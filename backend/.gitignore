@@ -2,3 +2,9 @@
 .env
 .env.*
 !.env.example
+
+# Generated Prisma Client
+backend/src/generated/prisma/
+
+# Compiled backend
+backend/dist/
