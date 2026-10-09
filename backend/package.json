@@ -4,12 +4,13 @@
   "description": "This directory provides the starting architectural layout for the Aventix backend application, built with **NestJS**, **PostgreSQL**, and **Prisma ORM**.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "tsx watch src/app.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "dependencies": {
     "dotenv": "^18.0.6",
     "express": "^5.2.1"
@@ -20,4 +21,5 @@
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   }
+
 }
