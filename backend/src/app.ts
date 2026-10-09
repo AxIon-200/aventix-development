@@ -1,4 +1,5 @@
 import express from "express";
+import { env } from "./config/env.js";
 
 const app = express();
 
@@ -11,8 +12,6 @@ app.get("/api/v1/health", (_req, res) => {
   });
 });
 
-const PORT = 5000;
-
-app.listen(PORT, () => {
-  console.log(`Aventix API running on port ${PORT}`);
+app.listen(env.PORT, () => {
+  console.log(`Aventix API running on port ${env.PORT}`);
 });
