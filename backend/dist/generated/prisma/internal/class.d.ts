@@ -117,6 +117,61 @@ export interface PrismaClient<in LogOpts extends Prisma.LogLevel = never, in out
     $extends: runtime.Types.Extensions.ExtendsHook<"extends", Prisma.TypeMapCb<OmitOpts>, ExtArgs, runtime.Types.Utils.Call<Prisma.TypeMapCb<OmitOpts>, {
         extArgs: ExtArgs;
     }>>;
+    /**
+ * `prisma.user`: Exposes CRUD operations for the **User** model.
+  * Example usage:
+  * ```ts
+  * // Fetch zero or more Users
+  * const users = await prisma.user.findMany()
+  * ```
+  */
+    get user(): Prisma.UserDelegate<ExtArgs, {
+        omit: OmitOpts;
+    }>;
+    /**
+     * `prisma.session`: Exposes CRUD operations for the **Session** model.
+      * Example usage:
+      * ```ts
+      * // Fetch zero or more Sessions
+      * const sessions = await prisma.session.findMany()
+      * ```
+      */
+    get session(): Prisma.SessionDelegate<ExtArgs, {
+        omit: OmitOpts;
+    }>;
+    /**
+     * `prisma.account`: Exposes CRUD operations for the **Account** model.
+      * Example usage:
+      * ```ts
+      * // Fetch zero or more Accounts
+      * const accounts = await prisma.account.findMany()
+      * ```
+      */
+    get account(): Prisma.AccountDelegate<ExtArgs, {
+        omit: OmitOpts;
+    }>;
+    /**
+     * `prisma.verification`: Exposes CRUD operations for the **Verification** model.
+      * Example usage:
+      * ```ts
+      * // Fetch zero or more Verifications
+      * const verifications = await prisma.verification.findMany()
+      * ```
+      */
+    get verification(): Prisma.VerificationDelegate<ExtArgs, {
+        omit: OmitOpts;
+    }>;
+    /**
+     * `prisma.organizerProfile`: Exposes CRUD operations for the **OrganizerProfile** model.
+      * Example usage:
+      * ```ts
+      * // Fetch zero or more OrganizerProfiles
+      * const organizerProfiles = await prisma.organizerProfile.findMany()
+      * ```
+      */
+    get organizerProfile(): Prisma.OrganizerProfileDelegate<ExtArgs, {
+        omit: OmitOpts;
+    }>;
 }
 export declare function getPrismaClientClass(): PrismaClientConstructor;
 //# sourceMappingURL=class.d.ts.map

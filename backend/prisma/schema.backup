@@ -1,0 +1,13 @@
+// Aventix Database Schema
+// Database: Supabase PostgreSQL
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Models will be implemented in Step 8.

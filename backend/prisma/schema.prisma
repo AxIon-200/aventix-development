@@ -11,3 +11,115 @@ datasource db {
 }
 
 // Models will be implemented in Step 8.
+
+model User {
+  id              String    @id @default(dbgenerated("pg_catalog.gen_random_uuid()")) @db.Uuid
+  name            String
+  email           String
+  emailVerified   Boolean   @default(false)
+  image           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  firstName       String
+  lastName        String
+  phoneNumber     String?
+  role            String    @default("ATTENDEE")
+  status          String    @default("ACTIVE")
+  termsAcceptedAt DateTime?
+  termsVersion    String?
+
+  // Better Auth relationships
+  sessions        Session[]
+  accounts        Account[]
+
+  // Aventix organizer relationships
+  organizerProfile   OrganizerProfile?  @relation("OrganizerOwner")
+  approvedOrganizers OrganizerProfile[] @relation("OrganizerApprover")
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(dbgenerated("pg_catalog.gen_random_uuid()")) @db.Uuid
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(dbgenerated("pg_catalog.gen_random_uuid()")) @db.Uuid
+  accountId             String
+  providerId            String
+  userId                String    @db.Uuid
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(dbgenerated("pg_catalog.gen_random_uuid()")) @db.Uuid
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+enum UserRole {
+  ATTENDEE
+  ORGANIZER
+  ADMINISTRATOR
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum OrganizerStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+model OrganizerProfile {
+  id               String          @id @default(uuid()) @db.Uuid
+  userId           String          @unique @db.Uuid
+  organizationName String
+  description      String?
+  approvalStatus   OrganizerStatus @default(PENDING)
+  approvedAt       DateTime?
+  approvedById     String?         @db.Uuid
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  user       User  @relation("OrganizerOwner", fields: [userId], references: [id])
+  approvedBy User? @relation("OrganizerApprover", fields: [approvedById], references: [id])
+
+  @@index([approvalStatus])
+}
