@@ -1,17 +1,10 @@
 import express from "express";
-import { env } from "./config/env.js";
+import apiRouter from "./routes/index.js";
 
 const app = express();
 
 app.use(express.json());
 
-app.get("/api/v1/health", (_req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Aventix API is running",
-  });
-});
+app.use("/api/v1", apiRouter);
 
-app.listen(env.PORT, () => {
-  console.log(`Aventix API running on port ${env.PORT}`);
-});
+export default app;
