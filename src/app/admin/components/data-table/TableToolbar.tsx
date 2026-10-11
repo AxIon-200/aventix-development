@@ -13,7 +13,7 @@ type TableToolbarProps = {
   onFilterChange: (key: string, value: string) => void;
   hasActiveFilters: boolean;
   onClear: () => void;
-  children?: ReactNode; // extra controls (e.g. a date range picker)
+  children?: ReactNode;
 };
 
 export function TableToolbar({
@@ -29,22 +29,31 @@ export function TableToolbar({
 }: TableToolbarProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Press "/" anywhere (when not typing in a field) to jump to search.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
       const t = e.target as HTMLElement | null;
-      if (t && (["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName) || t.isContentEditable)) return;
+
+      if (
+        t &&
+        (["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName) ||
+          t.isContentEditable)
+      )
+        return;
+
       e.preventDefault();
       inputRef.current?.focus();
     };
+
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, []);
 
   return (
     <div className="flex flex-wrap items-center gap-3">
+      {" "}
       <div className="relative w-full max-w-sm">
+        {" "}
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
         <input
           ref={inputRef}
@@ -59,43 +68,59 @@ export function TableToolbar({
           <button
             onClick={() => onSearchChange("")}
             aria-label="Clear search"
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:bg-teal-500"
           >
-            <X className="h-3.5 w-3.5" />
+            {" "}
+            <X className="h-3.5 w-3.5" />{" "}
           </button>
         ) : (
           <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 rounded border border-white/10 px-1.5 text-[10px] text-slate-500">
-            /
+            {" "}
+            /{" "}
           </kbd>
-        )}
+        )}{" "}
       </div>
-
       {filters.map((f) => (
         <div key={f.key} className="relative">
+          {" "}
           <select
             value={filterValues[f.key] ?? "all"}
             onChange={(e) => onFilterChange(f.key, e.target.value)}
             aria-label={f.label}
-            className="appearance-none rounded-lg border border-white/10 bg-white/[0.03] py-2 pl-3 pr-8 text-sm text-slate-200 outline-none focus:border-teal-400/60"
+            className="appearance-none rounded-lg border border-white/10 bg-[#1A1E27] py-2 pl-3 pr-8 text-sm text-white outline-none focus:border-[#66FCF1] focus:ring-1 focus:ring-[#66FCF1]"
           >
-            <option value="all">{f.allLabel}</option>
+            {" "}
+            <option
+              value="all"
+              className="bg-[#1A1E27] text-white hover:bg-[#66FCF1] hover:text-[#1A1E27]"
+            >
+              {" "}
+              {f.allLabel}{" "}
+            </option>
             {f.options.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
+              <option
+                key={o.value}
+                value={o.value}
+                className="bg-[#1A1E27] text-white hover:bg-[#66FCF1] hover:text-[#1A1E27]"
+              >
+                {" "}
+                {o.label}{" "}
               </option>
-            ))}
+            ))}{" "}
           </select>
-          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white" />{" "}
         </div>
       ))}
-
       {children}
-
       {hasActiveFilters && (
-        <button onClick={onClear} className="text-xs text-teal-400 hover:underline">
-          Clear filters
+        <button
+          onClick={onClear}
+          className="text-xs text-teal-400 hover:underline"
+        >
+          {" "}
+          Clear filters{" "}
         </button>
-      )}
+      )}{" "}
     </div>
   );
 }
