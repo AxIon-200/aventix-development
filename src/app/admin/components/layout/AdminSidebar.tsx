@@ -91,7 +91,6 @@ export function AdminSidebar() {
     try {
       return localStorage.getItem(STORAGE_KEY) === "1";
     } catch {
-      // storage unavailable (private mode, etc.) - just start expanded
       return false;
     }
   });

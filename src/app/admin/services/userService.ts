@@ -1,50 +1,42 @@
 import {
   ManagedUser,
-  PaginatedResult,
+  UserDecision,
   UserDetails,
-  UserListParams,
+  UserFilters,
   UserStats,
-  UserStatus,
 } from "@/app/admin/types/users";
+import { ListParams, PaginatedResult } from "@/app/admin/types/common";
 import { DEMO, mockUsers } from "@/app/admin/lib/mockUsers";
+import { API_BASE, delay, toQueryString } from "@/app/admin/services/api";
 
-// Flip to false once the backend endpoints exist. Nothing in the hooks,
-// components, or page needs to change.
+// Flip to false once the backend endpoints exist.
 const USE_MOCK = true;
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api";
 
-// ───────────────────────── list ─────────────────────────
 // GET /admin/users?page=1&pageSize=10&search=noah&status=active
 export async function getUsers(
-  params: UserListParams
+  params: ListParams<UserFilters>
 ): Promise<PaginatedResult<ManagedUser>> {
-  const { page, pageSize, search, status } = params;
+  const { page, pageSize, search, filters } = params;
 
   if (USE_MOCK) {
     await delay(450);
     failIfDemo("Failed to load users");
-    const filtered = filterMockUsers(search, status);
+    const rows = filterMock(search, filters.status);
     const start = (page - 1) * pageSize;
-    return {
-      data: filtered.slice(start, start + pageSize),
-      total: filtered.length,
-      page,
-      pageSize,
-    };
+    return { data: rows.slice(start, start + pageSize), total: rows.length, page, pageSize };
   }
 
-  const query = new URLSearchParams({
-    page: String(page),
-    pageSize: String(pageSize),
-    ...(search ? { search } : {}),
-    ...(status && status !== "all" ? { status } : {}),
+  const qs = toQueryString({
+    page,
+    pageSize,
+    search,
+    status: filters.status === "all" ? undefined : filters.status,
   });
-  const res = await fetch(`${API_BASE}/admin/users?${query}`);
+  const res = await fetch(`${API_BASE}/admin/users?${qs}`);
   if (!res.ok) throw new Error("Failed to load users");
   return res.json();
 }
 
-// ───────────────────────── stats ─────────────────────────
 // GET /admin/users/stats
 export async function getUserStats(): Promise<UserStats> {
   if (USE_MOCK) {
@@ -65,7 +57,6 @@ export async function getUserStats(): Promise<UserStats> {
   return res.json();
 }
 
-// ───────────────────────── details ─────────────────────────
 // GET /admin/users/:id
 export async function getUserById(id: string): Promise<UserDetails> {
   if (USE_MOCK) {
@@ -88,12 +79,8 @@ export async function getUserById(id: string): Promise<UserDetails> {
   return res.json();
 }
 
-// ───────────────────────── activate / deactivate ─────────────────────────
 // PATCH /admin/users/:id/status   body: { status: "active" | "inactive" }
-export async function updateUserStatus(
-  id: string,
-  status: Exclude<UserStatus, "pending">
-): Promise<ManagedUser> {
+export async function updateUserStatus(id: string, status: UserDecision): Promise<ManagedUser> {
   if (USE_MOCK) {
     await delay(500);
     failIfDemo("Failed to update user status");
@@ -112,53 +99,45 @@ export async function updateUserStatus(
   return res.json();
 }
 
-// ───────────────────────── export ─────────────────────────
-// GET /admin/users/export?search=&status=   → CSV file (Blob)
-// Exports ALL rows matching the current filters, not just the visible page.
+// GET /admin/users/export?search=&status=   -> CSV file (Blob)
 export async function exportUsers(
-  params: Pick<UserListParams, "search" | "status">
+  params: Pick<ListParams<UserFilters>, "search" | "filters">
 ): Promise<Blob> {
-  const { search, status } = params;
+  const { search, filters } = params;
 
   if (USE_MOCK) {
     await delay(600);
     failIfDemo("Failed to export users");
-    const rows = filterMockUsers(search, status);
+    const rows = filterMock(search, filters.status);
     const header = ["User ID", "Name", "Email", "Status", "Date Joined"];
     const lines = rows.map((u) =>
-      [u.userCode, u.name, u.email, u.status, u.joinedAt.slice(0, 10)].map(csvCell).join(",")
+      [u.userCode, u.name, u.email, u.status, u.joinedAt.slice(0, 10)]
+        .map((v) => `"${v.replace(/"/g, '""')}"`)
+        .join(",")
     );
     return new Blob([[header.join(","), ...lines].join("\n")], { type: "text/csv" });
   }
 
-  const query = new URLSearchParams({
-    ...(search ? { search } : {}),
-    ...(status && status !== "all" ? { status } : {}),
+  const qs = toQueryString({
+    search,
+    status: filters.status === "all" ? undefined : filters.status,
   });
-  const res = await fetch(`${API_BASE}/admin/users/export?${query}`);
+  const res = await fetch(`${API_BASE}/admin/users/export?${qs}`);
   if (!res.ok) throw new Error("Failed to export users");
   return res.blob();
 }
 
-// ───────────────────────── helpers (mock only) ─────────────────────────
-function filterMockUsers(search?: string, status?: UserListParams["status"]) {
-  const q = search?.trim().toLowerCase();
+// ───────────── mock-only helpers ─────────────
+function filterMock(search: string, status: UserFilters["status"]) {
+  const q = search.trim().toLowerCase();
   return mockUsers
-    .filter((u) => (status && status !== "all" ? u.status === status : true))
+    .filter((u) => (status === "all" ? true : u.status === status))
     .filter((u) =>
       q ? [u.name, u.email, u.userCode].some((v) => v.toLowerCase().includes(q)) : true
     )
     .sort((a, b) => new Date(b.joinedAt).getTime() - new Date(a.joinedAt).getTime());
 }
 
-function csvCell(value: string) {
-  return `"${value.replace(/"/g, '""')}"`;
-}
-
 function failIfDemo(message: string) {
   if (DEMO.failRequests) throw new Error(message);
-}
-
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }

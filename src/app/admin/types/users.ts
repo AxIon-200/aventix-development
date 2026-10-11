@@ -1,7 +1,13 @@
-// Data contracts for User Management. Build the backend to return exactly
-// these shapes and nothing on the frontend needs to change.
+// Data contracts for User Management.
+// PaginatedResult / ListParams now live in types/common.ts (shared by all lists).
 
 export type UserStatus = "active" | "inactive" | "pending";
+export type UserStatusFilter = UserStatus | "all";
+
+// What an admin can switch a user to from the table / details modal.
+export type UserDecision = Exclude<UserStatus, "pending">;
+
+export type UserFilters = { status: UserStatusFilter };
 
 export type ManagedUser = {
   id: string;
@@ -19,22 +25,6 @@ export type UserDetails = ManagedUser & {
   lastActiveAt?: string | null;
   totalBookings: number;
   ticketsPurchased: number;
-};
-
-export type UserStatusFilter = UserStatus | "all";
-
-export type UserListParams = {
-  page: number;
-  pageSize: number;
-  search?: string;
-  status?: UserStatusFilter;
-};
-
-export type PaginatedResult<T> = {
-  data: T[];
-  total: number; // total rows matching the filters (not just this page)
-  page: number;
-  pageSize: number;
 };
 
 export type UserStats = {

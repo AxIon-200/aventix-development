@@ -1,18 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { UserDetails, UserStatus } from "@/app/admin/types/users";
+import { UserDecision, UserDetails } from "@/app/admin/types/users";
 import { getUserById } from "@/app/admin/services/userService";
 import { formatDate } from "@/app/admin/lib/format";
 import { Modal } from "@/app/admin/components/ui/Modal";
 import { ErrorState } from "@/app/admin/components/ui/ErrorState";
-import { UserAvatar } from "@/app/admin/components/users/UserAvatar";
-import { UserStatusBadge } from "@/app/admin/components/users/UserStatusBadge";
+import { Avatar } from "@/app/admin/components/ui/Avatar";
+import { UserStatusBadge } from "@/app/admin/components/users/userStatus";
 
 type Props = {
   userId: string | null; // null = closed
   onClose: () => void;
-  onChangeStatus: (user: UserDetails, next: Exclude<UserStatus, "pending">) => void;
+  onChangeStatus: (user: UserDetails, next: UserDecision) => void;
 };
 
 export function UserDetailsModal({ userId, onClose, onChangeStatus }: Props) {
@@ -66,7 +66,7 @@ export function UserDetailsModal({ userId, onClose, onChangeStatus }: Props) {
           {user && user.status !== "inactive" && (
             <button
               onClick={() => onChangeStatus(user, "inactive")}
-              className="rounded-lg bg-red-500/10 px-3.5 py-2 text-sm font-medium text-red-300 hover:bg-red-500/20"
+              className="rounded-lg bg-rose-500/10 px-3.5 py-2 text-sm font-medium text-rose-300 hover:bg-rose-500/20"
             >
               Deactivate
             </button>
@@ -104,7 +104,7 @@ export function UserDetailsModal({ userId, onClose, onChangeStatus }: Props) {
       {!isLoading && user && (
         <div className="space-y-5">
           <div className="flex items-center gap-4">
-            <UserAvatar name={user.name} src={user.avatarUrl} size="lg" />
+            <Avatar name={user.name} src={user.avatarUrl} size="lg" />
             <div>
               <p className="text-base font-semibold text-white">{user.name}</p>
               <p className="mb-1.5 text-xs text-slate-500">{user.userCode}</p>
