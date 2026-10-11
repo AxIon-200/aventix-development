@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -18,7 +18,44 @@ import {
   PanelLeftOpen,
 } from "lucide-react";
 
+
 const STORAGE_KEY = "aventix_admin_sidebar_collapsed";
+const SIDEBAR_CHANGE_EVENT = "aventix-admin-sidebar-change";
+
+// Read the saved sidebar preference in the browser.
+function getSidebarSnapshot(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  try {
+    return window.localStorage.getItem(STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+// Keep the server render and initial hydration consistent.
+function getServerSidebarSnapshot(): boolean {
+  return false;
+}
+
+// Listen for sidebar preference changes.
+function subscribeToSidebar(callback: () => void) {
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === STORAGE_KEY || event.key === null) {
+      callback();
+    }
+  };
+
+  window.addEventListener("storage", handleStorage);
+  window.addEventListener(SIDEBAR_CHANGE_EVENT, callback);
+
+  return () => {
+    window.removeEventListener("storage", handleStorage);
+    window.removeEventListener(SIDEBAR_CHANGE_EVENT, callback);
+  };
+}
 
 const mainLinks = [{ href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard }];
 
@@ -85,25 +122,29 @@ function NavSection({
 
 export function AdminSidebar() {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
 
-    try {
-      return localStorage.getItem(STORAGE_KEY) === "1";
-    } catch {
-      return false;
-    }
-  });
+const collapsed = useSyncExternalStore(
+  subscribeToSidebar,
+  getSidebarSnapshot,
+  getServerSidebarSnapshot
+);
 
-  function toggle() {
-    const next = !collapsed;
-    setCollapsed(next);
-    try {
-      localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
-    } catch {
-      // ignore
-    }
+ function toggle() {
+  const next = !collapsed;
+
+  try {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      next ? "1" : "0"
+    );
+  } catch {
+    // Ignore storage errors.
   }
+
+  window.dispatchEvent(
+    new Event(SIDEBAR_CHANGE_EVENT)
+  );
+}
 
   return (
     <aside
