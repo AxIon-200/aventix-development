@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -158,14 +159,32 @@ const collapsed = useSyncExternalStore(
             collapsed ? "flex-col items-center gap-3" : "items-center justify-between px-2"
           }`}
         >
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-teal-500 text-xs font-bold text-slate-950">
-              A
-            </div>
-            {!collapsed && (
-              <span className="text-sm font-semibold tracking-wide text-white">AVENTIX</span>
+          <Link
+            href="/admin/dashboard"
+            aria-label="Aventix admin dashboard"
+            className="flex items-center"
+          >
+            {collapsed ? (
+              // Icon-only mark: the full wordmark would not fit in 72px.
+              <Image
+                src="/images/aventix-icon.png"
+                alt="Aventix"
+                width={34}
+                height={24}
+                priority
+                className="h-6 w-auto"
+              />
+            ) : (
+              <Image
+                src="/images/aventix-logo.png"
+                alt="Aventix"
+                width={104}
+                height={24}
+                priority
+                className="h-6 w-auto"
+              />
             )}
-          </div>
+          </Link>
           <button
             onClick={toggle}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
