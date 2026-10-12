@@ -34,3 +34,90 @@ export const OrganizerStatus = {
 } as const
 
 export type OrganizerStatus = (typeof OrganizerStatus)[keyof typeof OrganizerStatus]
+
+
+export const EventType = {
+  CONCERT: 'CONCERT',
+  GIG: 'GIG',
+  MUSIC_FESTIVAL: 'MUSIC_FESTIVAL'
+} as const
+
+export type EventType = (typeof EventType)[keyof typeof EventType]
+
+
+export const EventStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+  SOLD_OUT: 'SOLD_OUT',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED'
+} as const
+
+export type EventStatus = (typeof EventStatus)[keyof typeof EventStatus]
+
+
+export const AdmissionMode = {
+  ASSIGNED_SEATING: 'ASSIGNED_SEATING',
+  GENERAL_ADMISSION: 'GENERAL_ADMISSION'
+} as const
+
+export type AdmissionMode = (typeof AdmissionMode)[keyof typeof AdmissionMode]
+
+
+export const TicketCategoryStatus = {
+  ACTIVE: 'ACTIVE',
+  DISABLED: 'DISABLED'
+} as const
+
+export type TicketCategoryStatus = (typeof TicketCategoryStatus)[keyof typeof TicketCategoryStatus]
+
+
+export const BookingStatus = {
+  PENDING_PAYMENT: 'PENDING_PAYMENT',
+  CONFIRMED: 'CONFIRMED',
+  CANCELLED: 'CANCELLED',
+  EXPIRED: 'EXPIRED',
+  REFUNDED: 'REFUNDED'
+} as const
+
+export type BookingStatus = (typeof BookingStatus)[keyof typeof BookingStatus]
+
+
+export const SeatAllocationStatus = {
+  HELD: 'HELD',
+  CONFIRMED: 'CONFIRMED',
+  RELEASED: 'RELEASED'
+} as const
+
+export type SeatAllocationStatus = (typeof SeatAllocationStatus)[keyof typeof SeatAllocationStatus]
+
+
+export const PaymentStatus = {
+  PENDING: 'PENDING',
+  PAID: 'PAID',
+  FAILED: 'FAILED',
+  REFUNDED: 'REFUNDED'
+} as const
+
+export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus]
+
+
+export const TicketStatus = {
+  VALID: 'VALID',
+  USED: 'USED',
+  CANCELLED: 'CANCELLED',
+  EXPIRED: 'EXPIRED'
+} as const
+
+export type TicketStatus = (typeof TicketStatus)[keyof typeof TicketStatus]
+
+
+export const TicketVerificationResult = {
+  VALID: 'VALID',
+  ALREADY_USED: 'ALREADY_USED',
+  CANCELLED: 'CANCELLED',
+  EXPIRED: 'EXPIRED',
+  INVALID: 'INVALID'
+} as const
+
+export type TicketVerificationResult = (typeof TicketVerificationResult)[keyof typeof TicketVerificationResult]

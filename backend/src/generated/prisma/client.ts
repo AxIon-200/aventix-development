@@ -66,3 +66,63 @@ export type Verification = Prisma.VerificationModel
  * 
  */
 export type OrganizerProfile = Prisma.OrganizerProfileModel
+/**
+ * Model Venue
+ * 
+ */
+export type Venue = Prisma.VenueModel
+/**
+ * Model Event
+ * 
+ */
+export type Event = Prisma.EventModel
+/**
+ * Model EventMedia
+ * 
+ */
+export type EventMedia = Prisma.EventMediaModel
+/**
+ * Model TicketCategory
+ * 
+ */
+export type TicketCategory = Prisma.TicketCategoryModel
+/**
+ * Model EventSeat
+ * 
+ */
+export type EventSeat = Prisma.EventSeatModel
+/**
+ * Model Booking
+ * 
+ */
+export type Booking = Prisma.BookingModel
+/**
+ * Model BookingItem
+ * 
+ */
+export type BookingItem = Prisma.BookingItemModel
+/**
+ * Model BookingSeat
+ * 
+ */
+export type BookingSeat = Prisma.BookingSeatModel
+/**
+ * Model Payment
+ * 
+ */
+export type Payment = Prisma.PaymentModel
+/**
+ * Model Ticket
+ * 
+ */
+export type Ticket = Prisma.TicketModel
+/**
+ * Model TicketVerification
+ * 
+ */
+export type TicketVerification = Prisma.TicketVerificationModel
+/**
+ * Model ActivityLog
+ * 
+ */
+export type ActivityLog = Prisma.ActivityLogModel

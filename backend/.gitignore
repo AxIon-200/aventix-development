@@ -1,10 +1,13 @@
-# Environment files
+# Environment secrets
 .env
 .env.*
 !.env.example
 
+# Dependencies
+**/node_modules/
+
+# Build output
+**/dist/
+
 # Generated Prisma Client
 backend/src/generated/prisma/
-
-# Compiled backend
-backend/dist/

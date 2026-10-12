@@ -29,12 +29,17 @@ model User {
   termsVersion    String?
 
   // Better Auth relationships
-  sessions        Session[]
-  accounts        Account[]
+  sessions            Session[]
+  accounts            Account[]
+  ticketVerifications TicketVerification[]
+  activityLogs        ActivityLog[]
 
   // Aventix organizer relationships
   organizerProfile   OrganizerProfile?  @relation("OrganizerOwner")
   approvedOrganizers OrganizerProfile[] @relation("OrganizerApprover")
+
+  uploadedEventMedia EventMedia[]
+  bookings           Booking[]
 
   @@unique([email])
   @@map("user")
@@ -121,5 +126,358 @@ model OrganizerProfile {
   user       User  @relation("OrganizerOwner", fields: [userId], references: [id])
   approvedBy User? @relation("OrganizerApprover", fields: [approvedById], references: [id])
 
+  events Event[]
+
   @@index([approvalStatus])
+}
+
+model Venue {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  address   String
+  latitude  Decimal? @db.Decimal(10, 7)
+  longitude Decimal? @db.Decimal(10, 7)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events Event[]
+}
+
+enum EventType {
+  CONCERT
+  GIG
+  MUSIC_FESTIVAL
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  SOLD_OUT
+  COMPLETED
+  CANCELLED
+}
+
+model Event {
+  id          String  @id @default(uuid()) @db.Uuid
+  organizerId String  @db.Uuid
+  venueId     String? @db.Uuid
+
+  name            String
+  slug            String     @unique
+  description     String?
+  eventType       EventType?
+  artistPerformer String?
+
+  eventDate DateTime?
+  startTime DateTime?
+  endTime   DateTime?
+
+  posterUrl String?
+  bannerUrl String?
+
+  ticketSaleStart DateTime?
+  ticketSaleEnd   DateTime?
+
+  maxTicketsPerAttendee Int         @default(2)
+  status                EventStatus @default(DRAFT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organizer        OrganizerProfile @relation(fields: [organizerId], references: [id])
+  venue            Venue?           @relation(fields: [venueId], references: [id])
+  media            EventMedia[]
+  ticketCategories TicketCategory[]
+  seats            EventSeat[]
+  bookings         Booking[]
+
+  @@index([organizerId])
+  @@index([venueId])
+  @@index([status])
+  @@index([eventDate])
+}
+
+model EventMedia {
+  id           String   @id @default(uuid()) @db.Uuid
+  eventId      String   @db.Uuid
+  url          String
+  displayOrder Int      @default(0)
+  uploadedById String   @db.Uuid
+  createdAt    DateTime @default(now())
+
+  event      Event @relation(fields: [eventId], references: [id])
+  uploadedBy User  @relation(fields: [uploadedById], references: [id])
+
+  @@index([eventId])
+  @@index([uploadedById])
+  @@index([eventId, displayOrder])
+}
+
+enum AdmissionMode {
+  ASSIGNED_SEATING
+  GENERAL_ADMISSION
+}
+
+enum TicketCategoryStatus {
+  ACTIVE
+  DISABLED
+}
+
+model TicketCategory {
+  id      String @id @default(uuid()) @db.Uuid
+  eventId String @db.Uuid
+
+  name          String
+  description   String?
+  price         Decimal       @db.Decimal(12, 2)
+  admissionMode AdmissionMode
+  maxCapacity   Int?
+
+  saleStartAt DateTime?
+  saleEndAt   DateTime?
+
+  status TicketCategoryStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  event        Event         @relation(fields: [eventId], references: [id])
+  seats        EventSeat[]
+  bookingItems BookingItem[]
+
+  @@unique([id, eventId])
+  @@index([eventId])
+  @@index([eventId, status])
+  @@index([eventId, admissionMode])
+}
+
+model EventSeat {
+  id               String @id @default(uuid()) @db.Uuid
+  eventId          String @db.Uuid
+  ticketCategoryId String @db.Uuid
+
+  section      String?
+  row          String?
+  seatNumber   String
+  displayLabel String
+
+  enabled Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  event          Event          @relation(fields: [eventId], references: [id])
+  ticketCategory TicketCategory @relation(fields: [ticketCategoryId, eventId], references: [id, eventId])
+  bookingSeats   BookingSeat[]
+
+  @@unique([id, ticketCategoryId])
+  @@unique([eventId, displayLabel])
+  @@index([eventId])
+  @@index([ticketCategoryId])
+  @@index([eventId, ticketCategoryId])
+}
+
+enum BookingStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  CANCELLED
+  EXPIRED
+  REFUNDED
+}
+
+model Booking {
+  id               String @id @default(uuid()) @db.Uuid
+  bookingReference String @unique
+
+  userId  String @db.Uuid
+  eventId String @db.Uuid
+
+  status BookingStatus @default(PENDING_PAYMENT)
+
+  subtotal    Decimal @db.Decimal(12, 2)
+  totalAmount Decimal @db.Decimal(12, 2)
+
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  event    Event         @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  items    BookingItem[]
+  payments Payment[]
+
+  @@unique([id, eventId])
+  @@index([userId])
+  @@index([eventId])
+  @@index([status, expiresAt])
+  @@index([userId, eventId])
+}
+
+model BookingItem {
+  id               String @id @default(uuid()) @db.Uuid
+  bookingId        String @db.Uuid
+  ticketCategoryId String @db.Uuid
+  eventId          String @db.Uuid
+
+  quantity  Int
+  unitPrice Decimal @db.Decimal(12, 2)
+  subtotal  Decimal @db.Decimal(12, 2)
+
+  createdAt DateTime @default(now())
+
+  booking        Booking        @relation(fields: [bookingId, eventId], references: [id, eventId], onDelete: Restrict)
+  ticketCategory TicketCategory @relation(fields: [ticketCategoryId, eventId], references: [id, eventId], onDelete: Restrict)
+
+  seats   BookingSeat[]
+  tickets Ticket[]
+
+  @@unique([id, ticketCategoryId])
+  @@index([bookingId])
+  @@index([ticketCategoryId])
+  @@index([eventId])
+}
+
+enum SeatAllocationStatus {
+  HELD
+  CONFIRMED
+  RELEASED
+}
+
+model BookingSeat {
+  id               String  @id @default(uuid()) @db.Uuid
+  eventSeatId      String  @db.Uuid
+  bookingItemId    String  @db.Uuid
+  ticketCategoryId String  @db.Uuid
+  ticket           Ticket?
+
+  allocationStatus SeatAllocationStatus @default(HELD)
+  releasedAt       DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  eventSeat   EventSeat   @relation(fields: [eventSeatId, ticketCategoryId], references: [id, ticketCategoryId], onDelete: Restrict)
+  bookingItem BookingItem @relation(fields: [bookingItemId, ticketCategoryId], references: [id, ticketCategoryId], onDelete: Restrict)
+
+  @@unique([id, bookingItemId])
+  @@index([eventSeatId])
+  @@index([bookingItemId])
+  @@index([ticketCategoryId])
+  @@index([eventSeatId, allocationStatus])
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model Payment {
+  id        String @id @default(uuid()) @db.Uuid
+  bookingId String @db.Uuid
+
+  provider          String
+  providerReference String?
+  paymentMethod     String?
+
+  amount Decimal       @db.Decimal(12, 2)
+  status PaymentStatus @default(PENDING)
+
+  paidAt                  DateTime?
+  refundedAt              DateTime?
+  refundStatus            String?
+  refundProviderReference String?
+  refundError             String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+
+  @@unique([provider, providerReference])
+  @@index([bookingId])
+  @@index([bookingId, status])
+  @@index([status, createdAt])
+}
+
+enum TicketStatus {
+  VALID
+  USED
+  CANCELLED
+  EXPIRED
+}
+
+model Ticket {
+  id            String  @id @default(uuid()) @db.Uuid
+  bookingItemId String  @db.Uuid
+  bookingSeatId String? @unique @db.Uuid
+
+  ticketCode            String @unique
+  verificationTokenHash String @unique
+
+  status TicketStatus @default(VALID)
+
+  issuedAt DateTime  @default(now())
+  usedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bookingItem BookingItem  @relation(fields: [bookingItemId], references: [id], onDelete: Restrict)
+  bookingSeat BookingSeat? @relation(fields: [bookingSeatId], references: [id], onDelete: Restrict)
+
+  verifications TicketVerification[]
+
+  @@index([bookingItemId])
+  @@index([status])
+}
+
+enum TicketVerificationResult {
+  VALID
+  ALREADY_USED
+  CANCELLED
+  EXPIRED
+  INVALID
+}
+
+model TicketVerification {
+  id String @id @default(uuid()) @db.Uuid
+
+  ticketId     String? @db.Uuid
+  verifiedById String  @db.Uuid
+
+  tokenFingerprint String
+  result           TicketVerificationResult
+
+  verifiedAt DateTime @default(now())
+
+  ticket     Ticket? @relation(fields: [ticketId], references: [id], onDelete: Restrict)
+  verifiedBy User    @relation(fields: [verifiedById], references: [id], onDelete: Restrict)
+
+  @@index([ticketId])
+  @@index([verifiedById])
+  @@index([result])
+  @@index([verifiedAt])
+}
+
+model ActivityLog {
+  id String @id @default(uuid()) @db.Uuid
+
+  userId String? @db.Uuid
+
+  action     String
+  entityType String
+  entityId   String? @db.Uuid
+  metadata   Json?
+
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt])
 }

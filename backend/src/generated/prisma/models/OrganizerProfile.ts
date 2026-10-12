@@ -216,6 +216,7 @@ export type OrganizerProfileWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"OrganizerProfile"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   approvedBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
+  events?: Prisma.EventListRelationFilter
 }
 
 export type OrganizerProfileOrderByWithRelationInput = {
@@ -230,6 +231,7 @@ export type OrganizerProfileOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
   approvedBy?: Prisma.UserOrderByWithRelationInput
+  events?: Prisma.EventOrderByRelationAggregateInput
 }
 
 export type OrganizerProfileWhereUniqueInput = Prisma.AtLeast<{
@@ -247,6 +249,7 @@ export type OrganizerProfileWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"OrganizerProfile"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   approvedBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
+  events?: Prisma.EventListRelationFilter
 }, "id" | "userId">
 
 export type OrganizerProfileOrderByWithAggregationInput = {
@@ -289,6 +292,7 @@ export type OrganizerProfileCreateInput = {
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutOrganizerProfileInput
   approvedBy?: Prisma.UserCreateNestedOneWithoutApprovedOrganizersInput
+  events?: Prisma.EventCreateNestedManyWithoutOrganizerInput
 }
 
 export type OrganizerProfileUncheckedCreateInput = {
@@ -301,6 +305,7 @@ export type OrganizerProfileUncheckedCreateInput = {
   approvedById?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  events?: Prisma.EventUncheckedCreateNestedManyWithoutOrganizerInput
 }
 
 export type OrganizerProfileUpdateInput = {
@@ -313,6 +318,7 @@ export type OrganizerProfileUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutOrganizerProfileNestedInput
   approvedBy?: Prisma.UserUpdateOneWithoutApprovedOrganizersNestedInput
+  events?: Prisma.EventUpdateManyWithoutOrganizerNestedInput
 }
 
 export type OrganizerProfileUncheckedUpdateInput = {
@@ -325,6 +331,7 @@ export type OrganizerProfileUncheckedUpdateInput = {
   approvedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  events?: Prisma.EventUncheckedUpdateManyWithoutOrganizerNestedInput
 }
 
 export type OrganizerProfileCreateManyInput = {
@@ -412,6 +419,11 @@ export type OrganizerProfileMinOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
+export type OrganizerProfileScalarRelationFilter = {
+  is?: Prisma.OrganizerProfileWhereInput
+  isNot?: Prisma.OrganizerProfileWhereInput
+}
+
 export type OrganizerProfileCreateNestedOneWithoutUserInput = {
   create?: Prisma.XOR<Prisma.OrganizerProfileCreateWithoutUserInput, Prisma.OrganizerProfileUncheckedCreateWithoutUserInput>
   connectOrCreate?: Prisma.OrganizerProfileCreateOrConnectWithoutUserInput
@@ -490,6 +502,20 @@ export type EnumOrganizerStatusFieldUpdateOperationsInput = {
   set?: $Enums.OrganizerStatus
 }
 
+export type OrganizerProfileCreateNestedOneWithoutEventsInput = {
+  create?: Prisma.XOR<Prisma.OrganizerProfileCreateWithoutEventsInput, Prisma.OrganizerProfileUncheckedCreateWithoutEventsInput>
+  connectOrCreate?: Prisma.OrganizerProfileCreateOrConnectWithoutEventsInput
+  connect?: Prisma.OrganizerProfileWhereUniqueInput
+}
+
+export type OrganizerProfileUpdateOneRequiredWithoutEventsNestedInput = {
+  create?: Prisma.XOR<Prisma.OrganizerProfileCreateWithoutEventsInput, Prisma.OrganizerProfileUncheckedCreateWithoutEventsInput>
+  connectOrCreate?: Prisma.OrganizerProfileCreateOrConnectWithoutEventsInput
+  upsert?: Prisma.OrganizerProfileUpsertWithoutEventsInput
+  connect?: Prisma.OrganizerProfileWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.OrganizerProfileUpdateToOneWithWhereWithoutEventsInput, Prisma.OrganizerProfileUpdateWithoutEventsInput>, Prisma.OrganizerProfileUncheckedUpdateWithoutEventsInput>
+}
+
 export type OrganizerProfileCreateWithoutUserInput = {
   id?: string
   organizationName: string
@@ -499,6 +525,7 @@ export type OrganizerProfileCreateWithoutUserInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   approvedBy?: Prisma.UserCreateNestedOneWithoutApprovedOrganizersInput
+  events?: Prisma.EventCreateNestedManyWithoutOrganizerInput
 }
 
 export type OrganizerProfileUncheckedCreateWithoutUserInput = {
@@ -510,6 +537,7 @@ export type OrganizerProfileUncheckedCreateWithoutUserInput = {
   approvedById?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  events?: Prisma.EventUncheckedCreateNestedManyWithoutOrganizerInput
 }
 
 export type OrganizerProfileCreateOrConnectWithoutUserInput = {
@@ -526,6 +554,7 @@ export type OrganizerProfileCreateWithoutApprovedByInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutOrganizerProfileInput
+  events?: Prisma.EventCreateNestedManyWithoutOrganizerInput
 }
 
 export type OrganizerProfileUncheckedCreateWithoutApprovedByInput = {
@@ -537,6 +566,7 @@ export type OrganizerProfileUncheckedCreateWithoutApprovedByInput = {
   approvedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  events?: Prisma.EventUncheckedCreateNestedManyWithoutOrganizerInput
 }
 
 export type OrganizerProfileCreateOrConnectWithoutApprovedByInput = {
@@ -569,6 +599,7 @@ export type OrganizerProfileUpdateWithoutUserInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   approvedBy?: Prisma.UserUpdateOneWithoutApprovedOrganizersNestedInput
+  events?: Prisma.EventUpdateManyWithoutOrganizerNestedInput
 }
 
 export type OrganizerProfileUncheckedUpdateWithoutUserInput = {
@@ -580,6 +611,7 @@ export type OrganizerProfileUncheckedUpdateWithoutUserInput = {
   approvedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  events?: Prisma.EventUncheckedUpdateManyWithoutOrganizerNestedInput
 }
 
 export type OrganizerProfileUpsertWithWhereUniqueWithoutApprovedByInput = {
@@ -613,6 +645,70 @@ export type OrganizerProfileScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"OrganizerProfile"> | Date | string
 }
 
+export type OrganizerProfileCreateWithoutEventsInput = {
+  id?: string
+  organizationName: string
+  description?: string | null
+  approvalStatus?: $Enums.OrganizerStatus
+  approvedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutOrganizerProfileInput
+  approvedBy?: Prisma.UserCreateNestedOneWithoutApprovedOrganizersInput
+}
+
+export type OrganizerProfileUncheckedCreateWithoutEventsInput = {
+  id?: string
+  userId: string
+  organizationName: string
+  description?: string | null
+  approvalStatus?: $Enums.OrganizerStatus
+  approvedAt?: Date | string | null
+  approvedById?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type OrganizerProfileCreateOrConnectWithoutEventsInput = {
+  where: Prisma.OrganizerProfileWhereUniqueInput
+  create: Prisma.XOR<Prisma.OrganizerProfileCreateWithoutEventsInput, Prisma.OrganizerProfileUncheckedCreateWithoutEventsInput>
+}
+
+export type OrganizerProfileUpsertWithoutEventsInput = {
+  update: Prisma.XOR<Prisma.OrganizerProfileUpdateWithoutEventsInput, Prisma.OrganizerProfileUncheckedUpdateWithoutEventsInput>
+  create: Prisma.XOR<Prisma.OrganizerProfileCreateWithoutEventsInput, Prisma.OrganizerProfileUncheckedCreateWithoutEventsInput>
+  where?: Prisma.OrganizerProfileWhereInput
+}
+
+export type OrganizerProfileUpdateToOneWithWhereWithoutEventsInput = {
+  where?: Prisma.OrganizerProfileWhereInput
+  data: Prisma.XOR<Prisma.OrganizerProfileUpdateWithoutEventsInput, Prisma.OrganizerProfileUncheckedUpdateWithoutEventsInput>
+}
+
+export type OrganizerProfileUpdateWithoutEventsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  organizationName?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  approvalStatus?: Prisma.EnumOrganizerStatusFieldUpdateOperationsInput | $Enums.OrganizerStatus
+  approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutOrganizerProfileNestedInput
+  approvedBy?: Prisma.UserUpdateOneWithoutApprovedOrganizersNestedInput
+}
+
+export type OrganizerProfileUncheckedUpdateWithoutEventsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  organizationName?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  approvalStatus?: Prisma.EnumOrganizerStatusFieldUpdateOperationsInput | $Enums.OrganizerStatus
+  approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  approvedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
 export type OrganizerProfileCreateManyApprovedByInput = {
   id?: string
   userId: string
@@ -633,6 +729,7 @@ export type OrganizerProfileUpdateWithoutApprovedByInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutOrganizerProfileNestedInput
+  events?: Prisma.EventUpdateManyWithoutOrganizerNestedInput
 }
 
 export type OrganizerProfileUncheckedUpdateWithoutApprovedByInput = {
@@ -644,6 +741,7 @@ export type OrganizerProfileUncheckedUpdateWithoutApprovedByInput = {
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  events?: Prisma.EventUncheckedUpdateManyWithoutOrganizerNestedInput
 }
 
 export type OrganizerProfileUncheckedUpdateManyWithoutApprovedByInput = {
@@ -658,6 +756,35 @@ export type OrganizerProfileUncheckedUpdateManyWithoutApprovedByInput = {
 }
 
 
+/**
+ * Count Type OrganizerProfileCountOutputType
+ */
+
+export type OrganizerProfileCountOutputType = {
+  events: number
+}
+
+export type OrganizerProfileCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  events?: boolean | OrganizerProfileCountOutputTypeCountEventsArgs
+}
+
+/**
+ * OrganizerProfileCountOutputType without action
+ */
+export type OrganizerProfileCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the OrganizerProfileCountOutputType
+   */
+  select?: Prisma.OrganizerProfileCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * OrganizerProfileCountOutputType without action
+ */
+export type OrganizerProfileCountOutputTypeCountEventsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.EventWhereInput
+}
+
 
 export type OrganizerProfileSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -671,6 +798,8 @@ export type OrganizerProfileSelect<ExtArgs extends runtime.Types.Extensions.Inte
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   approvedBy?: boolean | Prisma.OrganizerProfile$approvedByArgs<ExtArgs>
+  events?: boolean | Prisma.OrganizerProfile$eventsArgs<ExtArgs>
+  _count?: boolean | Prisma.OrganizerProfileCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["organizerProfile"]>
 
 export type OrganizerProfileSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -717,6 +846,8 @@ export type OrganizerProfileOmit<ExtArgs extends runtime.Types.Extensions.Intern
 export type OrganizerProfileInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   approvedBy?: boolean | Prisma.OrganizerProfile$approvedByArgs<ExtArgs>
+  events?: boolean | Prisma.OrganizerProfile$eventsArgs<ExtArgs>
+  _count?: boolean | Prisma.OrganizerProfileCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type OrganizerProfileIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -732,6 +863,7 @@ export type $OrganizerProfilePayload<ExtArgs extends runtime.Types.Extensions.In
   objects: {
     user: Prisma.$UserPayload<ExtArgs>
     approvedBy: Prisma.$UserPayload<ExtArgs> | null
+    events: Prisma.$EventPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1139,6 +1271,7 @@ export interface Prisma__OrganizerProfileClient<T, Null = never, ExtArgs extends
   readonly [Symbol.toStringTag]: "PrismaPromise"
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   approvedBy<T extends Prisma.OrganizerProfile$approvedByArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.OrganizerProfile$approvedByArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  events<T extends Prisma.OrganizerProfile$eventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.OrganizerProfile$eventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1594,6 +1727,30 @@ export type OrganizerProfile$approvedByArgs<ExtArgs extends runtime.Types.Extens
    */
   include?: Prisma.UserInclude<ExtArgs> | null
   where?: Prisma.UserWhereInput
+}
+
+/**
+ * OrganizerProfile.events
+ */
+export type OrganizerProfile$eventsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Event
+   */
+  select?: Prisma.EventSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Event
+   */
+  omit?: Prisma.EventOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.EventInclude<ExtArgs> | null
+  where?: Prisma.EventWhereInput
+  orderBy?: Prisma.EventOrderByWithRelationInput | Prisma.EventOrderByWithRelationInput[]
+  cursor?: Prisma.EventWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.EventScalarFieldEnum | Prisma.EventScalarFieldEnum[]
 }
 
 /**
