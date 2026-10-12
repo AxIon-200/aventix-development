@@ -9,7 +9,7 @@ import { ManagedUser, UserStatus } from "@/app/admin/types/users";
 //                         error states
 // ─────────────────────────────────────────────────────────────
 export const DEMO = {
-  seedUsers: false,
+  seedUsers: true,
   failRequests: false,
 };
 

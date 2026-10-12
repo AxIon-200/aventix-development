@@ -7,7 +7,7 @@ import { AdminEvent, EventCategory, EventStatus } from "@/app/admin/types/events
 //   failRequests: true  = every request fails (preview the error states)
 // ─────────────────────────────────────────────────────────────
 export const DEMO = {
-  seedEvents: false,
+  seedEvents: true,
   failRequests: false,
 };
 

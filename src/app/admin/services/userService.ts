@@ -6,7 +6,7 @@ import {
   UserStats,
 } from "@/app/admin/types/users";
 import { ListParams, PaginatedResult } from "@/app/admin/types/common";
-import { DEMO, mockUsers } from "@/app/admin/lib/mockUsers";
+import { DEMO, mockUsers } from "@/app/admin/lib/mock/mockUsers";
 import { API_BASE, delay, toQueryString } from "@/app/admin/services/api";
 
 // Flip to false once the backend endpoints exist.

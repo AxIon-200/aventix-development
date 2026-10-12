@@ -13,7 +13,7 @@ import {
   mockRecentEvents,
   mockRecentUsers,
   mockRecentBookings,
-} from "@/app/admin/lib/mockAdminData";
+} from "@/app/admin/lib/mock/mockAdminData";
 
 // Flip to false once the backend has admin endpoints. Nothing in the
 // components that call these functions needs to change.

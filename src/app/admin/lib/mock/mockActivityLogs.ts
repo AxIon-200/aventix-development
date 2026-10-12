@@ -13,7 +13,7 @@ import {
 //   failRequests: true  = every request fails (preview the error states)
 // ─────────────────────────────────────────────────────────────
 export const DEMO = {
-  seedLogs: false,
+  seedLogs: true,
   failRequests: false,
 };
 

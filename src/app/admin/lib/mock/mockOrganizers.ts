@@ -7,7 +7,7 @@ import { Organizer, OrganizerStatus } from "@/app/admin/types/organizers";
 //   failRequests:   true  = every request fails (preview the error states)
 // ─────────────────────────────────────────────────────────────
 export const DEMO = {
-  seedOrganizers: false,
+  seedOrganizers: true,
   failRequests: false,
 };
 
