@@ -9,14 +9,14 @@ import {
   QrCode,
   TrendingUp,
   UserCheck,
-  CreditCard,
+  type LucideIcon,
 } from "lucide-react";
 
 interface NavItem {
   href: string;
   title: string;
   description: string;
-  icon: typeof LayoutDashboard;
+  icon: LucideIcon;
 }
 
 const navItems: NavItem[] = [
@@ -59,7 +59,7 @@ const navItems: NavItem[] = [
 ];
 
 export default function OrganizerSidebar() {
-  const pathname = usePathname();
+  const pathname = usePathname() || "";
 
   return (
     <aside className="w-full shrink-0 lg:w-[280px]">
