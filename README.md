@@ -1,36 +1,18 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Aventix navbar page-link fix
 
-## Getting Started
+This update changes only `src/components/Navbar.tsx` from the previously delivered `aventix-updated-develop-frontend.zip`.
 
-First, run the development server:
+The newer team upload intercepted homepage navigation and mapped Events to Trending Events, About to How It Works, and Contact to the organizer section. This fix removes that interception and the scroll-based active-page state. Standard Next.js links now open `/events`, `/about` and `/contact`; the active indicator follows the current route. Mobile menu links close the menu. Styling, responsive sizes, account/session controls and existing demo switchers are retained. Backend files are unchanged.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Apply
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. Stop `npm run dev` with Ctrl+C.
+2. Copy `src/components/Navbar.tsx` from this ZIP into the same path in your project, replacing only that file. Alternatively, apply `navbar-page-links.patch` after running `git apply --check navbar-page-links.patch` against the previous delivered version.
+3. Delete the generated `.next` folder to clear old bundles. In Windows Command Prompt from the project root: `rmdir /s /q .next`.
+4. Run `npm run dev` and refresh the browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+No npm dependency installation or backend changes are required for this fix. Preserve your Git folder, environment files and any unrelated changes. Review overlapping local Navbar changes before replacing it.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Verification
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Production build and scoped Navbar ESLint passed. Browser verification results are included in `verification.json`. The first browser attempt used stale production bundles; the final test uses a clean production build. Backend account-service connection errors are expected when that separate service is not running and do not constitute live authentication verification.

@@ -1,0 +1,19 @@
+{
+  "build": "passed (clean production build)",
+  "navbarLint": "passed",
+  "browserNavigation": [
+    "1366px Events opens /events and is active",
+    "1366px About opens /about and is active",
+    "1366px Contact opens /contact and is active",
+    "390px Events opens /events and is active",
+    "390px About opens /about and is active",
+    "390px Contact opens /contact and is active",
+    "320px Events opens /events and is active",
+    "320px About opens /about and is active",
+    "320px Contact opens /contact and is active"
+  ],
+  "backendChanges": 0,
+  "changedSource": [
+    "src/components/Navbar.tsx"
+  ]
+}
