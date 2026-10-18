@@ -38,7 +38,7 @@ export default function AuthModal({
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-[#182332] text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-[#1f2833] text-slate-400 hover:text-white flex items-center justify-center transition-colors"
         >
           <X className="w-4 h-4" />
         </button>
@@ -57,13 +57,13 @@ export default function AuthModal({
         </div>
 
         {/* Tabs */}
-        <div className="flex rounded-xl bg-[#131b26] p-1 border border-[#1e2a39] mb-5">
+        <div className="flex rounded-xl bg-[#151b23] p-1 border border-[#1e2a39] mb-5">
           <button
             type="button"
             onClick={() => setMode("login")}
             className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
               mode === "login"
-                ? "bg-[#00e5be] text-[#091519] shadow-md"
+                ? "bg-[#66fcf1] text-[#0b0c10] shadow-md"
                 : "text-slate-400 hover:text-white"
             }`}
           >
@@ -74,7 +74,7 @@ export default function AuthModal({
             onClick={() => setMode("register")}
             className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
               mode === "register"
-                ? "bg-[#00e5be] text-[#091519] shadow-md"
+                ? "bg-[#66fcf1] text-[#0b0c10] shadow-md"
                 : "text-slate-400 hover:text-white"
             }`}
           >
@@ -97,7 +97,7 @@ export default function AuthModal({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Juan dela Cruz"
-                  className="w-full bg-[#141e2b] text-sm text-white placeholder-slate-500 pl-9 pr-3.5 py-2.5 rounded-xl border border-[#233348] focus:outline-none focus:border-[#00e5be]"
+                  className="w-full bg-[#1f2833] text-sm text-white placeholder-slate-500 pl-9 pr-3.5 py-2.5 rounded-xl border border-[#233348] focus:outline-none focus:border-[#66fcf1]"
                 />
               </div>
             </div>
@@ -115,7 +115,7 @@ export default function AuthModal({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@domain.com"
-                className="w-full bg-[#141e2b] text-sm text-white placeholder-slate-500 pl-9 pr-3.5 py-2.5 rounded-xl border border-[#233348] focus:outline-none focus:border-[#00e5be]"
+                className="w-full bg-[#1f2833] text-sm text-white placeholder-slate-500 pl-9 pr-3.5 py-2.5 rounded-xl border border-[#233348] focus:outline-none focus:border-[#66fcf1]"
               />
             </div>
           </div>
@@ -132,14 +132,14 @@ export default function AuthModal({
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-[#141e2b] text-sm text-white placeholder-slate-500 pl-9 pr-3.5 py-2.5 rounded-xl border border-[#233348] focus:outline-none focus:border-[#00e5be]"
+                className="w-full bg-[#1f2833] text-sm text-white placeholder-slate-500 pl-9 pr-3.5 py-2.5 rounded-xl border border-[#233348] focus:outline-none focus:border-[#66fcf1]"
               />
             </div>
           </div>
 
           <button
             type="submit"
-            className="w-full py-3 rounded-xl bg-[#00e5be] hover:bg-[#32efcc] text-[#091519] font-bold text-sm transition-all shadow-[0_0_20px_rgba(0,229,190,0.3)] hover:scale-[1.02] active:scale-98 mt-2"
+            className="w-full py-3 rounded-xl bg-[#66fcf1] hover:bg-[#8afff6] text-[#0b0c10] font-bold text-sm transition-all shadow-[0_0_20px_rgba(102,252,241,0.3)] hover:scale-[1.02] active:scale-98 mt-2"
           >
             {isSuccess
               ? "✓ Success!"
@@ -151,8 +151,8 @@ export default function AuthModal({
 
         <p className="text-[11px] text-slate-500 text-center mt-5">
           By continuing, you agree to Aventix&apos;s{" "}
-          <span className="text-[#00e5be] cursor-pointer hover:underline">Terms</span> &amp;{" "}
-          <span className="text-[#00e5be] cursor-pointer hover:underline">Privacy Policy</span>.
+          <span className="text-[#66fcf1] cursor-pointer hover:underline">Terms</span> &amp;{" "}
+          <span className="text-[#66fcf1] cursor-pointer hover:underline">Privacy Policy</span>.
         </p>
       </div>
     </div>

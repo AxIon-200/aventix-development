@@ -40,7 +40,7 @@ export default function Testimonials() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center mb-14">
-          <span className="text-[#00e5be] text-xs font-bold tracking-[0.2em] uppercase block mb-1">
+          <span className="text-[#66fcf1] text-xs font-bold tracking-[0.2em] uppercase block mb-1">
             ATTENDEE STORIES
           </span>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
@@ -53,7 +53,7 @@ export default function Testimonials() {
           {testimonials.map((t) => (
             <div
               key={t.id}
-              className="bg-[#121a25] border border-[#1e2a39] rounded-2xl p-7 flex flex-col justify-between hover:border-[#00e5be]/40 transition-all duration-300 shadow-lg"
+              className="bg-[#121a25] border border-[#1e2a39] rounded-2xl p-7 flex flex-col justify-between hover:border-[#66fcf1]/40 transition-all duration-300 shadow-lg"
             >
               <div>
                 {/* 5 Cyan Stars */}
@@ -61,7 +61,7 @@ export default function Testimonials() {
                   {[...Array(t.rating)].map((_, i) => (
                     <Star
                       key={i}
-                      className="w-4 h-4 fill-[#00e5be] text-[#00e5be]"
+                      className="w-4 h-4 fill-[#66fcf1] text-[#66fcf1]"
                     />
                   ))}
                 </div>
@@ -74,7 +74,7 @@ export default function Testimonials() {
 
               {/* Author Row */}
               <div className="flex items-center gap-3 pt-4 border-t border-[#1a2737]">
-                <div className="relative w-11 h-11 rounded-full overflow-hidden border border-[#00e5be]/30 shrink-0">
+                <div className="relative w-11 h-11 rounded-full overflow-hidden border border-[#66fcf1]/30 shrink-0">
                   <Image
                     src={t.avatar}
                     alt={t.author}

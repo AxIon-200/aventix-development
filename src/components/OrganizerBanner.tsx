@@ -1,43 +1,49 @@
-"use client";
-
 import React from "react";
+import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 interface OrganizerBannerProps {
+  /** Landing page opens the organizer modal; otherwise the button links to `href`. */
   onBecomeOrganizer?: () => void;
+  href?: string;
 }
 
-export default function OrganizerBanner({ onBecomeOrganizer }: OrganizerBannerProps) {
-  return (
-    <section className="py-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Glowing Turquoise Banner Box */}
-        <div className="relative rounded-3xl bg-gradient-to-r from-[#42f7d8] via-[#24ddbe] to-[#1ac7ab] p-8 sm:p-12 md:p-14 overflow-hidden shadow-[0_0_50px_rgba(0,229,190,0.3)] flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
-          {/* Subtle decorative circles */}
-          <div className="absolute -right-12 -top-12 w-64 h-64 rounded-full bg-white/10 blur-2xl pointer-events-none" />
-          <div className="absolute -left-12 -bottom-12 w-64 h-64 rounded-full bg-[#00a887]/20 blur-2xl pointer-events-none" />
+const buttonClass =
+  "relative inline-flex items-center gap-2 rounded-full bg-[#0b0c10] px-8 py-4 text-base font-bold text-[#66fcf1] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] transition hover:bg-[#1f2833] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0b0c10]";
 
-          {/* Left Text Content */}
-          <div className="relative z-10 max-w-xl">
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#06191c] tracking-tight mb-2.5">
+export default function OrganizerBanner({ onBecomeOrganizer, href = "/register" }: OrganizerBannerProps) {
+  const content = (
+    <>
+      Become an Organizer
+      <ArrowRight aria-hidden className="h-4 w-4" />
+    </>
+  );
+
+  return (
+    <section aria-labelledby="organizer-cta" className="bg-[#0b0c10]">
+      <div className="mx-auto max-w-[1440px] px-4 py-12 sm:px-6 lg:p-16">
+        <div className="relative flex flex-col items-start justify-between gap-8 overflow-hidden rounded-3xl bg-gradient-to-r from-[#45a29e] to-[#66fcf1] p-8 sm:p-12 lg:flex-row lg:items-center lg:p-16">
+          <div aria-hidden className="pointer-events-none absolute right-0 top-0 h-80 w-80 rounded-full bg-white/10 blur-[50px]" />
+          <div aria-hidden className="pointer-events-none absolute bottom-0 left-10 h-60 w-60 rounded-full bg-[#0b0c10]/20 blur-[50px]" />
+
+          <div className="relative max-w-xl">
+            <h2 id="organizer-cta" className="font-display text-3xl font-bold leading-10 text-[#0b0c10] sm:text-4xl">
               Are You an Organizer?
             </h2>
-            <p className="text-[#0d343a] text-sm sm:text-base font-medium leading-relaxed">
-              List your concert, gig, or festival on Aventix and reach thousands of music
-              lovers across the Philippines.
+            <p className="mt-4 text-base leading-[29px] text-[#0b0c10]/80 sm:text-lg">
+              List your concert, gig, or festival on Aventix and reach thousands of music lovers across the Philippines.
             </p>
           </div>
 
-          {/* Right Action Button */}
-          <div className="relative z-10 shrink-0">
-            <button
-              onClick={onBecomeOrganizer}
-              className="inline-flex items-center gap-2.5 px-8 py-4 rounded-full bg-[#070e13] hover:bg-[#121c25] text-white font-bold text-sm sm:text-base transition-all duration-300 shadow-2xl hover:scale-105 active:scale-95 group"
-            >
-              <span>Become an Organizer</span>
-              <ArrowRight className="w-4 h-4 text-[#00e5be] transition-transform group-hover:translate-x-1" />
+          {onBecomeOrganizer ? (
+            <button type="button" onClick={onBecomeOrganizer} className={buttonClass}>
+              {content}
             </button>
-          </div>
+          ) : (
+            <Link href={href} className={buttonClass}>
+              {content}
+            </Link>
+          )}
         </div>
       </div>
     </section>

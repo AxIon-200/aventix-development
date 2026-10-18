@@ -28,7 +28,7 @@ export default function OrganizerModal({ isOpen, onClose }: OrganizerModalProps)
       <div className="relative w-full max-w-lg bg-[#0e1622] border border-[#213145] rounded-3xl p-6 sm:p-8 overflow-hidden shadow-2xl">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-[#182332] text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-[#1f2833] text-slate-400 hover:text-white flex items-center justify-center transition-colors"
         >
           <X className="w-4 h-4" />
         </button>
@@ -59,7 +59,7 @@ export default function OrganizerModal({ isOpen, onClose }: OrganizerModalProps)
                     value={company}
                     onChange={(e) => setCompany(e.target.value)}
                     placeholder="e.g. Live Nation PH / Karpos Multimedia"
-                    className="w-full bg-[#141e2b] text-sm text-white placeholder-slate-500 pl-9 pr-3.5 py-2.5 rounded-xl border border-[#233348] focus:outline-none focus:border-[#00e5be]"
+                    className="w-full bg-[#1f2833] text-sm text-white placeholder-slate-500 pl-9 pr-3.5 py-2.5 rounded-xl border border-[#233348] focus:outline-none focus:border-[#66fcf1]"
                   />
                 </div>
               </div>
@@ -75,7 +75,7 @@ export default function OrganizerModal({ isOpen, onClose }: OrganizerModalProps)
                     value={contactName}
                     onChange={(e) => setContactName(e.target.value)}
                     placeholder="Full Name"
-                    className="w-full bg-[#141e2b] text-sm text-white placeholder-slate-500 px-3.5 py-2.5 rounded-xl border border-[#233348] focus:outline-none focus:border-[#00e5be]"
+                    className="w-full bg-[#1f2833] text-sm text-white placeholder-slate-500 px-3.5 py-2.5 rounded-xl border border-[#233348] focus:outline-none focus:border-[#66fcf1]"
                   />
                 </div>
 
@@ -89,7 +89,7 @@ export default function OrganizerModal({ isOpen, onClose }: OrganizerModalProps)
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="producer@domain.ph"
-                    className="w-full bg-[#141e2b] text-sm text-white placeholder-slate-500 px-3.5 py-2.5 rounded-xl border border-[#233348] focus:outline-none focus:border-[#00e5be]"
+                    className="w-full bg-[#1f2833] text-sm text-white placeholder-slate-500 px-3.5 py-2.5 rounded-xl border border-[#233348] focus:outline-none focus:border-[#66fcf1]"
                   />
                 </div>
               </div>
@@ -101,7 +101,7 @@ export default function OrganizerModal({ isOpen, onClose }: OrganizerModalProps)
                 <select
                   value={eventType}
                   onChange={(e) => setEventType(e.target.value)}
-                  className="w-full bg-[#141e2b] text-sm text-white px-3.5 py-2.5 rounded-xl border border-[#233348] focus:outline-none focus:border-[#00e5be]"
+                  className="w-full bg-[#1f2833] text-sm text-white px-3.5 py-2.5 rounded-xl border border-[#233348] focus:outline-none focus:border-[#66fcf1]"
                 >
                   <option value="concert">Major Arena Concert</option>
                   <option value="festival">Music &amp; Arts Festival</option>
@@ -113,7 +113,7 @@ export default function OrganizerModal({ isOpen, onClose }: OrganizerModalProps)
 
               <button
                 type="submit"
-                className="w-full py-3.5 rounded-xl bg-[#00e5be] hover:bg-[#34f0cb] text-[#091519] font-extrabold text-sm transition-all shadow-[0_0_20px_rgba(0,229,190,0.35)] hover:scale-[1.02] active:scale-98 mt-2"
+                className="w-full py-3.5 rounded-xl bg-[#66fcf1] hover:bg-[#8afff6] text-[#0b0c10] font-extrabold text-sm transition-all shadow-[0_0_20px_rgba(102,252,241,0.35)] hover:scale-[1.02] active:scale-98 mt-2"
               >
                 Submit Organizer Application
               </button>
@@ -121,7 +121,7 @@ export default function OrganizerModal({ isOpen, onClose }: OrganizerModalProps)
           </div>
         ) : (
           <div className="p-6 text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-[#00e5be]/15 border border-[#00e5be] text-[#00e5be] flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(0,229,190,0.3)]">
+            <div className="w-16 h-16 rounded-full bg-[#66fcf1]/15 border border-[#66fcf1] text-[#66fcf1] flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(102,252,241,0.3)]">
               <CheckCircle className="w-8 h-8 stroke-[2.5]" />
             </div>
             <h3 className="text-2xl font-extrabold text-white">
@@ -136,7 +136,7 @@ export default function OrganizerModal({ isOpen, onClose }: OrganizerModalProps)
                 setSubmitted(false);
                 onClose();
               }}
-              className="px-6 py-2.5 rounded-full bg-[#00e5be] text-[#091519] font-bold text-sm hover:bg-[#34f0cb] transition-all"
+              className="px-6 py-2.5 rounded-full bg-[#66fcf1] text-[#0b0c10] font-bold text-sm hover:bg-[#8afff6] transition-all"
             >
               Close
             </button>

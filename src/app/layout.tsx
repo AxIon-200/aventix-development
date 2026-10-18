@@ -1,12 +1,23 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Inter, Space_Grotesk, Geist } from "next/font/google";
 import "./globals.css";
 
-const plusJakartaSans = Plus_Jakarta_Sans({
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-plus-jakarta",
+  variable: "--font-inter",
   display: "swap",
-  weight: ["400", "500", "600", "700", "800"],
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-space-grotesk",
+  display: "swap",
+});
+
+const geist = Geist({
+  subsets: ["latin"],
+  variable: "--font-geist",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -30,8 +41,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={plusJakartaSans.variable}>
-      <body className="font-sans bg-[#0b0f15] text-slate-100 antialiased selection:bg-[#00e5be] selection:text-[#0b0f15]">
+    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable} ${geist.variable}`}>
+      <body className="font-sans bg-[#0b0c10] text-slate-100 antialiased selection:bg-[#66fcf1] selection:text-[#0b0c10]">
         {children}
       </body>
     </html>

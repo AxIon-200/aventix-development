@@ -2,6 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { MapPin, ArrowRight } from "lucide-react";
 
 export interface EventItem {
@@ -63,22 +64,14 @@ export const TRENDING_EVENTS: EventItem[] = [
   },
 ];
 
-interface TrendingEventsProps {
-  onSelectEvent?: (event: EventItem) => void;
-  onViewAll?: () => void;
-}
-
-export default function TrendingEvents({
-  onSelectEvent,
-  onViewAll,
-}: TrendingEventsProps) {
+export default function TrendingEvents() {
   return (
     <section id="trending-events" className="py-16 scroll-mt-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
           <div>
-            <span className="text-[#00e5be] text-xs font-bold tracking-[0.2em] uppercase block mb-1">
+            <span className="text-[#66fcf1] text-xs font-bold tracking-[0.2em] uppercase block mb-1">
               DON&apos;T MISS OUT
             </span>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
@@ -86,13 +79,10 @@ export default function TrendingEvents({
             </h2>
           </div>
 
-          <button
-            onClick={onViewAll}
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#00e5be] hover:text-[#37f2ce] transition-colors group self-start sm:self-auto"
-          >
+          <Link href="/events" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#66fcf1] hover:text-[#8afff6] transition-colors group self-start sm:self-auto">
             <span>View All</span>
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-          </button>
+          </Link>
         </div>
 
         {/* 4 Event Cards Grid */}
@@ -100,10 +90,10 @@ export default function TrendingEvents({
           {TRENDING_EVENTS.map((event) => (
             <div
               key={event.id}
-              className="bg-[#121b26] border border-[#1e2d3f] rounded-2xl overflow-hidden hover:border-[#00e5be]/50 hover:shadow-[0_12px_30px_rgba(0,229,190,0.15)] transition-all duration-300 flex flex-col group"
+              className="bg-[#121b26] border border-[#1e2d3f] rounded-2xl overflow-hidden hover:border-[#66fcf1]/50 hover:shadow-[0_12px_30px_rgba(102,252,241,0.15)] transition-all duration-300 flex flex-col group"
             >
               {/* Image Container with Date Badge Overlay */}
-              <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#182332]">
+              <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#1f2833]">
                 <Image
                   src={event.imageUrl}
                   alt={`${event.title} - ${event.artist}`}
@@ -114,7 +104,7 @@ export default function TrendingEvents({
 
                 {/* Floating Date Badge */}
                 <div className="absolute top-3 left-3 bg-[#0d141e]/90 backdrop-blur-md border border-[#223347] rounded-lg px-2.5 py-1.5 text-center min-w-[48px] shadow-lg">
-                  <span className="text-[10px] font-bold text-[#00e5be] tracking-wider uppercase block leading-tight">
+                  <span className="text-[10px] font-bold text-[#66fcf1] tracking-wider uppercase block leading-tight">
                     {event.month}
                   </span>
                   <span className="text-lg font-extrabold text-white block leading-none my-0.5">
@@ -129,11 +119,11 @@ export default function TrendingEvents({
               {/* Card Body */}
               <div className="p-4 flex-1 flex flex-col justify-between">
                 <div>
-                  <h3 className="font-bold text-base text-white group-hover:text-[#00e5be] transition-colors line-clamp-1 leading-snug">
+                  <h3 className="font-bold text-base text-white group-hover:text-[#66fcf1] transition-colors line-clamp-1 leading-snug">
                     {event.title}
                   </h3>
 
-                  <p className="text-xs font-semibold text-[#00e5be] mt-1 line-clamp-1">
+                  <p className="text-xs font-semibold text-[#66fcf1] mt-1 line-clamp-1">
                     {event.artist}
                   </p>
 
@@ -154,12 +144,12 @@ export default function TrendingEvents({
                     </span>
                   </div>
 
-                  <button
-                    onClick={() => onSelectEvent?.(event)}
-                    className="bg-[#00e5be] hover:bg-[#34f0cb] text-[#091519] font-bold text-xs px-4 py-2 rounded-full transition-all shadow-[0_0_15px_rgba(0,229,190,0.25)] hover:shadow-[0_0_20px_rgba(0,229,190,0.45)] hover:scale-105 active:scale-95"
+                  <Link
+                    href={`/events/${event.id}`}
+                    className="bg-[#66fcf1] hover:bg-[#8afff6] text-[#0b0c10] font-bold text-xs px-4 py-2 rounded-full transition-all shadow-[0_0_15px_rgba(102,252,241,0.25)] hover:shadow-[0_0_20px_rgba(102,252,241,0.45)] hover:scale-105 active:scale-95 inline-block"
                   >
                     Book Now
-                  </button>
+                  </Link>
                 </div>
               </div>
             </div>

@@ -43,7 +43,7 @@ export default function BrowseCategory({ onSelectCategory }: BrowseCategoryProps
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center mb-10">
-          <span className="text-[#00e5be] text-xs font-bold tracking-[0.2em] uppercase block mb-1">
+          <span className="text-[#66fcf1] text-xs font-bold tracking-[0.2em] uppercase block mb-1">
             EXPLORE
           </span>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
@@ -63,16 +63,16 @@ export default function BrowseCategory({ onSelectCategory }: BrowseCategoryProps
                 onClick={() => handleClick(cat)}
                 className={`flex flex-col items-center justify-center p-6 rounded-2xl border transition-all duration-300 group text-center ${
                   isSelected
-                    ? "bg-[#182333] border-[#00e5be] shadow-[0_0_25px_rgba(0,229,190,0.25)]"
-                    : "bg-[#121a25] border-[#1e2a39] hover:border-[#00e5be]/50 hover:bg-[#16212f]"
+                    ? "bg-[#1f2833] border-[#66fcf1] shadow-[0_0_25px_rgba(102,252,241,0.25)]"
+                    : "bg-[#121a25] border-[#1e2a39] hover:border-[#66fcf1]/50 hover:bg-[#16212f]"
                 }`}
               >
                 {/* Icon box with glowing teal background */}
                 <div
                   className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-3.5 transition-all duration-300 ${
                     isSelected
-                      ? "bg-[#00e5be] text-[#091519] shadow-[0_0_20px_rgba(0,229,190,0.5)]"
-                      : "bg-[#102d33] border border-[#00e5be]/40 text-[#00e5be] group-hover:bg-[#00e5be] group-hover:text-[#091519] group-hover:shadow-[0_0_15px_rgba(0,229,190,0.4)]"
+                      ? "bg-[#66fcf1] text-[#0b0c10] shadow-[0_0_20px_rgba(102,252,241,0.5)]"
+                      : "bg-[#102d33] border border-[#66fcf1]/40 text-[#66fcf1] group-hover:bg-[#66fcf1] group-hover:text-[#0b0c10] group-hover:shadow-[0_0_15px_rgba(102,252,241,0.4)]"
                   }`}
                 >
                   <Icon className="w-6 h-6 stroke-[2]" />

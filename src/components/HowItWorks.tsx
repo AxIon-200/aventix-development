@@ -33,7 +33,7 @@ export default function HowItWorks() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center mb-16">
-          <span className="text-[#00e5be] text-xs font-bold tracking-[0.2em] uppercase block mb-1">
+          <span className="text-[#66fcf1] text-xs font-bold tracking-[0.2em] uppercase block mb-1">
             SIMPLE PROCESS
           </span>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
@@ -52,12 +52,12 @@ export default function HowItWorks() {
               >
                 {/* Glowing Circular Icon with Number Badge */}
                 <div className="relative mb-6">
-                  <div className="w-20 h-20 rounded-full bg-[#111924] border-2 border-[#00e5be] flex items-center justify-center text-[#00e5be] shadow-[0_0_30px_rgba(0,229,190,0.35)] group-hover:shadow-[0_0_45px_rgba(0,229,190,0.6)] group-hover:scale-105 transition-all duration-300">
+                  <div className="w-20 h-20 rounded-full bg-[#111924] border-2 border-[#66fcf1] flex items-center justify-center text-[#66fcf1] shadow-[0_0_30px_rgba(102,252,241,0.35)] group-hover:shadow-[0_0_45px_rgba(102,252,241,0.6)] group-hover:scale-105 transition-all duration-300">
                     <Icon className="w-8 h-8 stroke-[1.8]" />
                   </div>
 
                   {/* Top-Right Number Badge */}
-                  <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-[#00e5be] text-[#091519] font-extrabold text-xs flex items-center justify-center shadow-md">
+                  <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-[#66fcf1] text-[#0b0c10] font-extrabold text-xs flex items-center justify-center shadow-md">
                     {item.step}
                   </div>
                 </div>

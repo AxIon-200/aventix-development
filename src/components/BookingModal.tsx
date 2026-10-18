@@ -37,7 +37,7 @@ export default function BookingModal({ event, onClose }: BookingModalProps) {
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-[#182332] text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-[#1f2833] text-slate-400 hover:text-white flex items-center justify-center transition-colors"
         >
           <X className="w-4 h-4" />
         </button>
@@ -54,7 +54,7 @@ export default function BookingModal({ event, onClose }: BookingModalProps) {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#0e1622] via-[#0e1622]/60 to-transparent" />
               <div className="absolute bottom-4 left-6 right-6">
-                <span className="text-[11px] font-bold text-[#00e5be] tracking-wider uppercase">
+                <span className="text-[11px] font-bold text-[#66fcf1] tracking-wider uppercase">
                   {event.artist}
                 </span>
                 <h3 className="text-xl font-extrabold text-white leading-tight">
@@ -62,11 +62,11 @@ export default function BookingModal({ event, onClose }: BookingModalProps) {
                 </h3>
                 <div className="flex items-center gap-4 text-xs text-slate-300 mt-1">
                   <span className="flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-[#00e5be]" /> {event.month}{" "}
+                    <Calendar className="w-3.5 h-3.5 text-[#66fcf1]" /> {event.month}{" "}
                     {event.day}, {event.year}
                   </span>
                   <span className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-[#00e5be]" /> {event.venue}
+                    <MapPin className="w-3.5 h-3.5 text-[#66fcf1]" /> {event.venue}
                   </span>
                 </div>
               </div>
@@ -86,20 +86,20 @@ export default function BookingModal({ event, onClose }: BookingModalProps) {
                       onClick={() => setSelectedTier(key)}
                       className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
                         selectedTier === key
-                          ? "bg-[#182637] border-[#00e5be] shadow-[0_0_15px_rgba(0,229,190,0.15)]"
-                          : "bg-[#131b26] border-[#1e2c3e] hover:border-[#2b3e55]"
+                          ? "bg-[#182637] border-[#66fcf1] shadow-[0_0_15px_rgba(102,252,241,0.15)]"
+                          : "bg-[#151b23] border-[#1e2c3e] hover:border-[#2b3e55]"
                       }`}
                     >
                       <div className="flex items-center gap-3">
                         <div
                           className={`w-4 h-4 rounded-full border flex items-center justify-center ${
                             selectedTier === key
-                              ? "border-[#00e5be] bg-[#00e5be]"
+                              ? "border-[#66fcf1] bg-[#66fcf1]"
                               : "border-slate-500"
                           }`}
                         >
                           {selectedTier === key && (
-                            <div className="w-1.5 h-1.5 rounded-full bg-[#091519]" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-[#0b0c10]" />
                           )}
                         </div>
                         <div>
@@ -111,7 +111,7 @@ export default function BookingModal({ event, onClose }: BookingModalProps) {
                           </p>
                         </div>
                       </div>
-                      <span className="text-sm font-bold text-[#00e5be]">
+                      <span className="text-sm font-bold text-[#66fcf1]">
                         ₱{tier.price.toLocaleString()}
                       </span>
                     </div>
@@ -120,7 +120,7 @@ export default function BookingModal({ event, onClose }: BookingModalProps) {
               </div>
 
               {/* Quantity Selector */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-[#131b26] border border-[#1e2c3e]">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-[#151b23] border border-[#1e2c3e]">
                 <span className="text-sm font-medium text-slate-300">
                   Number of Tickets
                 </span>
@@ -138,7 +138,7 @@ export default function BookingModal({ event, onClose }: BookingModalProps) {
                   <button
                     type="button"
                     onClick={() => setQuantity(Math.min(6, quantity + 1))}
-                    className="w-8 h-8 rounded-lg bg-[#00e5be] text-[#091519] hover:bg-[#38f2cf] flex items-center justify-center font-bold text-base"
+                    className="w-8 h-8 rounded-lg bg-[#66fcf1] text-[#0b0c10] hover:bg-[#8afff6] flex items-center justify-center font-bold text-base"
                   >
                     +
                   </button>
@@ -162,8 +162,8 @@ export default function BookingModal({ event, onClose }: BookingModalProps) {
                       onClick={() => setPaymentMethod(p.id as any)}
                       className={`py-2 rounded-lg text-xs font-semibold border transition-all ${
                         paymentMethod === p.id
-                          ? "bg-[#182637] border-[#00e5be] text-[#00e5be]"
-                          : "bg-[#131b26] border-[#1e2c3e] text-slate-400 hover:text-white"
+                          ? "bg-[#182637] border-[#66fcf1] text-[#66fcf1]"
+                          : "bg-[#151b23] border-[#1e2c3e] text-slate-400 hover:text-white"
                       }`}
                     >
                       {p.label}
@@ -183,7 +183,7 @@ export default function BookingModal({ event, onClose }: BookingModalProps) {
 
                 <button
                   type="submit"
-                  className="px-6 py-3 rounded-xl bg-[#00e5be] hover:bg-[#36f0cc] text-[#091519] font-extrabold text-sm transition-all shadow-[0_0_20px_rgba(0,229,190,0.35)] hover:scale-105 active:scale-95"
+                  className="px-6 py-3 rounded-xl bg-[#66fcf1] hover:bg-[#8afff6] text-[#0b0c10] font-extrabold text-sm transition-all shadow-[0_0_20px_rgba(102,252,241,0.35)] hover:scale-105 active:scale-95"
                 >
                   Confirm &amp; Pay Now
                 </button>
@@ -193,7 +193,7 @@ export default function BookingModal({ event, onClose }: BookingModalProps) {
         ) : (
           /* Success Screen */
           <div className="p-8 text-center space-y-5">
-            <div className="w-16 h-16 rounded-full bg-[#00e5be]/15 border border-[#00e5be] text-[#00e5be] flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(0,229,190,0.3)]">
+            <div className="w-16 h-16 rounded-full bg-[#66fcf1]/15 border border-[#66fcf1] text-[#66fcf1] flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(102,252,241,0.3)]">
               <CheckCircle className="w-8 h-8 stroke-[2.5]" />
             </div>
 
@@ -207,27 +207,27 @@ export default function BookingModal({ event, onClose }: BookingModalProps) {
             </div>
 
             {/* Mock QR Ticket Card */}
-            <div className="p-4 rounded-2xl bg-[#131b26] border border-[#1e2a39] max-w-sm mx-auto flex items-center gap-4 text-left">
+            <div className="p-4 rounded-2xl bg-[#151b23] border border-[#1e2a39] max-w-sm mx-auto flex items-center gap-4 text-left">
               <div className="w-20 h-20 bg-white rounded-xl p-1.5 flex items-center justify-center shrink-0">
-                <QrCode className="w-full h-full text-[#0b0f15]" />
+                <QrCode className="w-full h-full text-[#0b0c10]" />
               </div>
               <div className="text-xs space-y-1">
                 <p className="font-bold text-white line-clamp-1">{event.title}</p>
-                <p className="text-[#00e5be] font-semibold">
+                <p className="text-[#66fcf1] font-semibold">
                   {tiers[selectedTier].name} ({quantity}x)
                 </p>
                 <p className="text-slate-400 font-mono text-[10px]">
                   AVX-2026-{Math.floor(100000 + Math.random() * 900000)}
                 </p>
                 <p className="text-slate-400 text-[10px] flex items-center gap-1">
-                  <ShieldCheck className="w-3 h-3 text-[#00e5be]" /> Verified Digital Pass
+                  <ShieldCheck className="w-3 h-3 text-[#66fcf1]" /> Verified Digital Pass
                 </p>
               </div>
             </div>
 
             <button
               onClick={onClose}
-              className="px-6 py-2.5 rounded-full bg-[#00e5be] text-[#091519] font-bold text-sm hover:bg-[#34f0cb] transition-all"
+              className="px-6 py-2.5 rounded-full bg-[#66fcf1] text-[#0b0c10] font-bold text-sm hover:bg-[#8afff6] transition-all"
             >
               Done
             </button>
