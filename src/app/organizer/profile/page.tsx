@@ -1,13 +1,15 @@
-import OrganizerTopbar from "@/components/organizer/OrganizerTopbar";
-import { Building2, ShieldCheck, CreditCard, Save } from "lucide-react";
+import { ShieldCheck, CreditCard, Save } from "lucide-react";
 
 export default function OrganizerProfilePage() {
   return (
-    <div className="flex flex-col gap-6">
-      <OrganizerTopbar
-        title="Organizer Profile & Payouts"
-        subtitle="Manage public organization credentials and connected bank account"
-      />
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-teal-400">Settings</p>
+          <h1 className="mt-1 text-2xl font-semibold text-white">Organizer Profile & Payouts</h1>
+          <p className="mt-1 text-sm text-slate-500">Manage public organization credentials and connected bank account.</p>
+        </div>
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Verification Status Badge */}

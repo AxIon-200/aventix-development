@@ -7,11 +7,14 @@ export default async function OrganizerEventsPage() {
   const data = await getOrganizerDashboard();
 
   return (
-    <div className="flex flex-col gap-6">
-      <OrganizerTopbar
-        title="Manage Events"
-        subtitle="Track registrations, edit details, and monitor seating capacity"
-      />
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-teal-400">Events Management</p>
+          <h1 className="mt-1 text-2xl font-semibold text-white">My Events</h1>
+          <p className="mt-1 text-sm text-slate-500">Track registrations, edit details, and monitor seating capacity.</p>
+        </div>
+      </div>
 
       <div className="flex flex-col gap-4">
         {/* Search & Actions Bar */}

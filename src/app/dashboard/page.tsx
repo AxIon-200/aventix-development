@@ -1,5 +1,4 @@
 import Link from "next/link";
-import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
 import StatCard from "@/components/dashboard/StatCard";
 import UpcomingEventsTable from "@/components/dashboard/UpcomingEventsTable";
 import { PlusIcon } from "@/components/dashboard/icons";
@@ -9,35 +8,48 @@ export default async function AttendeeDashboardPage() {
   const data = await getAttendeeDashboard();
 
   return (
-    <div className="flex flex-col">
-      <DashboardTopbar title={`Welcome back, ${data.attendeeName}!`} />
-
-      <div className="flex flex-col gap-6 p-4 sm:p-8">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="rounded-lg border border-[#66fcf1] px-3.5 py-2 text-[13px] text-[#66fcf1]">
-            {data.eventsThisMonth === 1
-              ? "You have 1 event coming up this month"
-              : `You have ${data.eventsThisMonth} events coming up this month`}
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-teal-400">
+            Attendee Portal
           </p>
-          <Link
-            href="/events"
-            className="flex items-center gap-2 rounded-lg border border-[#2c3644] bg-[#0b0c10] px-4 py-2.5 text-[13px] font-semibold text-white hover:border-[#66fcf1]"
-          >
-            <PlusIcon className="h-4 w-4" />
-            Buy Tickets
-          </Link>
+          <h1 className="mt-1 text-2xl font-semibold text-white">
+            Welcome back, {data.attendeeName}!
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            View your upcoming event tickets, loyalty points, and purchase history.
+          </p>
         </div>
-
-        <section aria-label="Summary" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {data.stats.map((stat) => (
-            <StatCard key={stat.label} {...stat} />
-          ))}
-        </section>
-
-        <section aria-label="Upcoming events">
-          <UpcomingEventsTable events={data.upcomingEvents} />
-        </section>
+        <Link
+          href="/events"
+          className="flex items-center gap-1.5 rounded-lg bg-teal-500 px-3.5 py-2 text-xs font-medium text-slate-950 transition hover:bg-teal-400"
+        >
+          <PlusIcon className="h-3.5 w-3.5" />
+          <span>Buy Tickets</span>
+        </Link>
       </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-teal-500/30 bg-teal-500/10 px-4 py-2.5 text-xs text-teal-300">
+        <p>
+          {data.eventsThisMonth === 1
+            ? "You have 1 event coming up this month"
+            : `You have ${data.eventsThisMonth} events coming up this month`}
+        </p>
+        <Link href="/dashboard/tickets" className="font-semibold underline hover:text-white">
+          View your passes &rarr;
+        </Link>
+      </div>
+
+      <section aria-label="Summary" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {data.stats.map((stat) => (
+          <StatCard key={stat.label} {...stat} />
+        ))}
+      </section>
+
+      <section aria-label="Upcoming events">
+        <UpcomingEventsTable events={data.upcomingEvents} />
+      </section>
     </div>
   );
 }

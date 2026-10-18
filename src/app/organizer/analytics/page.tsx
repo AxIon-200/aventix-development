@@ -1,16 +1,15 @@
-import OrganizerTopbar from "@/components/organizer/OrganizerTopbar";
-import { TrendingUp, DollarSign, Users, Download } from "lucide-react";
+import { Download } from "lucide-react";
 
 export default function OrganizerAnalyticsPage() {
   return (
-    <div className="flex flex-col gap-6">
-      <OrganizerTopbar
-        title="Sales & Analytics"
-        subtitle="In-depth breakdown of ticket sales, attendance trends, and revenue"
-      />
-
-      <div className="flex justify-end">
-        <button className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-[#111622] px-3.5 py-2 text-xs font-medium text-slate-300 hover:bg-white/5">
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-teal-400">Reports</p>
+          <h1 className="mt-1 text-2xl font-semibold text-white">Sales & Analytics</h1>
+          <p className="mt-1 text-sm text-slate-500">In-depth breakdown of ticket sales, attendance trends, and revenue.</p>
+        </div>
+        <button className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3.5 py-2 text-xs font-medium text-slate-200 hover:bg-white/10 transition">
           <Download className="h-3.5 w-3.5" />
           <span>Export Sales CSV</span>
         </button>

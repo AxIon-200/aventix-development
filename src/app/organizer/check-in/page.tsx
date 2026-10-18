@@ -1,13 +1,15 @@
-import OrganizerTopbar from "@/components/organizer/OrganizerTopbar";
-import { QrCode, CheckCircle2, Search, Camera } from "lucide-react";
+import { CheckCircle2, Search, Camera } from "lucide-react";
 
 export default function TicketScannerPage() {
   return (
-    <div className="flex flex-col gap-6">
-      <OrganizerTopbar
-        title="Gate Ticket Scanner"
-        subtitle="Validate attendee tickets and scan QR passes in real-time"
-      />
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-teal-400">Gate Check-In</p>
+          <h1 className="mt-1 text-2xl font-semibold text-white">Ticket Scanner</h1>
+          <p className="mt-1 text-sm text-slate-500">Validate attendee tickets and scan QR passes in real-time.</p>
+        </div>
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Scanner Viewport */}

@@ -17,11 +17,20 @@ export default async function OrganizerDashboardPage() {
   const data = await getOrganizerDashboard();
 
   return (
-    <div className="flex flex-col gap-6">
-      <OrganizerTopbar
-        title={`Welcome, ${data.organizerName}!`}
-        subtitle={`${data.organizationName} — Event Management Hub`}
-      />
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-teal-400">
+            Organizer Portal
+          </p>
+          <h1 className="mt-1 text-2xl font-semibold text-white">
+            Welcome back, {data.organizerName}!
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            {data.organizationName} &bull; Monitor ticket sales, gate check-in attendance, and live events.
+          </p>
+        </div>
+      </div>
 
       <div className="flex flex-col gap-6">
         {/* Stat Cards */}

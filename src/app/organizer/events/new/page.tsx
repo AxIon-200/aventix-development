@@ -1,12 +1,13 @@
-import OrganizerTopbar from "@/components/organizer/OrganizerTopbar";
-
 export default function CreateEventPage() {
   return (
-    <div className="flex flex-col gap-6">
-      <OrganizerTopbar
-        title="Create New Event"
-        subtitle="Set up event details, ticket tiers, seating map, and schedule"
-      />
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-teal-400">Event Creator</p>
+          <h1 className="mt-1 text-2xl font-semibold text-white">Create New Event</h1>
+          <p className="mt-1 text-sm text-slate-500">Set up event details, ticket tiers, seating map, and schedule.</p>
+        </div>
+      </div>
 
       <div className="rounded-xl border border-white/10 bg-[#111622] p-6 shadow-sm">
         <form className="space-y-6">
