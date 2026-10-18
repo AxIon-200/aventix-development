@@ -10,6 +10,8 @@ import { API_BASE, delay } from "@/app/admin/services/api";
 // components, or page needs to change.
 const USE_MOCK = true;
 
+const MOCK_AVATAR_KEY = "aventix.admin.profile.avatar";
+
 // Thrown for failures the form can show. When `field` is set, the form puts
 // the message under that input instead of in a banner.
 export class ProfileError extends Error {
@@ -37,11 +39,27 @@ export async function getProfile(): Promise<AdminProfile> {
   if (USE_MOCK) {
     await delay(450);
     failIfDemo("Failed to load your profile");
+
+    // Restore the mock photo after navigation or a page refresh.
+    if (typeof window !== "undefined") {
+      try {
+        const savedAvatar = window.localStorage.getItem(MOCK_AVATAR_KEY);
+
+        if (savedAvatar) {
+          (mockProfile as AdminProfile).avatarUrl = savedAvatar;
+        }
+      } catch {
+        // Continue using the in-memory profile if storage is unavailable.
+      }
+    }
+
     return { ...mockProfile };
   }
 
-  const res = await fetch(`${API_BASE}/admin/profile`);
-  if (!res.ok) throw new Error("Failed to load your profile");
+  const res = await fetch(`${API_BASE}/admin/profile`, {
+    method: "GET",
+  });
+  if (!res.ok) return failFrom(res, "Failed to load your profile");
   return res.json();
 }
 
@@ -98,3 +116,104 @@ export async function changePassword(payload: ChangePasswordPayload): Promise<vo
 function failIfDemo(message: string) {
   if (DEMO.failRequests) throw new Error(message);
 }
+
+
+
+export async function uploadProfilePhoto(
+  file: File
+): Promise<{ avatarUrl: string }> {
+  const allowedTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+  ];
+
+  const maxSize = 2 * 1024 * 1024;
+
+  // Validate the file again at the service level.
+  if (!allowedTypes.includes(file.type)) {
+    throw new ProfileError(
+      "Choose a JPG, PNG, or WebP image."
+    );
+  }
+
+  if (file.size > maxSize) {
+    throw new ProfileError(
+      "The image must be 2 MB or smaller."
+    );
+  }
+
+  // MOCK MODE: upload locally without requiring a backend endpoint.
+  if (USE_MOCK) {
+    await delay(500);
+    failIfDemo("Failed to upload your profile photo");
+
+    const avatarUrl = await new Promise<string>(
+      (resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onload = () => {
+          if (typeof reader.result === "string") {
+            resolve(reader.result);
+          } else {
+            reject(new Error("Could not read the selected image."));
+          }
+        };
+
+        reader.onerror = () => {
+          reject(new Error("Could not read the selected image."));
+        };
+
+        reader.readAsDataURL(file);
+      }
+    );
+
+    // Update the shared mock profile so getProfile() returns the photo.
+    (mockProfile as AdminProfile).avatarUrl = avatarUrl;
+
+    // Save the mock image across page refreshes.
+    try {
+      window.localStorage.setItem(MOCK_AVATAR_KEY, avatarUrl);
+    } catch {
+      // The current session can still use the in-memory image.
+    }
+
+    return { avatarUrl };
+  }
+
+  // REAL API MODE: called after USE_MOCK is changed to false.
+  const formData = new FormData();
+  formData.append("photo", file);
+
+  const response = await fetch(
+    `${API_BASE}/admin/profile/photo`,
+    {
+      method: "POST",
+      body: formData,
+    }
+  );
+
+  if (!response.ok) {
+    return failFrom(
+      response,
+      "Unable to upload your profile photo."
+    );
+  }
+
+  const result = (await response.json()) as {
+    avatarUrl?: unknown;
+  };
+
+  if (
+    typeof result.avatarUrl !== "string" ||
+    result.avatarUrl.trim() === ""
+  ) {
+    throw new ProfileError(
+      "The server did not return a valid photo URL."
+    );
+  }
+
+  return { avatarUrl: result.avatarUrl };
+}
+
+

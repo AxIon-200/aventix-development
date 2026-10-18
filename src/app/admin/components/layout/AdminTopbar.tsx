@@ -1,9 +1,9 @@
-
 "use client";
 
 import { useEffect, useRef, useState } from "react";
 import { Search, X } from "lucide-react";
 import { NotificationBell } from "@/app/admin/components/ui/NotificationBell";
+import { getProfile } from "@/app/admin/services/profileService";
 
 type AdminTopbarProps = {
   adminName?: string;
@@ -16,23 +16,103 @@ export function AdminTopbar({
 }: AdminTopbarProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState(adminName);
+  const [displayRole, setDisplayRole] = useState(adminRole);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Automatically focus the input when search opens.
+  // Load the current administrator's saved profile photo.
+  useEffect(() => {
+    let mounted = true;
+    let receivedPhotoUpdate = false;
+
+    function handlePhotoUpdate(event: Event) {
+      const customEvent = event as CustomEvent<{
+        avatarUrl: string;
+      }>;
+
+      receivedPhotoUpdate = true;
+      setAvatarUrl(customEvent.detail.avatarUrl);
+    }
+
+    window.addEventListener("admin-profile-photo-updated", handlePhotoUpdate);
+
+    getProfile()
+      .then((profile) => {
+        if (mounted && !receivedPhotoUpdate) {
+          setAvatarUrl(profile.avatarUrl ?? null);
+        }
+      })
+      .catch(() => {
+        // Keep using the initials if the profile request fails.
+      });
+
+    return () => {
+      mounted = false;
+      window.removeEventListener(
+        "admin-profile-photo-updated",
+        handlePhotoUpdate,
+      );
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    let receivedProfileUpdate = false;
+
+    // Receive changes from the User Profile page.
+    function handleProfileUpdate(event: Event) {
+      const customEvent = event as CustomEvent<{
+        fullName: string;
+        roleLabel?: string;
+      }>;
+
+      receivedProfileUpdate = true;
+
+      setDisplayName(customEvent.detail.fullName);
+
+      if (customEvent.detail.roleLabel) {
+        setDisplayRole(customEvent.detail.roleLabel);
+      }
+    }
+
+    window.addEventListener("admin-profile-updated", handleProfileUpdate);
+
+    // Load the saved name when the topbar first appears.
+    getProfile()
+      .then((profile) => {
+        if (mounted && !receivedProfileUpdate) {
+          setDisplayName(profile.fullName || adminName);
+          setDisplayRole(profile.roleLabel || adminRole);
+        }
+      })
+      .catch(() => {
+        // Keep the fallback values if loading fails.
+      });
+
+    return () => {
+      mounted = false;
+
+      window.removeEventListener("admin-profile-updated", handleProfileUpdate);
+    };
+  }, [adminName, adminRole]);
+
+  // Focus the search input when it opens.
   useEffect(() => {
     if (searchOpen) {
       searchInputRef.current?.focus();
     }
   }, [searchOpen]);
 
-  // Close search when Escape is pressed.
+  // Close the search input when Escape is pressed.
   useEffect(() => {
     if (!searchOpen) return;
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setSearchOpen(false);
+        setSearchQuery("");
       }
     }
 
@@ -50,7 +130,6 @@ export function AdminTopbar({
 
   return (
     <header className="relative z-40 flex h-16 items-center justify-end gap-3 border-b border-white/10 px-4 sm:px-8">
-
       {/* Expandable Search */}
       <div
         className={`flex items-center transition-all duration-200 ${
@@ -96,19 +175,25 @@ export function AdminTopbar({
       {/* Notifications */}
       <NotificationBell />
 
-      {/* Admin Profile */}
+      {/* Administrator profile and photo */}
       <div className="flex shrink-0 items-center gap-2 pl-1 sm:pl-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-500 text-xs font-semibold text-slate-950">
-          {adminName.slice(0, 2).toUpperCase()}
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-teal-400/30 bg-teal-500 text-xs font-semibold text-slate-950">
+          {avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={avatarUrl}
+              alt={`${adminName}'s profile`}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            displayName.slice(0, 2).toUpperCase()
+          )}
         </div>
 
         <div className="hidden leading-tight sm:block">
-          <p className="text-sm font-medium text-white">
-            {adminName}
-          </p>
-          <p className="text-xs text-slate-500">
-            {adminRole}
-          </p>
+          <p className="text-sm font-medium text-white">{displayName}</p>
+
+          <p className="text-xs text-slate-500">{displayRole}</p>
         </div>
       </div>
     </header>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -5,7 +6,12 @@ import {
   getProfile,
   updateProfile,
 } from "@/app/admin/services/profileService";
-import { ChangePasswordPayload, UpdateProfilePayload } from "@/app/admin/types/profile";
+
+import type {
+  ChangePasswordPayload,
+  UpdateProfilePayload,
+} from "@/app/admin/types/profile";
+
 import { useFetch } from "@/app/admin/hooks/useFetch";
 import { useToast } from "@/app/admin/components/ui/ToastProvider";
 import { ErrorState } from "@/app/admin/components/ui/ErrorState";
@@ -20,18 +26,55 @@ export default function ProfilePage() {
   const toast = useToast();
   const profile = useFetch(getProfile, []);
 
-  // The forms catch errors themselves (field errors or a banner); the page only
-  // handles success: toast, then refetch so every card shows the saved data.
+  // Save changes to personal information.
   async function handleSave(values: UpdateProfilePayload) {
-    await updateProfile(values);
+  try {
+    // Save the updated information.
+    const updatedProfile = await updateProfile(values);
+
+    // Notify the topbar immediately after a successful save.
+    window.dispatchEvent(
+      new CustomEvent("admin-profile-updated", {
+        detail: {
+          fullName: updatedProfile.fullName,
+          roleLabel: updatedProfile.roleLabel,
+        },
+      })
+    );
+
     toast.success("Profile updated.");
+
+    // Refresh the profile page data.
+    void profile.refetch();
+  } catch (error) {
+    // Allow the existing form to handle and display the error.
+    throw error;
+  }
+}
+
+  // Change the administrator's password.
+  async function handleChangePassword(
+    values: ChangePasswordPayload
+  ) {
+    await changePassword(values);
+
+    toast.success("Password changed.");
     profile.refetch();
   }
 
-  async function handleChangePassword(values: ChangePasswordPayload) {
-    await changePassword(values);
-    toast.success("Password changed.");
-    profile.refetch();
+  // Called after a profile photo uploads successfully.
+  function handlePhotoUploaded(avatarUrl: string) {
+    // Tell the topbar to update its avatar immediately.
+    window.dispatchEvent(
+      new CustomEvent("admin-profile-photo-updated", {
+        detail: { avatarUrl },
+      })
+    );
+
+    toast.success("Profile photo updated.");
+
+    // Reload profile data so the profile summary stays synchronized.
+    void profile.refetch();
   }
 
   return (
@@ -44,18 +87,35 @@ export default function ProfilePage() {
 
       {profile.error && !profile.data ? (
         <div className="rounded-2xl border border-white/10 bg-white/[0.03]">
-          <ErrorState title="Couldn't load your profile" message={profile.error} onRetry={profile.refetch} />
+          <ErrorState
+            title="Couldn't load your profile"
+            message={profile.error}
+            onRetry={profile.refetch}
+          />
         </div>
       ) : !profile.data ? (
         <ProfileSkeleton />
       ) : (
         <>
           <div className="grid gap-6 lg:grid-cols-3">
-            <ProfileSummaryCard profile={profile.data} />
-            <PersonalInfoForm profile={profile.data} onSave={handleSave} />
+            <ProfileSummaryCard
+              profile={profile.data}
+              onPhotoUploaded={handlePhotoUploaded}
+            />
+
+            <PersonalInfoForm
+              profile={profile.data}
+              onSave={handleSave}
+            />
           </div>
-          <SecurityForm onChangePassword={handleChangePassword} />
-          <AccountActivityCard profile={profile.data} />
+
+          <SecurityForm
+            onChangePassword={handleChangePassword}
+          />
+
+          <AccountActivityCard
+            profile={profile.data}
+          />
         </>
       )}
     </div>
