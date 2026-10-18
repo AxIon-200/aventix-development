@@ -54,12 +54,12 @@ export default function Navbar({ onOpenAuth, onSearch, searchEvents }: NavbarPro
 
   return (
     <header onKeyDown={(event) => { if (event.key === "Escape") { setMobileMenuOpen(false); menuButton.current?.focus(); } }} className="sticky top-0 z-50 w-full border-b border-[#1f2833] bg-[#0b0c10]">
-      <div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-16">
+      <div className="mx-auto flex h-16 xl:h-[72px] max-w-[1360px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-10">
         <Link href="/" aria-label="Aventix home" className="flex shrink-0 items-center">
-          <AventixLogo size="md" />
+          <AventixLogo size="md" className="max-h-8 max-w-[136px] object-contain" />
         </Link>
 
-        <nav aria-label="Primary" className="hidden items-center gap-9 text-sm font-medium xl:flex">
+        <nav aria-label="Primary" className="hidden items-center gap-6 text-sm font-medium xl:flex">
           {NAV_LINKS.map((l) => (
             <Link
               key={l.label}
@@ -95,7 +95,7 @@ export default function Navbar({ onOpenAuth, onSearch, searchEvents }: NavbarPro
       </div>
 
       {mobileMenuOpen && (
-        <nav id="mobile-navigation" aria-label="Mobile navigation" className="space-y-4 border-t border-[#1f2833] bg-[#0b0c10] px-4 pb-6 pt-4 xl:hidden">
+        <nav id="mobile-navigation" aria-label="Mobile navigation" className="max-h-[calc(100svh-64px)] overflow-y-auto space-y-4 border-t border-[#1f2833] bg-[#0b0c10] px-4 pb-6 pt-4 xl:hidden">
           <EventSearchField events={searchEvents} onSearch={onSearch} onNavigate={() => setMobileMenuOpen(false)} compact />
           <div className="flex flex-col text-sm font-medium">
             {NAV_LINKS.map((l) => (
