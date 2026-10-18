@@ -36,12 +36,17 @@ aventix-development/
 │   │   └── schema.prisma                # Supabase PostgreSQL schema with UserRole enum
 │   └── src/
 │       ├── config/                      # Environment and app config
-│       ├── controllers/                 # Controllers partitioned by domain
+│       ├── controllers/                 # Controllers partitioned by role domain
 │       │   ├── guest.controller.ts      # Public events & category controllers
 │       │   ├── attendee.controller.ts   # Attendee dashboard & ticket queries
 │       │   ├── organizer.controller.ts  # Organizer events, tiers & scanner
 │       │   ├── admin.controller.ts      # Administrative analytics & moderation
 │       │   └── health.controller.ts     # Health-check endpoints
+│       ├── services/                    # Business logic services by role
+│       │   ├── guest.service.ts         # Guest event catalogs & categories
+│       │   ├── attendee.service.ts      # Attendee bookings & tickets
+│       │   ├── organizer.service.ts     # Organizer live metrics & gate scans
+│       │   └── admin.service.ts         # Admin stats & audit operations
 │       ├── middlewares/
 │       │   └── role.middleware.ts       # Role-based access control (RBAC) guard
 │       ├── routes/                      # Route modules matching the 4 roles
@@ -97,22 +102,24 @@ aventix-development/
 │   │           └── settings/page.tsx    # Platform settings
 │   │
 │   ├── components/                      # Role-organized components
-│   │   ├── shared/                      # Shared brand & UI components
-│   │   │   └── index.ts                 # Navbar, Footer, AventixLogo, common modals
-│   │   ├── guest/                       # Guest & public landing components
-│   │   │   └── index.ts                 # Hero, TrendingEvents, Categories, HowItWorks
-│   │   ├── attendee/                    # Attendee dashboard components
-│   │   │   └── index.ts                 # DashboardSidebar, Topbar, StatCard, UpcomingEvents
-│   │   ├── organizer/                   # Organizer portal components
-│   │   │   ├── OrganizerSidebar.tsx
-│   │   │   ├── OrganizerTopbar.tsx
-│   │   │   ├── OrganizerStatCard.tsx
+│   │   ├── shared/index.ts              # Navbar, Footer, AventixLogo, common modals
+│   │   ├── guest/index.ts               # Hero, TrendingEvents, Categories, HowItWorks
+│   │   ├── attendee/index.ts            # AttendeeSidebar, Topbar, StatCard, UpcomingEvents
+│   │   ├── organizer/                   # OrganizerSidebar, OrganizerTopbar, StatCard
 │   │   │   └── index.ts
-│   │   └── dashboard/                   # Preserved for backward compatibility
+│   │   ├── dashboard/                   # Preserved for backward compatibility
+│   │   └── index.ts                     # Central barrel export for all role components
+│   │
+│   ├── hooks/                           # Role & Platform hooks
+│   │   ├── useRole.ts                   # Role detection & permission guard hook
+│   │   └── index.ts                     # Central hooks export
 │   │
 │   ├── lib/                             # Data layer & API clients
+│   │   ├── guest/events.ts              # Public events fetcher
+│   │   ├── shared/format.ts             # Shared currency & date formatters
 │   │   ├── dashboard.ts                 # Attendee data fetching & mock fallbacks
-│   │   └── organizer.ts                 # Organizer data fetching & mock fallbacks
+│   │   ├── organizer.ts                 # Organizer data fetching & mock fallbacks
+│   │   └── index.ts                     # Central data layer export
 │   │
 │   └── types/                           # Strongly typed data models
 │       ├── roles.ts                     # UserRole enum & route mapping
