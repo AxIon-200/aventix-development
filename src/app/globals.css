@@ -23,6 +23,13 @@
 html {
   color-scheme: dark;
   scroll-behavior: smooth;
+  scroll-snap-type: y proximity;
+}
+
+.snap-section {
+  scroll-snap-align: start;
+  scroll-snap-stop: normal;
+  scroll-margin-top: 5rem;
 }
 
 body {
@@ -32,19 +39,19 @@ body {
   overflow-x: hidden;
 }
 
-/* Custom scrollbar */
+/* Hide browser scrollbar completely across all browsers */
 ::-webkit-scrollbar {
-  width: 8px;
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
 }
-::-webkit-scrollbar-track {
-  background: var(--background);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--card-border);
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--accent);
+
+html,
+body,
+* {
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE and Edge */
 }
 
 /* Glassmorphism utility */

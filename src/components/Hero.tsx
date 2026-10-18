@@ -31,7 +31,7 @@ export default function Hero({ onSearchSubmit, onExploreClick }: HeroProps) {
   };
 
   return (
-    <section className="relative overflow-hidden pt-8 pb-16 md:pt-14 md:pb-24">
+    <section id="hero-section" className="relative overflow-hidden pt-8 pb-16 md:pt-14 md:pb-24 scroll-mt-24 snap-section">
       {/* Background ambient lighting */}
       <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[#66fcf1]/10 rounded-full blur-[140px] pointer-events-none -z-10" />
       <div className="absolute top-1/3 right-1/4 w-[450px] h-[450px] bg-[#0099ff]/10 rounded-full blur-[130px] pointer-events-none -z-10" />
@@ -41,8 +41,8 @@ export default function Hero({ onSearchSubmit, onExploreClick }: HeroProps) {
           {/* Left Column: Headline, Description, Search Widget & CTA */}
           <div className="lg:col-span-7 space-y-7 z-10">
             {/* Top Pill Badge */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#121b27]/90 border border-[#213143] shadow-inner backdrop-blur-md">
-              <span className="w-2 h-2 rounded-full bg-[#66fcf1] shadow-[0_0_8px_#66fcf1]" />
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#121b27]/90 border border-[#213143] shadow-inner backdrop-blur-md hover:border-[#66fcf1]/50 hover:shadow-[0_0_15px_rgba(102,252,241,0.25)] transition-all duration-300 group cursor-default">
+              <span className="w-2 h-2 rounded-full bg-[#66fcf1] shadow-[0_0_8px_#66fcf1] group-hover:scale-125 transition-transform" />
               <span className="text-xs font-semibold text-[#66fcf1] tracking-wide">
                 Philippines&apos; #1 Ticketing Platform
               </span>
@@ -72,10 +72,10 @@ export default function Hero({ onSearchSubmit, onExploreClick }: HeroProps) {
             {/* Search Bar Widget Container */}
             <form
               onSubmit={handleSearch}
-              className="bg-[#121a25]/90 border border-[#223347] backdrop-blur-xl p-2 sm:p-2.5 rounded-2xl shadow-2xl flex flex-col md:flex-row items-stretch md:items-center gap-2 max-w-2xl"
+              className="bg-[#121a25]/90 border border-[#223347] hover:border-[#66fcf1]/40 hover:shadow-[0_0_35px_rgba(102,252,241,0.15)] transition-all duration-300 backdrop-blur-xl p-2 sm:p-2.5 rounded-2xl shadow-2xl flex flex-col md:flex-row items-stretch md:items-center gap-2 max-w-2xl"
             >
               {/* Field 1: Search artist or event */}
-              <div className="min-w-0 flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#1f2833] transition-colors">
+              <div className="min-w-0 flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#1f2833] focus-within:bg-[#1f2833] transition-colors">
                 <Search className="w-4 h-4 text-[#66fcf1] shrink-0" />
                 <input
                   type="text"
@@ -91,7 +91,7 @@ export default function Hero({ onSearchSubmit, onExploreClick }: HeroProps) {
               <div className="hidden md:block w-px h-8 bg-[#223347]" />
 
               {/* Field 2: Location */}
-              <div className="min-w-0 flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#1f2833] transition-colors">
+              <div className="min-w-0 flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#1f2833] focus-within:bg-[#1f2833] transition-colors">
                 <MapPin className="w-4 h-4 text-[#66fcf1] shrink-0" />
                 <input
                   type="text"
@@ -107,7 +107,7 @@ export default function Hero({ onSearchSubmit, onExploreClick }: HeroProps) {
               <div className="hidden md:block w-px h-8 bg-[#223347]" />
 
               {/* Field 3: Date */}
-              <div className="min-w-0 flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#1f2833] transition-colors">
+              <div className="min-w-0 flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#1f2833] focus-within:bg-[#1f2833] transition-colors">
                 <Calendar className="w-4 h-4 text-[#66fcf1] shrink-0" />
                 <input
                   type="date"
@@ -122,7 +122,7 @@ export default function Hero({ onSearchSubmit, onExploreClick }: HeroProps) {
               {/* Search button */}
               <button
                 type="submit"
-                className="bg-[#66fcf1] hover:bg-[#8afff6] text-[#0b0c10] font-bold text-sm px-6 py-3 rounded-xl transition-all shadow-[0_0_20px_rgba(102,252,241,0.35)] hover:shadow-[0_0_25px_rgba(102,252,241,0.55)] hover:scale-[1.02] flex items-center justify-center shrink-0"
+                className="bg-[#66fcf1] hover:bg-[#8afff6] text-[#0b0c10] font-bold text-sm px-6 py-3 rounded-xl transition-all duration-200 shadow-[0_0_20px_rgba(102,252,241,0.35)] hover:shadow-[0_0_30px_rgba(102,252,241,0.6)] hover:scale-[1.03] active:scale-95 flex items-center justify-center shrink-0"
               >
                 Search
               </button>
@@ -133,10 +133,10 @@ export default function Hero({ onSearchSubmit, onExploreClick }: HeroProps) {
               <Link
                 href="/events"
                 onClick={onExploreClick}
-                className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full bg-[#66fcf1] hover:bg-[#8afff6] text-[#0b0c10] font-extrabold text-base transition-all duration-300 shadow-[0_0_35px_rgba(102,252,241,0.5)] hover:shadow-[0_0_45px_rgba(102,252,241,0.7)] hover:scale-105 active:scale-95"
+                className="group inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full bg-[#66fcf1] hover:bg-[#8afff6] text-[#0b0c10] font-extrabold text-base transition-all duration-300 shadow-[0_0_35px_rgba(102,252,241,0.5)] hover:shadow-[0_0_45px_rgba(102,252,241,0.7)] hover:scale-105 active:scale-95"
               >
                 <span>Explore Events</span>
-                <ArrowRight className="w-5 h-5 stroke-[2.5]" />
+                <ArrowRight className="w-5 h-5 stroke-[2.5] transition-transform duration-300 group-hover:translate-x-1.5" />
               </Link>
             </div>
           </div>

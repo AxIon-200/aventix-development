@@ -32,7 +32,7 @@ export default function WhyChooseUs() {
   ];
 
   return (
-    <section className="py-16 lg:py-24">
+    <section id="why-choose-us" className="py-16 lg:py-24 scroll-mt-24 snap-section">
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-16">
         {/* Section Header */}
         <div className="text-center mb-14">
@@ -51,20 +51,20 @@ export default function WhyChooseUs() {
             return (
               <div
                 key={idx}
-                className="bg-[#1f2833] border border-[#2c3644] rounded-2xl p-7 text-center flex flex-col items-center hover:border-[#66fcf1]/40 hover:bg-[#16212f] transition-all duration-300 group shadow-lg"
+                className="bg-[#1f2833] border border-[#2c3644] rounded-2xl p-7 text-center flex flex-col items-center hover:border-[#66fcf1] hover:bg-[#16212f] hover:-translate-y-2 hover:shadow-[0_15px_35px_rgba(0,0,0,0.5),0_0_25px_rgba(102,252,241,0.2)] transition-all duration-300 group shadow-lg"
               >
                 {/* Solid Cyan Icon Badge */}
-                <div className="w-14 h-14 rounded-2xl bg-[#66fcf1] text-[#0b0c10] flex items-center justify-center mb-5 shadow-[0_0_20px_rgba(102,252,241,0.3)] group-hover:scale-110 group-hover:shadow-[0_0_30px_rgba(102,252,241,0.5)] transition-all">
+                <div className="w-14 h-14 rounded-2xl bg-[#66fcf1] text-[#0b0c10] flex items-center justify-center mb-5 shadow-[0_0_20px_rgba(102,252,241,0.3)] group-hover:scale-115 group-hover:rotate-6 group-hover:shadow-[0_0_35px_rgba(102,252,241,0.6)] transition-all duration-300">
                   <Icon className="w-6 h-6 stroke-[2.2]" />
                 </div>
 
                 {/* Title */}
-                <h3 className="text-lg font-bold text-white mb-2 group-hover:text-[#66fcf1] transition-colors">
+                <h3 className="text-lg font-bold text-white mb-2 group-hover:text-[#66fcf1] transition-colors duration-200">
                   {feature.title}
                 </h3>
 
                 {/* Description */}
-                <p className="text-sm text-slate-400 leading-relaxed font-normal">
+                <p className="text-sm text-slate-400 leading-relaxed font-normal group-hover:text-slate-300 transition-colors">
                   {feature.description}
                 </p>
               </div>

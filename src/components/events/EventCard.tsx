@@ -16,7 +16,7 @@ export default function EventCard({ event }: { event: EventDetails }) {
     <li>
       <Link
         href={`/events/${encodeURIComponent(event.id)}`}
-        className="group flex h-full flex-col overflow-hidden rounded-2xl border border-[#2c3644] bg-[#1f2833] transition hover:border-[#66fcf1]/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#66fcf1]"
+        className="group flex h-full flex-col overflow-hidden rounded-2xl border border-[#2c3644] bg-[#1f2833] transition-all duration-300 hover:border-[#66fcf1] hover:-translate-y-2 hover:shadow-[0_15px_35px_-5px_rgba(0,0,0,0.6),0_0_25px_rgba(102,252,241,0.2)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#66fcf1]"
       >
         <div className="relative aspect-[305/200] w-full overflow-hidden bg-[#151b23]">
           {img && (
@@ -26,10 +26,10 @@ export default function EventCard({ event }: { event: EventDetails }) {
               fill
               unoptimized={img.startsWith("http")}
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
+              className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
             />
           )}
-          <div className="absolute left-3 top-3 flex flex-col items-center gap-1 rounded-lg bg-[#0b0c10]/90 px-3 py-1.5 text-center font-bold">
+          <div className="absolute left-3 top-3 flex flex-col items-center gap-1 rounded-lg bg-[#0b0c10]/90 px-3 py-1.5 text-center font-bold border border-white/5 group-hover:border-[#66fcf1]/50 group-hover:scale-105 transition-all duration-300 backdrop-blur-md">
             <span className="text-xs leading-3 tracking-[0.67px] text-[#66fcf1]">{badge.month}</span>
             <span className="text-sm leading-[14px] tracking-[0.36px] text-white">{badge.day}</span>
             <span className="text-[9px] leading-[9px] text-white">{badge.year}</span>
@@ -37,7 +37,7 @@ export default function EventCard({ event }: { event: EventDetails }) {
         </div>
 
         <div className="flex flex-1 flex-col gap-[3.5px] p-5">
-          <h3 className="line-clamp-2 min-h-14 font-display text-lg font-bold leading-7 text-white">{event.name}</h3>
+          <h3 className="line-clamp-2 min-h-14 font-display text-lg font-bold leading-7 text-white group-hover:text-[#66fcf1] transition-colors duration-200">{event.name}</h3>
           <p className="font-display text-[13px] font-medium leading-[18px] text-[#45a29e]">{event.performers.join(", ")}</p>
           <p className="flex items-center gap-2 text-sm text-[#c5c6c7]">
             <MapPin aria-hidden className="h-3 w-3 shrink-0 text-[#45a29e]" />
@@ -56,7 +56,7 @@ export default function EventCard({ event }: { event: EventDetails }) {
               )}
             </div>
             {booking.canBook ? (
-              <span className="rounded-full bg-[#66fcf1] px-4 py-2 text-xs font-semibold text-[#0b0c10] transition group-hover:bg-[#8afff6]">
+              <span className="rounded-full bg-[#66fcf1] px-4 py-2 text-xs font-semibold text-[#0b0c10] shadow-[0_0_15px_rgba(102,252,241,0.3)] transition-all duration-300 group-hover:bg-[#8afff6] group-hover:shadow-[0_0_20px_rgba(102,252,241,0.6)] group-hover:scale-105">
                 Book Now
               </span>
             ) : (

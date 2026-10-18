@@ -9,13 +9,13 @@ import {
 
 export default function HeroMockups() {
   return (
-    <div aria-hidden="true" inert className="relative w-full h-[620px] lg:h-[680px] pointer-events-none select-none overflow-hidden">
+    <div className="relative w-full h-[620px] lg:h-[680px] select-none overflow-hidden">
       {/* Ambient background glows */}
-      <div className="absolute top-10 right-10 w-96 h-96 bg-[#66fcf1]/15 rounded-full blur-[120px]" />
-      <div className="absolute bottom-10 left-10 w-80 h-80 bg-[#0084ff]/10 rounded-full blur-[100px]" />
+      <div className="absolute top-10 right-10 w-96 h-96 bg-[#66fcf1]/15 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-10 left-10 w-80 h-80 bg-[#0084ff]/10 rounded-full blur-[100px] pointer-events-none" />
 
       {/* Floating Mockup 1: "03. Event Details Page" (Top Right Layer) */}
-      <div className="absolute top-2 right-0 w-[420px] xl:w-[480px] rounded-xl bg-[#0e1622]/95 border border-[#1e2d40] shadow-2xl backdrop-blur-xl p-4 transform rotate-1 hover:rotate-0 transition-transform duration-500 z-20">
+      <div className="absolute top-2 right-0 w-[420px] xl:w-[480px] rounded-xl bg-[#0e1622]/95 border border-[#1e2d40] hover:border-[#66fcf1]/40 shadow-2xl backdrop-blur-xl p-4 transform rotate-1 hover:rotate-0 hover:-translate-y-1 transition-all duration-500 z-20">
         <div className="flex items-center justify-between border-b border-[#1c293a] pb-2 mb-3 text-[11px] text-slate-400">
           <div className="flex items-center gap-1.5 font-medium text-slate-300">
             <span className="w-2 h-2 rounded-full bg-[#66fcf1] inline-block animate-pulse" />

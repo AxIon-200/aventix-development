@@ -36,7 +36,7 @@ export default function Testimonials() {
   ];
 
   return (
-    <section className="py-16 lg:py-24 bg-[#1f2833]/40">
+    <section id="testimonials" className="py-16 lg:py-24 bg-[#1f2833]/40 scroll-mt-24 snap-section">
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-16">
         {/* Section Header */}
         <div className="text-center mb-14">
@@ -53,37 +53,37 @@ export default function Testimonials() {
           {testimonials.map((t) => (
             <div
               key={t.id}
-              className="bg-[#1f2833] border border-[#2c3644] rounded-2xl p-7 flex flex-col justify-between hover:border-[#66fcf1]/40 transition-all duration-300 shadow-lg"
+              className="bg-[#1f2833] border border-[#2c3644] rounded-2xl p-7 flex flex-col justify-between hover:border-[#66fcf1] hover:-translate-y-2 hover:shadow-[0_15px_35px_rgba(0,0,0,0.5),0_0_25px_rgba(102,252,241,0.15)] transition-all duration-300 shadow-lg group"
             >
               <div>
                 {/* 5 Cyan Stars */}
-                <div className="flex items-center gap-1 mb-4">
+                <div className="flex items-center gap-1 mb-4 group-hover:scale-105 transition-transform duration-300 origin-left">
                   {[...Array(t.rating)].map((_, i) => (
                     <Star
                       key={i}
-                      className="w-4 h-4 fill-[#66fcf1] text-[#66fcf1]"
+                      className="w-4 h-4 fill-[#66fcf1] text-[#66fcf1] drop-shadow-[0_0_6px_rgba(102,252,241,0.5)]"
                     />
                   ))}
                 </div>
 
                 {/* Review Text */}
-                <p className="text-slate-300 text-sm leading-relaxed mb-6 font-normal">
+                <p className="text-slate-300 text-sm leading-relaxed mb-6 font-normal group-hover:text-white transition-colors duration-200">
                   {t.review}
                 </p>
               </div>
 
               {/* Author Row */}
               <div className="flex items-center gap-3 pt-4 border-t border-[#1a2737]">
-                <div className="relative w-11 h-11 rounded-full overflow-hidden border border-[#66fcf1]/30 shrink-0">
+                <div className="relative w-11 h-11 rounded-full overflow-hidden border border-[#66fcf1]/30 group-hover:border-[#66fcf1] shrink-0 transition-colors duration-300">
                   <Image
                     src={t.avatar}
                     alt={t.author}
                     fill
-                    className="object-cover"
+                    className="object-cover transition-transform duration-300 group-hover:scale-110"
                   />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white leading-tight">
+                  <h4 className="text-sm font-bold text-white group-hover:text-[#66fcf1] leading-tight transition-colors duration-200">
                     {t.author}
                   </h4>
                   <p className="text-xs text-slate-400 mt-0.5">{t.location}</p>
