@@ -1,0 +1,3994 @@
+--- /dev/null
++++ b/ABRIGO-HANDOFF.md
+@@ -0,0 +1,230 @@
++> Historical expanded-phase report. See TEAM-INTEGRATION-REPORT.md for the current uploaded-project baseline, integration results and blockers. Statements below about the missing team ZIP describe the earlier phase.
++
++# Aventix — Abrigo frontend handoff (expanded scope)
++
++## 1. Outcome and scope
++
++The existing frontend now includes Abrigo's public/authentication interfaces and the remaining ticket-selection, numbered-seat, booking-summary, payment and confirmation frontend. This extends the previous review package; it is not a new application.
++
++**The assigned tasks cannot yet be marked fully complete.** The current `aventix-development(2).zip` did not become available. No current team backend, API client, Git history, base branch or teammate changes could be inspected. Real authentication, reservations, payments and ticket issuance remain disconnected. Mock/test-adapter checks are not end-to-end acceptance. Exact Figma imagery and real-browser visual verification also remain outstanding.
++
++The accessible Word task document was read and matches the earlier task requirements. The accessible backend revision PDF was read. It confirms numbered seats and distinguishes proposed routes/policies from adopted contracts. No proposed endpoint, schema, provider, role policy or hold duration was implemented as a backend fact.
++
++### Implemented frontend
++
++| Assigned area | Delivered behavior | Live status |
++| --- | --- | --- |
++| Public pages and event details | Previous work retained; event identity, media/detail sections, availability states, related cards and honest contact behavior. | Existing event fetch integration retained but actual backend DTOs unverified; labeled sample data when unconfigured. |
++| Shared authentication/recovery | Previous validation, password controls, recovery states and safe destinations retained. Added shared session reader and logout boundary. Header reflects supplied session and destinations; no hardcoded user/role. | Auth/session/recovery adapter still disconnected. |
++| Search/filter components | Figma-style open/closed dropdowns with keyboard selection and focus return; search clear, matching results and hover/active states. | Suggestions use a public index supplied to the header on Events/Event Details; other pages navigate to full search. No speculative search API. |
++| Ticket selection | Current event categories, quantities, availability, event-wide confirmed+held allowance, category limits and estimated subtotal; selection preserved to next step. | Requires verified shared session and current ticket-options adapter. Unauthenticated public fallback preserved. |
++| Numbered-seat selection | Service-provided sections/rows/seat labels; available/selected/unavailable states; exact per-category counts; duplicate/event/category rejection; conflicts refresh availability. | Requires real seat inventory and atomic booking adapter. No hardcoded seat inventory or standing bypass. |
++| Booking summary | Retrieves an owner-authorized booking by URL; shows actual reference, customer, allocated seats, prices, configured fees, total and original expiry. | Requires real booking retrieval. Returning does not create another hold. Editing requires explicit successful unpaid cancellation first. |
++| Payment | Only returned supported methods; trusted service QR/redirect instructions; pending guard, status refresh/polling, original deadline, explicit Cancel Payment and Back behavior. | No actual payment provider or simulator invented. A redirect/query string never confirms payment. |
++| Confirmation | Retrieves actual status on refresh/revisit; success only for authoritative confirmed+paid, non-cancelled event; pending/failed/cancelled/expired/refund messages and supplied ticket links. | Requires real booking-level payment summary and Sherwin's ticket destinations. |
++
++No attendee dashboard, profile editor, My Tickets, ticket-details page, booking-history implementation, organizer event management or administrator work was added. These remain with the assigned teammates. Organizer registration remains a disabled design preview because onboarding is undecided.
++
++## 2. Source and exact change inventory
++
++The baseline remains the earlier supplied frontend ZIP (`frotend.zip` / identical `frotend(1).zip`) plus the previous review changes. This is **not** a patch against the missing current team repository. Paths below are relative to the frontend package root.
++
++| Exact path | Versus original frontend ZIP | Versus previous review package |
++| --- | --- | --- |
++| `ABRIGO-HANDOFF.md` | Added | Added |
++| `FIGMA-TRACEABILITY.md` | Added | Added |
++| `FRONTEND-HANDOFF.md` | Added | Modified |
++| `src/app/about/experience/page.tsx` | Added | Unchanged |
++| `src/app/about/page.tsx` | Modified | Unchanged |
++| `src/app/bookings/[bookingId]/confirmation/page.tsx` | Added | Added |
++| `src/app/bookings/[bookingId]/payment/page.tsx` | Added | Added |
++| `src/app/bookings/[bookingId]/summary/page.tsx` | Added | Added |
++| `src/app/contact/page.tsx` | Modified | Unchanged |
++| `src/app/events/[id]/not-found.tsx` | Modified | Unchanged |
++| `src/app/events/[id]/page.tsx` | Modified | Modified |
++| `src/app/events/[id]/seats/page.tsx` | Added | Added |
++| `src/app/events/[id]/tickets/page.tsx` | Added | Modified |
++| `src/app/events/loading.tsx` | Added | Unchanged |
++| `src/app/events/page.tsx` | Modified | Modified |
++| `src/app/forgot-password/page.tsx` | Added | Unchanged |
++| `src/app/globals.css` | Modified | Unchanged |
++| `src/app/layout.tsx` | Modified | Unchanged |
++| `src/app/legal/[policy]/page.tsx` | Added | Unchanged |
++| `src/app/login/page.tsx` | Added | Unchanged |
++| `src/app/page.tsx` | Modified | Unchanged |
++| `src/app/register/attendee/page.tsx` | Added | Unchanged |
++| `src/app/register/organizer/page.tsx` | Added | Unchanged |
++| `src/app/register/page.tsx` | Added | Unchanged |
++| `src/app/reset-password/page.tsx` | Added | Unchanged |
++| `src/components/AboutHero.tsx` | Added | Unchanged |
++| `src/components/AuthModal.tsx` | Modified | Unchanged |
++| `src/components/BookingModal.tsx` | Modified | Unchanged |
++| `src/components/BrowseCategory.tsx` | Modified | Unchanged |
++| `src/components/Footer.tsx` | Modified | Unchanged |
++| `src/components/Hero.tsx` | Modified | Unchanged |
++| `src/components/HeroMockups.tsx` | Modified | Unchanged |
++| `src/components/HowItWorks.tsx` | Modified | Unchanged |
++| `src/components/Navbar.tsx` | Modified | Modified |
++| `src/components/OrganizerModal.tsx` | Modified | Unchanged |
++| `src/components/Testimonials.tsx` | Modified | Unchanged |
++| `src/components/TrendingEvents.tsx` | Modified | Unchanged |
++| `src/components/WhyChooseUs.tsx` | Modified | Unchanged |
++| `src/components/auth/AccountChoice.tsx` | Added | Unchanged |
++| `src/components/auth/AccountMenu.tsx` | Added | Added |
++| `src/components/auth/AuthForm.tsx` | Added | Unchanged |
++| `src/components/auth/AuthShell.tsx` | Added | Unchanged |
++| `src/components/auth/Dialog.tsx` | Added | Unchanged |
++| `src/components/auth/FormField.tsx` | Added | Unchanged |
++| `src/components/auth/OrganizerPreview.tsx` | Added | Unchanged |
++| `src/components/auth/useAccountSession.ts` | Added | Added |
++| `src/components/booking/BookingPrimitives.tsx` | Added | Added |
++| `src/components/booking/BookingRecordView.tsx` | Added | Added |
++| `src/components/booking/SeatSelection.tsx` | Added | Added |
++| `src/components/booking/TicketSelection.tsx` | Added | Added |
++| `src/components/contact/ContactForm.tsx` | Modified | Unchanged |
++| `src/components/event/BookingLoginNotice.tsx` | Added | Unchanged |
++| `src/components/event/Playlist.tsx` | Modified | Unchanged |
++| `src/components/event/RelatedEvents.tsx` | Added | Unchanged |
++| `src/components/events/DemoNotice.tsx` | Added | Unchanged |
++| `src/components/events/EventSearchField.tsx` | Added | Added |
++| `src/components/events/EventsBrowser.tsx` | Modified | Modified |
++| `src/components/events/FilterSelect.tsx` | Added | Added |
++| `src/components/layout/PageShell.tsx` | Modified | Modified |
++| `src/lib/auth/client.ts` | Added | Modified |
++| `src/lib/auth/destination.ts` | Added | Modified |
++| `src/lib/auth/validation.ts` | Added | Unchanged |
++| `src/lib/booking/client.ts` | Added | Added |
++| `src/lib/booking/draft.ts` | Added | Added |
++| `src/lib/booking/format.ts` | Added | Added |
++| `src/lib/booking/rules.ts` | Added | Added |
++| `src/lib/booking/types.ts` | Added | Added |
++| `src/lib/booking/validate.ts` | Added | Added |
++| `src/lib/event-booking.ts` | Modified | Unchanged |
++| `src/lib/event-payload.ts` | Added | Unchanged |
++| `src/lib/events-api.ts` | Modified | Unchanged |
++| `src/lib/format.ts` | Modified | Modified |
++| `tests/booking-frontend.test.mjs` | Added | Added |
++| `tests/load-typescript.mjs` | Added | Added |
++| `tests/public-frontend.test.mjs` | Added | Modified |
++
++The `review/` directory contains packaging-only patch/manifests. It is not a runtime dependency. The historical `FRONTEND-HANDOFF.md` describes the earlier public-only phase; this file is authoritative for the expanded delivery.
++
++## 3. Figma coverage and fidelity
++
++`FIGMA-TRACEABILITY.md` maps all **72 references** to their component, route, assigned owner or deliberate exclusion. They are not 72 independent pages: the list includes repeated page states, reusable sections, six tiny date/empty-container references, and five attendee-area references outside Abrigo's implementation.
++
++Design context was retrieved for every requested ID. Sparse whole-page responses were correlated with screenshots and existing high-fidelity shared/page components. The actual ticket, seat, summary, provider-payment example and confirmation designs were inspected. Logged-in public variants reuse the same public content with session-aware navigation; they do not create duplicate applications.
++
++Material differences remain:
++
++- Figma asset downloads returned HTML “Site Unavailable,” including a fresh background retry in this phase. Exact concert backgrounds, collage/illustration assets, icons and some promotional/seat-plan/album imagery are still unavailable. Existing supplied image bytes remain intact; unrelated stock imagery and corrupt downloads are not shipped.
++- No implementation screenshots or browser pixel comparison could be produced. Chromium was unavailable and its attempted download failed. Responsive CSS and DOM behavior do not prove rendered fidelity, overflow or native-dialog focus behavior.
++- Ticket/event cards display actual supplied items, dates and prices; duplicated Figma event placeholders and missing concerts are not fabricated as live inventory.
++- The payment prototype's static GCash QR is not a live payable code and is not reproduced as one. The frontend displays only an approved service's returned QR/link for an eligible booking, with configured trusted origins. Credentials/payment secrets never enter this frontend.
++- The confirmation prototype has inconsistent sample customer/ticket labels and a generic Confirm button. The implementation instead uses actual booking fields, authoritative status and supplied ticket links.
++- Prototype self-selected roles and unverified application/payment success were deliberately omitted. First/last names are separate as required. Numbered seating cannot be bypassed just because a prototype category says Standing.
++- The prototype's unrelated organization's marketing-consent text and fixed online fee were not copied into submission. Fees come only from the booking response; no live legal/refund promises are invented.
++
++## 4. Interaction, state and ownership rules
++
++### Selection and reservation
++
++`src/lib/booking/` contains frontend view models, pure rules, runtime validation and adapter boundaries. These are **not new approved HTTP contracts**. The transport mapping must follow the current team API once it is available.
++
++The browser draft stores only event/category/quantity/seat identifiers and an operation identity in `sessionStorage`. It never persists attendee details, prices, payment data, authentication tokens, roles or a claimed server reservation. Refresh revalidates the draft against the current event/categories/seats. An unavailable seat is removed from the selected set and a replacement is required.
++
++The UI validates one event, unique categories, whole positive quantities, remaining availability, category limits, the event-wide allowance after confirmed tickets/active holds, and exactly the requested number of distinct numbered seats in each category. Backend enforcement is still required atomically across concurrent users/requests.
++
++Only a successful real `createBooking` response can navigate to summary. Its event/category/quantity/seat allocations must match the request. Unknown or inconsistent mutation results block a second creation and preserve the operation identity; the user must reconcile the existing booking through the agreed service/history/support flow. An operation key alone does not prove backend idempotency support.
++
++### Booking, expiry and payment
++
++Summary/payment/confirmation load the booking by ID through the owner-authorized adapter; URL values cannot supply customer details or prices. Unauthorized/forbidden/not-found responses clear booking details. Stale/error state disables mutations.
++
++The countdown uses the server's `expiresAt` and `serverNow`, advanced with monotonic elapsed browser time. There is no hardcoded ten-minute hold. A refresh cannot silently extend the original deadline, regress the server timestamp, turn a paid result into failed/unpaid, or revive cancelled/expired/refunded bookings. Reaching the deadline disables payment without locally claiming the server has completed expiration processing.
++
++Payment methods and provider instructions come from the adapter. Starting or returning from payment does not set PAID/CONFIRMED. A started attempt cannot be submitted again merely by changing a radio button. Explicit service-approved failed-payment retry retains the original expiry. A trusted booking refresh is the proof used for confirmation; the newest failed attempt does not overwrite a paid booking summary.
++
++Back navigation alone never cancels. Cancel Payment and “cancel reservation to edit” explicitly request cancellation only for an eligible own unpaid booking. The result must come from the service. Confirmed bookings do not offer ordinary attendee cancellation.
++
++Cancelled events never display valid-admission success or ticket links, even if a previously paid booking is awaiting a refund. Processing/failed refund states do not claim refund completion. My Tickets and per-seat ticket links are displayed only when supplied by the authorized attendee integration; no teammate route names are guessed in runtime code.
++
++### Shared authentication and navigation
++
++`PublicAuthClient.getSession` and `.logout` extend the shared frontend boundary. The backend session service supplies display identity, effective booking eligibility and allowed navigation links. Logout clears the displayed session only after the service succeeds; errors retain the account state. No role dropdown, persisted fake account, fake ticket or payment-success simulator is shipped.
++
++Visitor return destinations allow only defined event/ticket/seat routes and booking summary/payment/confirmation routes. External origins, traversal, control characters, privileged-area paths and arbitrary success query strings are rejected. This protects navigation; it does not replace backend role/ownership checks.
++
++## 5. Required backend and teammate integration
++
++| Existing assigned work | Required agreement or implementation |
++| --- | --- |
++| Moyamoy — registration/login/logout/sessions | Map the shared auth client to real endpoints, session refresh/logout, effective account eligibility, approved role destinations, Remember Me and password policy. |
++| Moyamoy — password recovery/profile APIs | Map neutral recovery request, backend-issued link validation/reset and invalid/expired/used-link errors. Keep recovery separate from authenticated Change Password. |
++| Moyamoy — public event search/details | Verify the existing `/events` assumptions, actual envelopes/DTOs, media, canonical IDs, categories, derived sale states, paging/filtering and update behavior. No new public endpoint was invented here. |
++| Moyamoy — category/inventory and seat APIs | Supply current purchase limit, confirmed+held commitments, per-category constraints, effective seat state, event/category identifiers, labels/section/row and verified seat-plan media. No holder identities are needed. |
++| Moyamoy — bookings/reservations/expiration | Map `createBooking`, `getBooking`, and unpaid cancellation. Enforce all-or-nothing seats, event scope, cumulative limit, trusted prices/fees, ownership, original expiry, idempotency/reconciliation and concurrency rules on the server. |
++| Moyamoy — payment records/confirmation | Map supported methods, payment initiation/instructions, trusted provider origins, booking-level payment summary and actual result refresh. Define retry, late callbacks, refunds and cancellation behavior. The adapter interfaces do not adopt the PDF's proposed paths automatically. |
++| Sherwin — attendee pages/tickets | Supply actual allowed account navigation, history reconciliation and ticket destinations for the relevant booking/seat. Dashboard/profile/My Tickets/history/sidebar work was not recreated. |
++| Team decisions | Adopt or replace proposed state normalization, organizer onboarding, standing scope, auth persistence, password/session policy, late-payment/refund treatment and approved legal text. Numbered-seat selection remains required. |
++
++The view model uses normalized `PENDING_PAYMENT`, `CONFIRMED`, `CANCELLED`, `EXPIRED`, `REFUNDED` and booking-level payment/refund states. This does not change database enums or declare a proposed mapping approved. The real frontend adapter must map the agreed backend representation once, not introduce a competing lifecycle.
++
++Current default adapters intentionally contain no speculative HTTP methods. Therefore a freshly extracted package cannot create accounts/holds/payments. Public preview and protected login/service-unavailable gates remain honest. Existing support/email addresses, marketing copy and policy text also need team approval before release.
++
++## 6. Verification results
++
++| Check | Result |
++| --- | --- |
++| Production build | `npm run build` passed, including TypeScript and all new App Router pages. |
++| Lint | `npm run lint` passed with no warnings/errors. |
++| Included regression suites | `node --test tests/*.test.mjs`: **17 passed**. Covers public validation/returns/API failures plus event-wide limits, exact numbered seats, conflicts, selection persistence allowlisting, server expiry, state regression, allocation integrity, trusted payment URLs and centavo formatting. |
++| DOM interaction verification | **28 passed** in temporary jsdom harnesses: 16 public/auth/search/filter/logout checks and 12 booking-flow checks. Booking checks include exact seat count, double-submit guard, conflict refresh, real-response-only summary, redirect/query rejection as proof, paid confirmation, explicit unpaid cancellation, ticket-link integration, cancelled-event refund handling, expired deadlines, forbidden data access and uncertain mutation blocking. |
++| Production HTTP smoke | **20 URLs passed** with headings, main-content anchors and no `href="#"` placeholders, including all new signed-out route gates. Missing-event fallback was also rendered; its observed streaming response was HTTP 200, not a claimed literal 404. |
++| Backend/live concurrency | **Not run.** No current backend source/client or live session/reservation/payment implementation was available. Test adapters cannot prove atomic server transactions, provider callbacks, authorization or real inventory. |
++| Browser visual/responsive/accessibility | **Not completed.** Missing Chromium/download failure; no claim of browser screenshots, exact Figma match, actual mobile rendering, overflow or native focus-trap verification. DOM dialog plumbing was stubbed where needed and is not browser focus evidence. |
++| Manifests/assets | `package.json`, `package-lock.json`, configuration files and supplied image bytes remain unchanged. Temporary formatter/jsdom tooling is outside the project and not packaged as a dependency. |
++
++The included regression suites run with the existing TypeScript development dependency. The one-off DOM/HTTP harnesses were environment checks, not new runtime dependencies. Browser review is still required around 1440, 1280, 1024, 768, 390 and 320px, especially the dropdowns, account menu, forms, ticket columns and seat layout.
++
++Run from the frontend root:
++
++```bash
++npm ci
++npm run lint
++node --test tests/*.test.mjs
++npm run build
++npm run dev
++```
++
++With the default adapters, new booking routes correctly show login/service-unavailable gates. Full signed-in booking layouts were exercised only with injected test adapters; do not present them as connected live functionality.
++
++## 7. Git and pull-request impact
++
++No backend controllers/routes, database schemas/migrations, authorization policies or teammate dashboards/pages were changed. No package was added to the project, no lockfile regenerated, no repository restructuring performed, and nothing was pushed, merged or submitted as a pull request.
++
++The main additional shared-file overlap risks are:
++
++- `Navbar.tsx`: session-aware account control and reusable search field; backend-supplied navigation only.
++- `PageShell.tsx`, Events and Event Details pages: optional public search-index propagation.
++- `EventsBrowser.tsx`: shared custom filter select and later desktop breakpoint so tablet filters wrap.
++- `auth/client.ts`: additive session/logout view boundary; existing methods retained.
++- `auth/destination.ts`: defined seat/booking return routes added to the safe allowlist.
++- `format.ts`: preserve centavos when public event amounts have decimals. Booking amounts use a new exact-two-decimal formatter.
++- Existing ticket route: retains the original public locked fallback and conditionally uses the signed-in selector through the shared session adapter.
++
++Most remaining booking implementation is in added page-specific routes and `components/booking` / `lib/booking` files. Only newly added files were formatted with a temporary formatter; unrelated team files/configuration were not reformatted.
++
++`review/frontend-changes.patch` compares this delivery with the original available frontend ZIP. `review/expanded-since-previous.patch` compares with the previous review ZIP. `review/file-changes.json` records exact paths and hashes. These baselines are known uploaded frontend snapshots, **not the current team branch**.
++
++Before a real PR: inspect the actual repository/base and working tree, map these relative paths to its frontend package, review/stage only Abrigo's files, run patch checks and project checks, and resolve overlap manually. Do not copy this entire standalone frontend over teammates' repository. No tool can guarantee zero merge conflicts without the current base and changes. Use real task numbers and the team's agreed branch; do not auto-close backend-dependent or unverified tasks.
++
++## 8. Remaining completion blockers
++
++1. Re-upload the current team project ZIP or at least its complete frontend package and existing frontend API/session clients. Exclude `node_modules`, `.next`, `.git`, `.env` and secrets. This is needed to inspect current contracts, actual branch overlap and integration paths.
++2. Connect and verify real auth, numbered-seat inventory, atomic bookings, expiry, cancellations, payment results and tickets. The Word acceptance criteria explicitly require more than mock-only integration.
++3. Provide downloadable Figma asset exports and run a real-browser responsive/visual/accessibility review. All 72 references are mapped, but pixel fidelity is not signed off.
++4. Resolve the PDF's remaining proposed policies through the team; do not change backend rules as part of this frontend patch.
++5. Complete actual repository checks and reviewer acceptance/merge workflow after integration. No PR has been opened automatically.
++
++The package excludes dependency/build/Git folders, environment files, generated `next-env.d.ts`, caches, failed downloads, temporary tools and screenshots. Original images and dependency files are preserved. This is the concrete expanded frontend review result available now; full end-to-end task completion remains blocked by the items above.
+--- /dev/null
++++ b/FIGMA-TRACEABILITY.md
+@@ -0,0 +1,90 @@
++# Figma reference traceability — 72 requested nodes
++
++These are 72 references, not 72 independent pages. They include page states, shared components, date labels and an empty container. All requested IDs were submitted for design-context retrieval. Sparse whole-page responses were correlated with direct screenshots and shared high-fidelity component/page counterparts. Initial metadata-limit responses were recovered through design-context retrieval; no page was invented from a missing frame name.
++
++This is an implementation map, not a claim of pixel-identical output or completed live backend acceptance. Exact assets and real-browser verification remain blocked. See `ABRIGO-HANDOFF.md`.
++
++| Figma node | Design/component | Implementation or owner | Status / deliberate difference |
++| --- | --- | --- | --- |
++| `705:14000` | Event details | `/events/[id]` | Reused and extended; live event DTO mapping still needed. |
++| `705:14121` | Related events | `RelatedEvents` | Dynamic related cards, excluding current event; no duplicated fake inventory. |
++| `705:24585` | About, not logged in | `/about` | Existing public content reused. |
++| `705:24622` | Contact, not logged in | `/contact` | Existing public content; honest mailto behavior, not direct delivery. |
++| `705:16349` | Tickets, not logged in | `/events/[id]/tickets` | Public locked fallback preserved. |
++| `705:18693` | Application notice modal | `OrganizerPreview / Dialog` | Notice only; application success claim intentionally not implemented. |
++| `705:13981` | Events listing | `/events / EventsBrowser` | Dynamic month groups, filtering and loading/error states. |
++| `705:13478` | Attendee account hover | `AccountChoice` | Hover/focus state reused. |
++| `705:15769` | Organizer step 2 | `/register/organizer` | Disabled visual preview; onboarding undecided. |
++| `705:15673` | Organizer account hover | `AccountChoice` | Hover/focus state reused. |
++| `705:15728` | Organizer step 1 | `/register/organizer` | Disabled visual preview; no privileged public registration. |
++| `705:15692` | Attendee registration | `/register/attendee` | Separate first/last names per assigned requirements; adapter disconnected. |
++| `705:13472` | Account choice | `/register` | Account choice; organizer policy notice. |
++| `705:18706` | Temporary role overlay | `AuthModal` | Replaced role buttons with shared-login access; no self-assigned roles. |
++| `705:13468` | Login | `/login` | Form behavior implemented; session integration and exact background missing. |
++| `705:24443` | About alternate hero | `/about/experience` | Alternate hero; exact illustration assets missing. |
++| `705:12863` | Landing | `/` | Existing landing reused; decorative imagery differs. |
++| `705:15916` | ATTENDEE USER PROFILE PAGE | `Excluded from Abrigo implementation` | Attendee user profile and account settings — Sherwin. |
++| `705:16174` | ATTENDEE TICKETS PAGE | `Excluded from Abrigo implementation` | My Tickets — Sherwin. |
++| `705:15302` | Section 9 | `EventsBrowser / EventCard` | November section reused through dynamic month grouping. |
++| `705:15100` | Section 12 | `EventsBrowser / EventCard` | March section reused; displayed dates come from data, not prototype labels. |
++| `705:14898` | Section 13 | `EventsBrowser / EventCard` | May section reused; missing Bruno Mars asset/data not fabricated. |
++| `705:14696` | Section 11 | `EventsBrowser / EventCard` | February section reused; missing Young K asset/data not fabricated. |
++| `705:14494` | Section 10 | `EventsBrowser / EventCard` | December section reused; missing Le Sserafim asset/data not fabricated. |
++| `705:13139` | Section 3 | `BrowseCategory` | Existing category section and working filter navigation reused. |
++| `705:13507` | Container | `dateBadge / EventCard` | Tiny date primitive; real event date formatting, not an additional page. |
++| `705:14147` | Container | `Navbar` | Public navigation links reused. |
++| `705:15505` | Register Card — Choose Account Type | `AccountChoice` | Reusable account-choice panel; organizer controls remain preview-only. |
++| `705:13505` | Container | `dateBadge / EventCard` | Date primitive; no separate page. |
++| `705:13503` | 2025 | `dateBadge / EventCard` | Year label derives from event date; no hardcoded 2025 override. |
++| `705:13385` | Section 1 | `Hero / HeroMockups` | Existing hero retained; exact collage asset still unavailable. |
++| `705:13050` | Section 5 | `WhyChooseUs` | Existing section reused; claims are preview copy pending team approval. |
++| `705:14288` | Section 8 | `EventsBrowser / EventCard` | October month section; real list items instead of four copies of one event. |
++| `705:13509` | Container | `dateBadge / EventCard` | Date primitive; no separate page. |
++| `705:13511` | Container | `dateBadge / EventCard` | Date primitive; no separate page. |
++| `705:13182` | Section 2 | `TrendingEvents` | Existing four-card preview; not a fabricated seven-event inventory. |
++| `705:14131` | Section 2 — Event Filters | `EventsBrowser / FilterSelect` | Shared filter bar with responsive wrapping. |
++| `705:12949` | Section 7 | `OrganizerBanner` | CTA links to disabled onboarding preview. |
++| `705:14127` | Section 1 — Events Hero | `/events` | Existing events hero reused. |
++| `705:13497` | Background — Login AND Register Page | `AuthShell` | Structure retained; concert background asset is still missing. |
++| `705:13093` | Section 4 | `HowItWorks` | Existing section reused. |
++| `705:12875` | Footer | `Footer` | Existing footer reused; unsupplied destinations remain honest. |
++| `705:13450` | Log in Form | `AuthForm` | Shared login form and validation. |
++| `705:13504` | Container | `No standalone component` | Empty off-canvas 100×100 design container; no user-facing route added. |
++| `705:12965` | Section 6 | `Testimonials` | Existing sample testimonial section retained; content approval remains. |
++| `705:13430` | Nav | `Navbar` | Public header reused with safe account and search controls. |
++| `705:24039` | Filter - All Locations | `FilterSelect` | Open/closed/selected location variants; actual source locations only. |
++| `705:24034` | Dropdown Item | `FilterSelect` | Dropdown item hover/active styling and keyboard interaction. |
++| `705:24026` | Field | `EventsBrowser / FilterSelect` | Composed filters; data drives options. |
++| `705:24025` | Aventix-Search-Results | `EventSearchField` | Matching-results panel using a supplied public event index. |
++| `705:23963` | Aventix-Search-Field | `EventSearchField` | Search/default/filled/clear states. |
++| `705:24140` | Filter - All Dates | `FilterSelect / matchesDate` | Date choices and keyboard dropdown. |
++| `705:23893` | Group 3 | `AccountMenu` | Shared account dropdown; display identity and destinations from real session adapter. |
++| `705:16331` | ATTENDEE DROPDOWN | `Navbar / AccountMenu` | Signed-in header variant; no hardcoded Sherwin account. |
++| `705:19955` | BOOKING CONFIRMATION | `/bookings/[bookingId]/confirmation` | Record-backed status and ticket links; success only for authoritative eligible confirmed/paid data. |
++| `705:16035` | ATTENDEE BOOKING HISTORY PAGE | `Excluded from Abrigo implementation` | Attendee booking-history/digital-ticket area — Sherwin. |
++| `705:15806` | ATTENDEE DASHBOARD PAGE | `Excluded from Abrigo implementation` | Attendee dashboard — Sherwin. |
++| `705:16301` | Setting Option | `Excluded from Abrigo implementation` | Attendee sidebar/navigation area — Sherwin; only shared header/logout integration is supplied. |
++| `705:24342` | Filter - All Genres | `FilterSelect` | Genre choices from event data. |
++| `705:23956` | Aventix Search bar | `EventSearchField` | Compact search field. |
++| `705:24008` | Aventix-Search-Result-Item | `EventSearchField` | Result item and keyboard/pointer active state. |
++| `705:24241` | Filter - All Categories | `FilterSelect` | Category options from actual event data. |
++| `705:24532` | Aventix Contact Us Page | `/contact + AccountMenu` | Same public content with session-aware header; no duplicate route. |
++| `705:12785` | Selected Ticket and Booking Summary | `/bookings/[bookingId]/summary` | Server-created booking, exact allocated seats, trusted totals; no invented fee or marketing consent. |
++| `705:18617` | Footer | `Footer` | Shared footer reused. |
++| `705:12628` | ATTENDEE LOGGED IN - Aventix Event TICKET SELECTION | `/events/[id]/tickets / TicketSelection` | Signed-in controls require shared verified session and current ticket-options adapter. |
++| `705:23101` | TICKET PAYMENT | `/bookings/[bookingId]/payment` | Supported-method instructions and optional trusted provider QR/link; static GCash QR is not reused as a live payment. |
++| `705:24493` | Aventix About Us Page | `/about + AccountMenu` | Same public content with session-aware header. |
++| `705:23134` | SEAT  PROJECT | `/events/[id]/seats` | Dynamic numbered-seat selection; no hardcoded seat inventory. |
++| `705:17078` | ATTENDEE LOGGED IN - Aventix Events Page | `/events + AccountMenu` | Reuses event browsing and authenticated header; no second listing app. |
++| `705:18385` | ATTENDEE LOGGED IN - Aventix Event Details | `/events/[id] + AccountMenu` | Reuses public details with authenticated header. |
++| `705:16517` | ATTENDEE LOGGED IN | `/ + AccountMenu` | Reuses existing landing with authenticated header. |
++
++## Fidelity limits
++
++- Existing supplied raster images are preserved; missing Figma backgrounds, collage, icons and seat-plan/album artwork are not replaced with unrelated stock imagery.
++- Availability, event dates, prices and counts come from supplied data. Prototype duplicates or inconsistent month labels are not treated as authoritative inventory.
++- Organizer/admin role-selection and unverified application/payment success are intentionally absent.
++- Provider payment screens remain provider-owned. A static prototype QR is not an actual payable code.
++- No attendee dashboard, profile, My Tickets, digital-ticket details or booking-history implementation was added. Ticket links require Sherwin/backend integration.
++- Marketing consent belonging to a different organization in the prototype is not inserted into Aventix payment submission.
++- Responsive CSS is implemented, but browser screenshots, exact asset geometry, overflow and assistive-technology review still need verification.
+--- /dev/null
++++ b/TEAM-INTEGRATION-REPORT.md
+@@ -0,0 +1,89 @@
++# Aventix — Abrigo integration report
++
++## 1. Implementation summary
++
++The expanded Abrigo frontend is now integrated into the actual uploaded `aventix-development (2).zip`, on its existing `public-pages` working tree. The uploaded frontend matched the earlier public review package byte for byte. This delivery preserves that public/auth work and adds ticket quantities, mandatory numbered-seat selection, booking summary, payment/status and confirmation UI, session/logout navigation, and accessible search/filter controls. It extends the existing Next.js application.
++
++Public routes include landing, events, event details, About, Contact, Login, account choice, attendee registration, disabled organizer preview, forgot/reset password and unauthenticated ticket entry. Booking routes use shared authentication and service adapters. No Sherwin dashboard/profile/My Tickets/history, Mary organizer management, or Shai administrator pages were implemented.
++
++## 2. Exact files changed
++
++The following inventory is relative to the uploaded ZIP, not Git HEAD. The upload already contained uncommitted frontend and backend changes; those were preserved. `review/team-upload-changes.patch` applies only this delivery's changes. `review/team-file-changes.json` records paths and hashes.
++
++| Status | Path |
++| --- | --- |
++| Added | `ABRIGO-HANDOFF.md` |
++| Added | `FIGMA-TRACEABILITY.md` |
++| Added | `src/app/bookings/[bookingId]/confirmation/page.tsx` |
++| Added | `src/app/bookings/[bookingId]/payment/page.tsx` |
++| Added | `src/app/bookings/[bookingId]/summary/page.tsx` |
++| Modified | `src/app/events/[id]/page.tsx` |
++| Added | `src/app/events/[id]/seats/page.tsx` |
++| Modified | `src/app/events/[id]/tickets/page.tsx` |
++| Modified | `src/app/events/page.tsx` |
++| Modified | `src/components/Navbar.tsx` |
++| Added | `src/components/auth/AccountMenu.tsx` |
++| Added | `src/components/auth/useAccountSession.ts` |
++| Added | `src/components/booking/BookingPrimitives.tsx` |
++| Added | `src/components/booking/BookingRecordView.tsx` |
++| Added | `src/components/booking/SeatSelection.tsx` |
++| Added | `src/components/booking/TicketSelection.tsx` |
++| Added | `src/components/events/EventSearchField.tsx` |
++| Modified | `src/components/events/EventsBrowser.tsx` |
++| Added | `src/components/events/FilterSelect.tsx` |
++| Modified | `src/components/layout/PageShell.tsx` |
++| Modified | `src/lib/auth/client.ts` |
++| Modified | `src/lib/auth/destination.ts` |
++| Added | `src/lib/booking/client.ts` |
++| Added | `src/lib/booking/draft.ts` |
++| Added | `src/lib/booking/format.ts` |
++| Added | `src/lib/booking/rules.ts` |
++| Added | `src/lib/booking/types.ts` |
++| Added | `src/lib/booking/validate.ts` |
++| Modified | `src/lib/format.ts` |
++| Added | `tests/booking-frontend.test.mjs` |
++| Added | `tests/load-typescript.mjs` |
++| Modified | `tests/public-frontend.test.mjs` |
++| Added | `TEAM-INTEGRATION-REPORT.md` |
++
++## 3. Figma fidelity
++
++All 72 references were inspected and mapped in `FIGMA-TRACEABILITY.md`; these include sections, hover/overlay states and five attendee references assigned to Sherwin, rather than 72 independent pages. Existing public styling and image assets were preserved. Exact unavailable Figma backgrounds/collage/illustrations and some artwork remain missing: asset downloads returned HTML instead of image bytes. Static prototype payment QR codes were not represented as real payment instructions. No browser pixel-fidelity sign-off is claimed.
++
++## 4. Interaction status
++
++Public navigation, local event search/filtering, field validation, password visibility, safe return destinations, recovery UI, and accessible custom controls are implemented. Contact opens the user's email application and does not claim delivery. Organizer onboarding remains explicitly unavailable; there is no role self-assignment.
++
++Authenticated booking views validate quantities, cumulative limits and exact numbered seats, handle conflicts, preserve event identity and the original server expiry, guard duplicate/uncertain mutations, and display only service-confirmed payment/booking status. Back does not cancel; unpaid cancellation is explicit. Confirmation requires actual paid+confirmed status and a non-cancelled event. Ticket links must come from the service.
++
++The default auth and booking adapters are disconnected. These views do not create accounts, reserve seats, take payment or issue tickets without backend integration. Existing public event fetch behavior is retained; unconfigured discovery uses explicitly labeled sample data. Production configured API failures do not become sample success.
++
++## 5. Backend dependencies — Moyamoy
++
++The uploaded backend was inspected read-only. It contains nine starter files: empty domain module classes, commented bootstrap and schema model placeholders. There are no implemented controllers, services, DTOs, recovery/session client or usable booking/payment endpoints to wire. The existing Prisma status enum alone is not an HTTP contract.
++
++Supply agreed session/login/logout/attendee registration/recovery contracts, session persistence and password policy; event response mapping; numbered-seat inventory and cumulative limits; atomic/idempotent booking creation; owner-authorized retrieval/cancellation; authoritative server timestamps/expiry; payment methods/trusted origins/instructions and booking-level status; event-cancellation/refund semantics; and issued-ticket destinations. Map these into `src/lib/auth/client.ts` and `src/lib/booking/client.ts`. Their types are frontend view models, not imposed backend contracts. Confirm organizer onboarding, legal text, fees and remaining PDF policy proposals with the team. No endpoints or backend policies were invented.
++
++## 6. Verification
++
++- `npm run build`: passed on this integrated project, including TypeScript and production route generation.
++- `npm run lint`: passed, zero errors/warnings.
++- `node --test tests/*.test.mjs`: 17 passed.
++- DOM interaction harness: 16 auth/public and 12 booking checks passed using injected test adapters, not live services.
++- Production HTTP checks: 20 public/booking/auth URLs returned expected headings/main content without placeholder anchors; unknown-event fallback also checked. Streaming unknown-event response was HTTP 200, not a claimed 404.
++- Backend/planning/config/dependency preservation: every supplied protected file verified byte for byte; no backend edits.
++- Browser rendering/responsiveness/native focus and real backend end-to-end/concurrency/payment checks: not completed. Chromium download was unavailable. Test adapters do not prove live authorization, atomic reservations or provider behavior.
++
++The initial dependency symlink build failed because Turbopack disallows an out-of-root node_modules symlink. Repeating with physical local dependencies passed without source/config changes. The dependency manifest/lockfile are unchanged.
++
++## 7. Git impact
++
++Existing branch: `public-pages`. The upload already had numerous tracked modifications and untracked public files, including backend changes. They were not reset, staged, committed, pushed or attributed to this work. Use the ZIP-relative patch/inventory to distinguish this delivery from that pre-existing work. No automatic push, merge or PR was performed.
++
++Shared overlap: Navbar, PageShell, EventsBrowser, Events and Event Details routes, auth adapter/destination helper, price formatter and ticket entry route. New booking code stays in dedicated routes/components/lib folders. Global CSS, root layout, package files, configuration, original image bytes, backend and team planning files remain unchanged from this upload. Review overlap against the current remote base before applying; zero merge conflicts cannot be guaranteed. Do not stage the entire pre-existing dirty tree.
++
++## 8. Remaining work
++
++Connect and verify Moyamoy's real services once implemented; obtain missing Figma exports; perform desktop/tablet/mobile browser review; approve outstanding onboarding/payment/legal policies; complete reviewer acceptance and the team's normal branch/PR process. The frontend is reviewable, but all assigned acceptance criteria cannot honestly be marked complete while these dependencies remain unresolved.
++
++The ZIP preserves project structure and backend source, excluding Git history, dependencies/build outputs, environment files/secrets and generated caches. `ABRIGO-HANDOFF.md` and `FRONTEND-HANDOFF.md` are historical phase reports; this report is authoritative for the uploaded-project integration.
+--- /dev/null
++++ b/src/app/bookings/[bookingId]/confirmation/page.tsx
+@@ -0,0 +1,7 @@
++import type { Metadata } from "next";
++import BookingRecordView from "@/components/booking/BookingRecordView";
++export const metadata: Metadata = { title: "Booking confirmation | Aventix", robots: { index: false, follow: false } };
++export default async function Page({ params }: { params: Promise<{ bookingId: string }> }) {
++  const { bookingId } = await params;
++  return <BookingRecordView key={bookingId} bookingId={bookingId} mode="confirmation" />;
++}
+--- /dev/null
++++ b/src/app/bookings/[bookingId]/payment/page.tsx
+@@ -0,0 +1,7 @@
++import type { Metadata } from "next";
++import BookingRecordView from "@/components/booking/BookingRecordView";
++export const metadata: Metadata = { title: "Booking payment | Aventix", robots: { index: false, follow: false } };
++export default async function Page({ params }: { params: Promise<{ bookingId: string }> }) {
++  const { bookingId } = await params;
++  return <BookingRecordView key={bookingId} bookingId={bookingId} mode="payment" />;
++}
+--- /dev/null
++++ b/src/app/bookings/[bookingId]/summary/page.tsx
+@@ -0,0 +1,7 @@
++import type { Metadata } from "next";
++import BookingRecordView from "@/components/booking/BookingRecordView";
++export const metadata: Metadata = { title: "Booking summary | Aventix", robots: { index: false, follow: false } };
++export default async function Page({ params }: { params: Promise<{ bookingId: string }> }) {
++  const { bookingId } = await params;
++  return <BookingRecordView key={bookingId} bookingId={bookingId} mode="summary" />;
++}
+--- a/src/app/events/[id]/page.tsx
++++ b/src/app/events/[id]/page.tsx
+@@ -35,7 +35,7 @@
+ 
+   return (
+     <div className="flex min-h-screen flex-col bg-[#0b0c10] font-sans text-white">
+-      <Navbar />
++      <Navbar searchEvents={[event]} />
+       <main id="main-content" className="flex-1">
+         <div className="mx-auto max-w-[1440px] px-4 pt-6 sm:px-6 lg:px-16"><DemoNotice /></div>
+         <EventHero event={event} booking={booking} />
+--- /dev/null
++++ b/src/app/events/[id]/seats/page.tsx
+@@ -0,0 +1,7 @@
++import type { Metadata } from "next";
++import SeatSelection from "@/components/booking/SeatSelection";
++export const metadata: Metadata = { title: "Numbered-seat selection | Aventix", robots: { index: false, follow: false } };
++export default async function Page({ params }: { params: Promise<{ id: string }> }) {
++  const { id } = await params;
++  return <SeatSelection key={id} eventId={id} />;
++}
+--- a/src/app/events/[id]/tickets/page.tsx
++++ b/src/app/events/[id]/tickets/page.tsx
+@@ -1,3 +1,5 @@
++import TicketSelection from "@/components/booking/TicketSelection";
++import type { EventDetails } from "@/types/event";
+ import type { Metadata } from "next";
+ import Link from "next/link";
+ import { notFound } from "next/navigation";
+@@ -16,6 +18,10 @@
+   const { category } = await searchParams;
+   const event = await getEventById(id);
+   if (!event) notFound();
++  return <TicketSelection eventId={event.id} initialCategory={typeof category === "string" ? category : undefined} fallback={<PublicTicketEntry event={event} category={category} />} />;
++}
++
++function PublicTicketEntry({ event, category }: { event: EventDetails; category?: string }) {
+   const selected = typeof category === "string" ? event.categories.find(c => c.id === category) : undefined;
+   const returnTo = bookingHref(event.id, selected?.id);
+   const booking = getBookingState(event);
+--- a/src/app/events/page.tsx
++++ b/src/app/events/page.tsx
+@@ -15,7 +15,7 @@
+   const initialQuery = Array.isArray(q) ? q[0] : q ?? "";
+ 
+   return (
+-    <PageShell>
++    <PageShell searchEvents={events}>
+       <section aria-labelledby="events-title" className="bg-[#0b0c10]">
+         <div className="mx-auto max-w-[1440px] px-4 pb-6 pt-12 sm:px-6 lg:px-16 lg:pt-[44px]">
+           <p className="text-sm font-semibold text-[#66fcf1]">EVENT CALENDAR</p>
+--- a/src/components/Navbar.tsx
++++ b/src/components/Navbar.tsx
+@@ -1,15 +1,21 @@
+ "use client";
+ 
+-import React, { useState, useRef } from "react";
++import { useState, useRef } from "react";
+ import Link from "next/link";
+-import { usePathname, useRouter } from "next/navigation";
++import { usePathname } from "next/navigation";
++import EventSearchField from "./events/EventSearchField";
++import type { EventDetails } from "@/types/event";
++import AccountMenu from "./auth/AccountMenu";
++import { useAccountSession } from "./auth/useAccountSession";
++import { publicAuthClient } from "@/lib/auth/client";
+ import AventixLogo from "./AventixLogo";
+-import { Search, Menu, X } from "lucide-react";
++import { Menu, X } from "lucide-react";
+ 
+ interface NavbarProps {
+   /** Landing page opens its auth modal; other pages fall back to /login and /register. */
+   onOpenAuth?: (mode: "login" | "register") => void;
+   onSearch?: (query: string) => void;
++  searchEvents?: EventDetails[];
+ }
+ 
+ const NAV_LINKS = [
+@@ -22,21 +28,12 @@
+ const pillButton =
+   "inline-flex items-center justify-center rounded-full bg-[#66fcf1] px-5 py-2 text-sm font-semibold text-[#0b0c10] shadow-glow transition hover:bg-[#8afff6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#66fcf1]";
+ 
+-export default function Navbar({ onOpenAuth, onSearch }: NavbarProps) {
+-  const router = useRouter();
++export default function Navbar({ onOpenAuth, onSearch, searchEvents }: NavbarProps) {
++  const { session, clearSession } = useAccountSession();
+   const pathname = usePathname();
+   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`));
+   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+   const menuButton = useRef<HTMLButtonElement>(null);
+-  const [searchVal, setSearchVal] = useState("");
+-
+-  const handleSearchSubmit = (e: React.FormEvent) => {
+-    e.preventDefault();
+-    setMobileMenuOpen(false);
+-    if (onSearch) onSearch(searchVal);
+-    else router.push(searchVal.trim() ? `/events?q=${encodeURIComponent(searchVal.trim())}` : "/events");
+-  };
+-
+   const authControl = (mode: "login" | "register", label: string, className: string, onClick?: () => void) =>
+     onOpenAuth ? (
+       <button
+@@ -78,19 +75,8 @@
+         </nav>
+ 
+         <div className="hidden items-center gap-4 xl:flex">
+-          <form onSubmit={handleSearchSubmit} role="search" className="relative flex h-[38px] w-48 items-center lg:w-56">
+-            <Search aria-hidden className="pointer-events-none absolute left-4 h-3.5 w-3.5 text-[#c5c6c7]" />
+-            <input
+-              type="text"
+-              value={searchVal}
+-              onChange={(e) => setSearchVal(e.target.value)}
+-              placeholder="Search events..."
+-              aria-label="Search events"
+-              className="h-full w-full rounded-full border border-[#2c3644] bg-[#1f2833] pl-10 pr-4 text-sm text-white placeholder:text-[#c5c6c7]/80 focus:border-[#66fcf1] focus:outline-none focus:ring-1 focus:ring-[#66fcf1]"
+-            />
+-          </form>
+-          {authControl("login", "Log in", pillButton)}
+-          {authControl("register", "Register", pillButton)}
++          <EventSearchField events={searchEvents} onSearch={onSearch} onNavigate={() => setMobileMenuOpen(false)} />
++          {session ? <AccountMenu session={session} client={publicAuthClient} onLoggedOut={clearSession} /> : <>{authControl("login", "Log in", pillButton)}{authControl("register", "Register", pillButton)}</>}
+         </div>
+ 
+         <div className="flex items-center xl:hidden">
+@@ -110,17 +96,7 @@
+ 
+       {mobileMenuOpen && (
+         <nav id="mobile-navigation" aria-label="Mobile navigation" className="space-y-4 border-t border-[#1f2833] bg-[#0b0c10] px-4 pb-6 pt-4 xl:hidden">
+-          <form onSubmit={handleSearchSubmit} role="search" className="relative">
+-            <Search aria-hidden className="pointer-events-none absolute left-4 top-3 h-4 w-4 text-[#c5c6c7]" />
+-            <input
+-              type="text"
+-              value={searchVal}
+-              onChange={(e) => setSearchVal(e.target.value)}
+-              placeholder="Search events..."
+-              aria-label="Search events"
+-              className="w-full rounded-full border border-[#2c3644] bg-[#1f2833] py-2.5 pl-10 pr-4 text-sm text-white placeholder:text-[#c5c6c7]/80"
+-            />
+-          </form>
++          <EventSearchField events={searchEvents} onSearch={onSearch} onNavigate={() => setMobileMenuOpen(false)} compact />
+           <div className="flex flex-col text-sm font-medium">
+             {NAV_LINKS.map((l) => (
+               <Link
+@@ -135,8 +111,7 @@
+             ))}
+           </div>
+           <div className="flex gap-2 pt-2">
+-            {authControl("login", "Log in", `${pillButton} flex-1`, () => setMobileMenuOpen(false))}
+-            {authControl("register", "Register", `${pillButton} flex-1`, () => setMobileMenuOpen(false))}
++            {session ? <AccountMenu session={session} client={publicAuthClient} onLoggedOut={clearSession} /> : <>{authControl("login", "Log in", `${pillButton} flex-1`, () => setMobileMenuOpen(false))}{authControl("register", "Register", `${pillButton} flex-1`, () => setMobileMenuOpen(false))}</>}
+           </div>
+         </nav>
+       )}
+--- /dev/null
++++ b/src/components/auth/AccountMenu.tsx
+@@ -0,0 +1,91 @@
++"use client";
++import { useRef, useState } from "react";
++import Link from "next/link";
++import { useRouter } from "next/navigation";
++import { ChevronDown, UserRound } from "lucide-react";
++import {
++  authErrorMessage,
++  type AccountSession,
++  type PublicAuthClient,
++} from "@/lib/auth/client";
++import { safeLocalHref } from "@/lib/booking/rules";
++
++export default function AccountMenu({
++  session,
++  client,
++  onLoggedOut,
++}: {
++  session: AccountSession;
++  client: PublicAuthClient;
++  onLoggedOut: () => void;
++}) {
++  const [error, setError] = useState("");
++  const [pending, setPending] = useState(false);
++  const busy = useRef(false);
++  const router = useRouter();
++  async function logout() {
++    if (busy.current || !client.logout) return;
++    busy.current = true;
++    setPending(true);
++    setError("");
++    try {
++      await client.logout();
++      onLoggedOut();
++      router.replace("/");
++      router.refresh();
++    } catch (error) {
++      setError(authErrorMessage(error));
++    } finally {
++      busy.current = false;
++      setPending(false);
++    }
++  }
++  return (
++    <details
++      className="relative min-w-0 rounded-xl border border-[#45a29e] bg-[#1f2833] text-sm text-[#66fcf1]"
++      onKeyDown={(e) => {
++        if (e.key === "Escape") {
++          e.currentTarget.open = false;
++          e.currentTarget.querySelector("summary")?.focus();
++        }
++      }}
++    >
++      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4">
++        <UserRound aria-hidden size={17} />
++        <span className="max-w-36 truncate">Hi, {session.displayName}</span>
++        <ChevronDown aria-hidden className="ml-auto" size={16} />
++      </summary>
++      <div className="absolute left-0 z-[60] xl:left-auto xl:right-0 mt-2 w-64 rounded-xl border border-[#2c3644] bg-[#151b23] p-3 shadow-2xl">
++        {session.navigation
++          ?.filter((item) => safeLocalHref(item.href))
++          .map((item) => (
++            <Link
++              key={item.href}
++              href={safeLocalHref(item.href)!}
++              className="block rounded-lg px-3 py-3 text-[#c5c6c7] hover:bg-[#1f2833]"
++            >
++              {item.label}
++            </Link>
++          ))}
++        <button
++          type="button"
++          onClick={logout}
++          disabled={pending || !client.logout}
++          className="w-full rounded-lg px-3 py-3 text-left text-red-300 hover:bg-red-400/10 disabled:opacity-50"
++        >
++          {pending ? "Signing out…" : "Log out"}
++        </button>
++        {!client.logout && (
++          <p className="px-3 text-xs leading-5 text-[#9fa3a8]">
++            Logout is unavailable until the session service is connected.
++          </p>
++        )}
++        {error && (
++          <p role="alert" className="p-3 text-xs text-red-200">
++            {error}
++          </p>
++        )}
++      </div>
++    </details>
++  );
++}
+--- /dev/null
++++ b/src/components/auth/useAccountSession.ts
+@@ -0,0 +1,61 @@
++"use client";
++import { useEffect, useState } from "react";
++import {
++  publicAuthClient,
++  type AccountSession,
++  type PublicAuthClient,
++} from "@/lib/auth/client";
++
++export function useAccountSession(client: PublicAuthClient = publicAuthClient) {
++  const [state, setState] = useState<{
++    loading: boolean;
++    session: AccountSession | null;
++    unavailable: boolean;
++  }>({
++    loading: Boolean(client.getSession),
++    session: null,
++    unavailable: false,
++  });
++  useEffect(() => {
++    let active = true;
++    async function load() {
++      try {
++        const session = client.getSession ? await client.getSession() : null;
++        if (
++          session &&
++          (typeof session.userId !== "string" ||
++            typeof session.displayName !== "string" ||
++            typeof session.canBook !== "boolean")
++        )
++          throw new Error("Unsupported session format");
++        if (
++          session?.navigation &&
++          (!Array.isArray(session.navigation) ||
++            !session.navigation.every(
++              (item) =>
++                typeof item.label === "string" && typeof item.href === "string",
++            ))
++        )
++          throw new Error("Unsupported account navigation");
++        if (active)
++          setState({
++            loading: false,
++            session,
++            unavailable: !client.getSession,
++          });
++      } catch {
++        if (active)
++          setState({ loading: false, session: null, unavailable: true });
++      }
++    }
++    void load();
++    return () => {
++      active = false;
++    };
++  }, [client]);
++  return {
++    ...state,
++    clearSession: () =>
++      setState({ loading: false, session: null, unavailable: false }),
++  };
++}
+--- /dev/null
++++ b/src/components/booking/BookingPrimitives.tsx
+@@ -0,0 +1,132 @@
++import Link from "next/link";
++import Image from "next/image";
++import { formatDateTime } from "@/lib/format";
++import { formatBookingAmount as formatPrice } from "@/lib/booking/format";
++import type { BookingRecord } from "@/lib/booking/types";
++
++export const primary =
++  "inline-flex min-h-11 items-center justify-center rounded-lg bg-[#66fcf1] px-6 py-3 text-sm font-bold text-[#0b0c10] transition hover:bg-[#8afff6] disabled:cursor-not-allowed disabled:opacity-40";
++export const secondary =
++  "inline-flex min-h-11 items-center justify-center rounded-lg border border-[#2c3644] bg-[#151b23] px-5 py-3 text-sm font-semibold text-[#c5c6c7] hover:border-[#66fcf1] disabled:opacity-40";
++export const panel =
++  "rounded-xl border border-[#242c36] bg-[#151b23] p-5 sm:p-7";
++
++export function BookingHeading({
++  name,
++  date,
++  venue,
++  backHref,
++  backLabel = "Back to Event",
++}: {
++  name: string;
++  date: string;
++  venue: string;
++  backHref: string;
++  backLabel?: string;
++}) {
++  return (
++    <div className="mb-10">
++      <Link
++        href={backHref}
++        className="inline-block rounded-full bg-[#1f2833] px-5 py-2 text-xs text-[#66fcf1]"
++      >
++        ← {backLabel}
++      </Link>
++      <h1 className="mt-5 font-display text-2xl font-bold uppercase sm:text-3xl">
++        {name}
++      </h1>
++      <p className="mt-2 text-sm text-[#9aa4ae]">
++        {formatDateTime(date)} · {venue}
++      </p>
++    </div>
++  );
++}
++export function SeatPlan({ src }: { src?: string }) {
++  const valid = src && (/^\/(?!\/)/.test(src) || /^https:\/\//.test(src));
++  return (
++    <aside className="min-w-0">
++      <h2 className="mb-5 text-lg font-bold">SEAT PLAN</h2>
++      {valid ? (
++        <div className="relative aspect-[408/390] overflow-hidden rounded-2xl bg-[#151b23]">
++          <Image
++            src={src}
++            alt="Event seat plan supplied by the event service"
++            fill
++            sizes="(max-width:1024px) 100vw, 408px"
++            unoptimized={src.startsWith("http")}
++            className="object-contain"
++          />
++        </div>
++      ) : (
++        <div className="flex min-h-60 items-center justify-center rounded-2xl border border-[#2c3644] bg-[#151b23] p-8 text-center text-sm leading-6 text-[#9aa4ae]">
++          The event service has not supplied a seat-plan image. Only the
++          numbered seats returned by the service can be selected.
++        </div>
++      )}
++      <h3 className="mt-7 text-sm font-semibold text-[#66fcf1]">
++        BOOKING REMINDERS
++      </h3>
++      <ol className="mt-4 list-inside list-decimal space-y-3 text-sm leading-6 text-[#9aa4ae]">
++        <li>Choose categories and quantities.</li>
++        <li>Select the required numbered seats.</li>
++        <li>Review the server-created booking before payment.</li>
++      </ol>
++      <p className="mt-5 text-xs leading-5 text-[#9aa4ae]">
++        A browser selection is not a reservation. The service must successfully
++        hold every requested seat together.
++      </p>
++    </aside>
++  );
++}
++export function ErrorNotice({ message }: { message: string }) {
++  return (
++    <p
++      role="alert"
++      className="my-5 rounded-lg border border-red-400/30 bg-red-400/5 p-4 text-sm leading-6 text-red-200"
++    >
++      {message}
++    </p>
++  );
++}
++export function Totals({ booking }: { booking: BookingRecord }) {
++  return (
++    <dl className="space-y-3 text-sm">
++      <div className="flex justify-between gap-4">
++        <dt>Subtotal</dt>
++        <dd>{formatPrice(booking.subtotal)}</dd>
++      </div>
++      {booking.fees.map((f, i) => (
++        <div
++          key={`${f.name}-${i}`}
++          className="flex justify-between gap-4 text-[#c5c6c7]"
++        >
++          <dt>{f.name}</dt>
++          <dd>{formatPrice(f.amount)}</dd>
++        </div>
++      ))}
++      <div className="flex justify-between gap-4 border-t border-[#2c3644] pt-4 text-lg font-bold">
++        <dt>Total</dt>
++        <dd className="text-[#66fcf1]">{formatPrice(booking.total)}</dd>
++      </div>
++    </dl>
++  );
++}
++export function ItemList({ booking }: { booking: BookingRecord }) {
++  return (
++    <ul className="space-y-3">
++      {booking.items.map((item) => (
++        <li key={item.ticketCategoryId} className={panel}>
++          <div className="flex flex-wrap justify-between gap-3">
++            <h3 className="font-semibold">{item.name}</h3>
++            <span className="text-sm text-[#c5c6c7]">
++              {item.quantity} × {formatPrice(item.unitPrice)}
++            </span>
++          </div>
++          <p className="mt-3 text-sm text-[#66fcf1]">
++            Seats: {item.seats.map((s) => s.displayLabel).join(", ")}
++          </p>
++        </li>
++      ))}
++    </ul>
++  );
++}
+--- /dev/null
++++ b/src/components/booking/BookingRecordView.tsx
+@@ -0,0 +1,801 @@
++"use client";
++import { useCallback, useEffect, useRef, useState } from "react";
++import Link from "next/link";
++import Image from "next/image";
++import { useRouter } from "next/navigation";
++import PageShell from "@/components/layout/PageShell";
++import Dialog from "@/components/auth/Dialog";
++import { useAccountSession } from "@/components/auth/useAccountSession";
++import { publicAuthClient, type PublicAuthClient } from "@/lib/auth/client";
++import { authHref } from "@/lib/auth/destination";
++import {
++  publicBookingClient,
++  BookingClientError,
++  bookingErrorMessage,
++  type PublicBookingClient,
++} from "@/lib/booking/client";
++import {
++  canCancel,
++  canPay,
++  isConfirmed,
++  reconcileBooking,
++  safeLocalHref,
++  secondsRemaining,
++  trustedPaymentUrl,
++} from "@/lib/booking/rules";
++import { requireBooking } from "@/lib/booking/validate";
++import { formatBookingAmount as formatPrice } from "@/lib/booking/format";
++import type {
++  BookingRecord,
++  PaymentInstructions,
++  PaymentMethod,
++} from "@/lib/booking/types";
++import {
++  BookingHeading,
++  ErrorNotice,
++  ItemList,
++  panel,
++  primary,
++  secondary,
++  SeatPlan,
++  Totals,
++} from "./BookingPrimitives";
++
++type Mode = "summary" | "payment" | "confirmation";
++
++function useReservationClock(booking?: BookingRecord) {
++  const [clock, setClock] = useState({ stamp: "", elapsed: 0 });
++  const stamp = booking ? `${booking.id}/${booking.serverNow}` : "";
++  useEffect(() => {
++    if (!stamp) return;
++    const receivedAt = performance.now();
++    const timer = window.setInterval(
++      () => setClock({ stamp, elapsed: performance.now() - receivedAt }),
++      500,
++    );
++    return () => window.clearInterval(timer);
++  }, [stamp]);
++  return booking
++    ? secondsRemaining(booking, clock.stamp === stamp ? clock.elapsed : 0)
++    : 0;
++}
++
++export default function BookingRecordView({
++  bookingId,
++  mode,
++  client = publicBookingClient,
++  auth = publicAuthClient,
++}: {
++  bookingId: string;
++  mode: Mode;
++  client?: PublicBookingClient;
++  auth?: PublicAuthClient;
++}) {
++  const access = useAccountSession(auth);
++  const router = useRouter();
++  const [booking, setBooking] = useState<BookingRecord>();
++  const previous = useRef<BookingRecord>(undefined);
++  const [loading, setLoading] = useState(true);
++  const [stale, setStale] = useState(false);
++  const [error, setError] = useState("");
++  const [busy, setBusy] = useState(false);
++  const busyRef = useRef(false);
++  const loadLock = useRef(false);
++  const mounted = useRef(true);
++  const [methods, setMethods] = useState<PaymentMethod[]>([]);
++  const [methodId, setMethodId] = useState("");
++  const [attemptStarted, setAttemptStarted] = useState(false);
++  const [methodsLoading, setMethodsLoading] = useState(true);
++  const [instructions, setInstructions] = useState<PaymentInstructions>();
++  const [cancelIntent, setCancelIntent] = useState<"cancel" | "edit" | null>(
++    null,
++  );
++  const remaining = useReservationClock(booking);
++  const currentStatus = booking?.status;
++  const currentSnapshotTime = booking?.serverNow;
++
++  const refresh = useCallback(async () => {
++    if (loadLock.current) return;
++    loadLock.current = true;
++    try {
++      if (!client.getBooking) throw new BookingClientError("UNAVAILABLE");
++      const next = reconcileBooking(
++        previous.current,
++        requireBooking(await client.getBooking(bookingId), bookingId),
++      );
++      if (mounted.current) {
++        previous.current = next;
++        setBooking(next);
++        setStale(false);
++        setError("");
++      }
++      return next;
++    } catch (e) {
++      if (mounted.current) {
++        setError(bookingErrorMessage(e));
++        setStale(true);
++        if (
++          e instanceof BookingClientError &&
++          ["UNAUTHENTICATED", "FORBIDDEN", "NOT_FOUND"].includes(e.code)
++        ) {
++          previous.current = undefined;
++          setBooking(undefined);
++        }
++      }
++    } finally {
++      loadLock.current = false;
++      if (mounted.current) setLoading(false);
++    }
++  }, [bookingId, client]);
++
++  useEffect(() => {
++    mounted.current = true;
++    return () => {
++      mounted.current = false;
++    };
++  }, []);
++  useEffect(() => {
++    if (access.session) void refresh();
++  }, [access.session, refresh]);
++  useEffect(() => {
++    if (
++      mode !== "payment" ||
++      !access.session ||
++      !booking ||
++      booking.status !== "PENDING_PAYMENT"
++    )
++      return;
++    const timer = window.setInterval(() => {
++      if (!busyRef.current) void refresh();
++    }, 8000);
++    return () => window.clearInterval(timer);
++  }, [mode, access.session, booking, refresh]);
++  useEffect(() => {
++    if (
++      mode !== "payment" ||
++      !client.getPaymentMethods ||
++      !currentSnapshotTime ||
++      currentStatus !== "PENDING_PAYMENT"
++    )
++      return;
++    let active = true;
++    async function load() {
++      try {
++        const result = await client.getPaymentMethods!(bookingId);
++        if (
++          !Array.isArray(result) ||
++          !result.every(
++            (m) =>
++              m &&
++              typeof m.id === "string" &&
++              typeof m.label === "string" &&
++              (m.description === undefined ||
++                typeof m.description === "string"),
++          ) ||
++          new Set(result.map((m) => m.id)).size !== result.length
++        )
++          throw new BookingClientError("CONTRACT_MISMATCH");
++        if (active) {
++          setMethods(result);
++          setMethodsLoading(false);
++        }
++      } catch (e) {
++        if (active) {
++          setMethods([]);
++          setMethodsLoading(false);
++          setError(bookingErrorMessage(e));
++        }
++      }
++    }
++    void load();
++    return () => {
++      active = false;
++    };
++  }, [mode, bookingId, client, currentStatus, currentSnapshotTime]);
++  useEffect(() => {
++    if (mode === "payment" && booking && isConfirmed(booking))
++      router.replace(`/bookings/${encodeURIComponent(bookingId)}/confirmation`);
++  }, [mode, booking, bookingId, router]);
++
++  async function startPayment() {
++    if (
++      busyRef.current ||
++      !booking ||
++      stale ||
++      (attemptStarted && booking.paymentStatus !== "FAILED") ||
++      !canPay(booking, remaining) ||
++      !methods.some((m) => m.id === methodId)
++    )
++      return;
++    busyRef.current = true;
++    setBusy(true);
++    setError("");
++    setInstructions(undefined);
++    try {
++      if (!client.startPayment) throw new BookingClientError("UNAVAILABLE");
++      const result = await client.startPayment(
++        bookingId,
++        methodId,
++        crypto.randomUUID(),
++      );
++      if (
++        !result ||
++        [result.message, result.redirectUrl, result.qrImageUrl].some(
++          (value) => value !== undefined && typeof value !== "string",
++        )
++      )
++        throw new BookingClientError("CONTRACT_MISMATCH");
++      setAttemptStarted(true);
++      // Never trust a provider redirect or browser success query as payment proof.
++      if (
++        result.redirectUrl &&
++        !trustedPaymentUrl(result.redirectUrl, client.trustedPaymentOrigins)
++      )
++        throw new BookingClientError("CONTRACT_MISMATCH");
++      if (
++        result.qrImageUrl &&
++        !trustedPaymentUrl(result.qrImageUrl, client.trustedPaymentOrigins)
++      )
++        throw new BookingClientError("CONTRACT_MISMATCH");
++      setInstructions(result);
++      await refresh();
++    } catch (e) {
++      setError(bookingErrorMessage(e));
++      setStale(true);
++    } finally {
++      busyRef.current = false;
++      setBusy(false);
++    }
++  }
++  async function cancelReservation() {
++    if (busyRef.current || !booking || stale || !canCancel(booking, remaining))
++      return;
++    busyRef.current = true;
++    setBusy(true);
++    setError("");
++    try {
++      if (!client.cancelUnpaidBooking)
++        throw new BookingClientError("UNAVAILABLE");
++      const next = reconcileBooking(
++        booking,
++        requireBooking(
++          await client.cancelUnpaidBooking(bookingId, crypto.randomUUID()),
++          bookingId,
++        ),
++      );
++      previous.current = next;
++      setBooking(next);
++      setCancelIntent(null);
++      if (next.status !== "CANCELLED" && next.status !== "EXPIRED")
++        throw new BookingClientError("BOOKING_NOT_CANCELLABLE");
++      if (cancelIntent === "edit")
++        router.push(`/events/${encodeURIComponent(next.event.id)}/tickets`);
++    } catch (e) {
++      setError(bookingErrorMessage(e));
++      setStale(true);
++      setCancelIntent(null);
++    } finally {
++      busyRef.current = false;
++      setBusy(false);
++    }
++  }
++
++  const returnTo = `/bookings/${encodeURIComponent(bookingId)}/${mode}`;
++  const title =
++    mode === "summary"
++      ? "Booking summary"
++      : mode === "payment"
++        ? "Payment"
++        : "Booking status";
++  if (access.loading)
++    return (
++      <PageShell>
++        <p role="status" className="p-10">
++          Checking your account…
++        </p>
++      </PageShell>
++    );
++  if (!access.session)
++    return (
++      <PageShell>
++        <section className="mx-auto max-w-2xl px-6 py-20">
++          <h1 className="font-display text-3xl font-bold">
++            Log in to view your booking
++          </h1>
++          <p className="mt-5 text-[#c5c6c7]">
++            {access.unavailable
++              ? "The shared account service is not connected. No booking or payment result can be verified."
++              : "Only the authorized booking owner may view these details."}
++          </p>
++          <Link
++            href={authHref("/login", returnTo)}
++            className={`${primary} mt-6`}
++          >
++            Log in
++          </Link>
++        </section>
++      </PageShell>
++    );
++  if (!booking)
++    return (
++      <PageShell>
++        <section className="mx-auto max-w-2xl px-6 py-20">
++          <h1 className="font-display text-3xl font-bold">{title}</h1>
++          {loading ? (
++            <p role="status" className="mt-6">
++              Retrieving your current booking…
++            </p>
++          ) : (
++            <>
++              <ErrorNotice message={error} />
++              <button
++                type="button"
++                onClick={() => void refresh()}
++                className={secondary}
++              >
++                Try again
++              </button>
++            </>
++          )}
++          <Link href="/events" className="ml-4 text-sm text-[#66fcf1]">
++            Back to Events
++          </Link>
++        </section>
++      </PageShell>
++    );
++
++  const confirmed = isConfirmed(booking);
++  const eventHref = `/events/${encodeURIComponent(booking.event.id)}`;
++  const paymentEnabled = !stale && canPay(booking, remaining);
++  const cancellationEnabled = !stale && canCancel(booking, remaining);
++  const ticketsHref = confirmed
++    ? safeLocalHref(booking.myTicketsHref)
++    : undefined;
++  const instructionsActive =
++    !stale &&
++    booking.event.status === "PUBLISHED" &&
++    booking.status === "PENDING_PAYMENT" &&
++    booking.paymentStatus !== "FAILED" &&
++    booking.paymentStatus !== "PAID" &&
++    booking.paymentStatus !== "REFUNDED" &&
++    remaining > 0;
++  const paymentRedirect = instructionsActive
++    ? trustedPaymentUrl(instructions?.redirectUrl, client.trustedPaymentOrigins)
++    : undefined;
++  const paymentQr = instructionsActive
++    ? trustedPaymentUrl(instructions?.qrImageUrl, client.trustedPaymentOrigins)
++    : undefined;
++
++  return (
++    <PageShell>
++      <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-16">
++        <BookingHeading
++          name={
++            mode === "confirmation" && confirmed ? "Booking confirmed" : title
++          }
++          date={booking.event.startsAt}
++          venue={booking.event.venue.name}
++          backHref={eventHref}
++        />
++        <div className="mb-7 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[#2c3644] bg-[#151b23] p-5">
++          <div>
++            <p className="text-sm font-semibold">{booking.reference}</p>
++            <p className="mt-1 text-xs text-[#9aa4ae]">
++              Booking: {booking.status} · Payment: {booking.paymentStatus}
++              {booking.paymentMethod ? ` · ${booking.paymentMethod}` : ""}
++            </p>
++          </div>
++          {booking.status === "PENDING_PAYMENT" && (
++            <p
++              role="timer"
++              aria-live="off"
++              className="text-sm font-semibold text-[#66fcf1]"
++            >
++              {remaining > 0
++                ? `Reservation: ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}`
++                : "Reservation deadline reached — refresh status"}
++            </p>
++          )}
++        </div>
++        {error && <ErrorNotice message={error} />}
++        {stale && (
++          <p role="status" className="mb-5 text-sm text-amber-200">
++            These details could not be refreshed. Booking and payment actions
++            are disabled until a successful refresh.
++          </p>
++        )}
++        <h2 className="mb-7 font-display text-2xl font-bold uppercase">
++          {booking.event.name}
++        </h2>
++
++        {mode === "summary" && (
++          <div className="grid gap-10 lg:grid-cols-[minmax(0,408px)_minmax(0,1fr)]">
++            <SeatPlan src={booking.seatPlanUrl} />
++            <section className="min-w-0">
++              <h3 className="mb-5 border-b border-[#26303b] pb-4 font-bold">
++                SELECTED TICKETS
++              </h3>
++              <ItemList booking={booking} />
++              <h3 className="mb-5 mt-8 border-b border-[#26303b] pb-4 font-bold">
++                ORDER SUMMARY
++              </h3>
++              <div className={panel}>
++                <Totals booking={booking} />
++                <p className="mt-4 text-xs leading-5 text-[#9aa4ae]">
++                  Amounts and configured fees are supplied by the booking
++                  service. Your selected numbered seats are reserved only while
++                  this booking remains valid.
++                </p>
++              </div>
++              <Customer booking={booking} />
++              <div className="mt-7 flex flex-wrap gap-3">
++                {paymentEnabled && (
++                  <Link
++                    href={`/bookings/${encodeURIComponent(bookingId)}/payment`}
++                    className={primary}
++                  >
++                    Proceed to Payment
++                  </Link>
++                )}
++                {cancellationEnabled && (
++                  <button
++                    type="button"
++                    disabled={busy}
++                    onClick={() => setCancelIntent("edit")}
++                    className={secondary}
++                  >
++                    Cancel reservation to edit selection
++                  </button>
++                )}
++                <button
++                  type="button"
++                  disabled={busy}
++                  onClick={() => void refresh()}
++                  className={secondary}
++                >
++                  Refresh booking
++                </button>
++              </div>
++              <p className="mt-4 text-xs leading-5 text-[#9aa4ae]">
++                Back navigation does not cancel a hold. Changing a held
++                selection requires explicit cancellation through the service
++                first.
++              </p>
++            </section>
++          </div>
++        )}
++
++        {mode === "payment" && (
++          <section className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
++            <div className="min-w-0">
++              <div className="rounded-t-xl bg-[#0755c9] p-5 text-center text-xl font-bold">
++                {methods.find((m) => m.id === methodId)?.label ??
++                  "Secure payment"}
++              </div>
++              <div className="rounded-b-xl bg-[#f4f5f8] p-6 text-[#17212b] sm:p-10">
++                <h3 className="text-xl font-semibold">
++                  Complete payment using the supported service
++                </h3>
++                <p className="mt-3 text-sm leading-6">
++                  The amount due is {formatPrice(booking.total)}. Only a
++                  confirmed result from the booking service can complete this
++                  booking.
++                </p>
++                {paymentEnabled && (
++                  <fieldset
++                    disabled={
++                      busy ||
++                      (attemptStarted && booking.paymentStatus !== "FAILED")
++                    }
++                    className="mt-6 space-y-3"
++                  >
++                    <legend className="mb-3 text-sm font-semibold">
++                      Choose payment method
++                    </legend>
++                    {methods.map((method) => (
++                      <label
++                        key={method.id}
++                        className="flex cursor-pointer items-start gap-3 rounded-lg border border-[#c5ccd2] bg-white p-4"
++                      >
++                        <input
++                          type="radio"
++                          name="paymentMethod"
++                          value={method.id}
++                          checked={methodId === method.id}
++                          onChange={() => {
++                            setMethodId(method.id);
++                            setInstructions(undefined);
++                          }}
++                          className="mt-1"
++                        />
++                        <span>
++                          <span className="block font-semibold">
++                            {method.label}
++                          </span>
++                          {method.description && (
++                            <span className="mt-1 block text-xs text-[#536474]">
++                              {method.description}
++                            </span>
++                          )}
++                        </span>
++                      </label>
++                    ))}
++                  </fieldset>
++                )}
++                {methodsLoading &&
++                  client.getPaymentMethods &&
++                  paymentEnabled && (
++                    <p role="status" className="mt-5 text-sm">
++                      Loading supported payment methods…
++                    </p>
++                  )}
++                {!methods.length &&
++                  (!methodsLoading || !client.getPaymentMethods) &&
++                  paymentEnabled && (
++                    <p className="mt-5 rounded bg-amber-100 p-4 text-sm">
++                      No supported payment methods have been returned. Payment
++                      cannot start.
++                    </p>
++                  )}
++                {instructionsActive && instructions?.message && (
++                  <p className="mt-6 text-sm leading-6">
++                    {instructions.message}
++                  </p>
++                )}
++                {paymentQr && (
++                  <div className="relative mx-auto mt-6 aspect-square w-full max-w-72">
++                    <Image
++                      src={paymentQr}
++                      alt="Payment QR supplied by the supported payment service"
++                      fill
++                      unoptimized
++                      className="object-contain"
++                    />
++                  </div>
++                )}
++                {paymentRedirect && (
++                  <a
++                    href={paymentRedirect}
++                    target="_blank"
++                    rel="noopener noreferrer"
++                    className={`${primary} mt-6`}
++                  >
++                    Open secure payment page
++                  </a>
++                )}
++                <div className="mt-7 flex flex-wrap gap-3">
++                  <button
++                    type="button"
++                    disabled={
++                      busy ||
++                      !paymentEnabled ||
++                      !methodId ||
++                      !client.startPayment ||
++                      (attemptStarted && booking.paymentStatus !== "FAILED")
++                    }
++                    onClick={startPayment}
++                    className={primary}
++                  >
++                    {busy
++                      ? "Contacting payment service…"
++                      : attemptStarted && booking.paymentStatus !== "FAILED"
++                        ? "Payment started"
++                        : "Start payment"}
++                  </button>
++                  <button
++                    type="button"
++                    disabled={busy}
++                    onClick={() => void refresh()}
++                    className="min-h-11 rounded-lg border border-[#6c7883] px-5 text-sm font-semibold"
++                  >
++                    Refresh payment status
++                  </button>
++                </div>
++              </div>
++              <p className="mt-4 text-xs leading-5 text-[#9aa4ae]">
++                Opening, closing, or returning from the payment service does not
++                prove payment. Retry does not renew the original reservation
++                deadline.
++              </p>
++            </div>
++            <aside className="space-y-6">
++              <div className={panel}>
++                <Totals booking={booking} />
++              </div>
++              <ItemList booking={booking} />
++              <Link
++                href={`/bookings/${encodeURIComponent(bookingId)}/summary`}
++                className={`${secondary} w-full`}
++              >
++                Back to Summary
++              </Link>
++              {cancellationEnabled && (
++                <button
++                  type="button"
++                  disabled={busy}
++                  onClick={() => setCancelIntent("cancel")}
++                  className="min-h-11 w-full rounded-lg border border-red-400/40 px-5 py-3 text-sm font-semibold text-red-300"
++                >
++                  Cancel Payment & release reservation
++                </button>
++              )}
++            </aside>
++          </section>
++        )}
++
++        {mode === "confirmation" && (
++          <section>
++            <p
++              role="status"
++              className={`${panel} mb-8 ${confirmed ? "text-[#66fcf1]" : "text-[#c5c6c7]"}`}
++            >
++              {booking.event.status === "CANCELLED"
++                ? "This event has been cancelled. Its tickets cannot grant admission; check the refund status below."
++                : confirmed
++                  ? "The booking service has confirmed your payment and booking."
++                  : booking.status === "CANCELLED"
++                    ? "This booking has been cancelled. It cannot grant admission."
++                    : booking.status === "EXPIRED"
++                      ? "This booking has expired. No active reservation is implied."
++                      : booking.status === "REFUNDED" &&
++                          booking.paymentStatus === "REFUNDED"
++                        ? "The service reports that this booking has been refunded."
++                        : "Your booking is not confirmed. Check the current status before taking further action."}
++            </p>
++            <div className="grid gap-8 lg:grid-cols-2">
++              <div>
++                <Customer booking={booking} />
++                <h3 className="mb-5 mt-8 text-lg font-bold">TICKET SUMMARY</h3>
++                <ItemList booking={booking} />
++                <div className={`${panel} mt-5`}>
++                  <Totals booking={booking} />
++                </div>
++              </div>
++              <SeatPlan src={booking.seatPlanUrl} />
++            </div>
++            {booking.refundStatus &&
++              booking.refundStatus !== "NOT_APPLICABLE" && (
++                <p className={`${panel} mt-8`}>
++                  Refund status: {booking.refundStatus}.{" "}
++                  {booking.refundStatus === "REFUNDED" &&
++                  booking.paymentStatus === "REFUNDED"
++                    ? "Refund completion was reported by the service."
++                    : "This does not mean a refund has completed."}
++                </p>
++              )}
++            <div className={`${panel} mt-8`}>
++              <h3 className="text-xl font-bold">IMPORTANT INFORMATION</h3>
++              <p className="mt-3 text-sm leading-6 text-[#c5c6c7]">
++                Keep your booking reference. Admission requires valid issued
++                tickets for the displayed event and assigned seats. A browser
++                confirmation screen is not itself a ticket.
++              </p>
++              {confirmed && (
++                <ul className="mt-5 space-y-3">
++                  {booking.issuedTickets?.map((ticket) =>
++                    safeLocalHref(ticket.href) ? (
++                      <li key={ticket.id}>
++                        <Link
++                          href={safeLocalHref(ticket.href)!}
++                          className="text-sm text-[#66fcf1] underline"
++                        >
++                          View ticket for seat {ticket.seatLabel}
++                        </Link>
++                      </li>
++                    ) : null,
++                  )}
++                </ul>
++              )}
++              {confirmed && !ticketsHref && !booking.issuedTickets?.length && (
++                <p className="mt-4 text-sm text-[#9aa4ae]">
++                  Ticket destinations have not yet been supplied by the attendee
++                  integration.
++                </p>
++              )}
++            </div>
++            <div className="mt-7 flex flex-wrap gap-3">
++              {ticketsHref && (
++                <Link href={ticketsHref} className={primary}>
++                  View My Tickets
++                </Link>
++              )}
++              {paymentEnabled && (
++                <Link
++                  href={`/bookings/${encodeURIComponent(bookingId)}/payment`}
++                  className={primary}
++                >
++                  Continue to Payment
++                </Link>
++              )}
++              <button
++                type="button"
++                disabled={busy}
++                onClick={() => void refresh()}
++                className={secondary}
++              >
++                Refresh result
++              </button>
++              <Link href="/events" className={secondary}>
++                Back to Events
++              </Link>
++            </div>
++          </section>
++        )}
++
++        {mode !== "confirmation" && !paymentEnabled && (
++          <p
++            role="status"
++            className="mt-8 rounded-lg border border-amber-400/30 bg-amber-400/5 p-5 text-sm leading-6 text-amber-200"
++          >
++            {confirmed
++              ? "This booking is already confirmed. Do not pay again."
++              : "Payment is not currently available for this booking. Refresh its current state or return to the event."}{" "}
++            <Link
++              href={`/bookings/${encodeURIComponent(bookingId)}/confirmation`}
++              className="underline"
++            >
++              View booking result
++            </Link>
++          </p>
++        )}
++        <Dialog
++          open={cancelIntent !== null}
++          onClose={() => {
++            if (!busy) setCancelIntent(null);
++          }}
++          title={
++            cancelIntent === "edit"
++              ? "Cancel this reservation to edit?"
++              : "Cancel this unpaid reservation?"
++          }
++        >
++          <p className="my-6 text-sm leading-6 text-[#c5c6c7]">
++            This explicitly requests cancellation of the eligible unpaid booking
++            and release of its numbered seats. Availability is not guaranteed if
++            you select again.
++          </p>
++          <button
++            type="button"
++            disabled={busy || !cancellationEnabled}
++            onClick={cancelReservation}
++            className="min-h-11 w-full rounded-lg bg-red-500 px-5 py-3 text-sm font-bold text-white disabled:opacity-40"
++          >
++            {busy ? "Requesting cancellation…" : "Cancel reservation"}
++          </button>
++          <button
++            type="button"
++            disabled={busy}
++            onClick={() => setCancelIntent(null)}
++            className={`${secondary} mt-3 w-full`}
++          >
++            Keep reservation
++          </button>
++        </Dialog>
++      </div>
++    </PageShell>
++  );
++}
++
++function Customer({ booking }: { booking: BookingRecord }) {
++  return (
++    <section className={`${panel} mt-6`}>
++      <h3 className="mb-4 font-bold">CUSTOMER INFORMATION</h3>
++      <dl className="space-y-3 text-sm">
++        <div className="grid gap-1 sm:grid-cols-[90px_1fr]">
++          <dt className="text-[#9aa4ae]">Name</dt>
++          <dd>{booking.attendee.name}</dd>
++        </div>
++        <div className="grid gap-1 sm:grid-cols-[90px_1fr]">
++          <dt className="text-[#9aa4ae]">Email</dt>
++          <dd className="break-all">{booking.attendee.email}</dd>
++        </div>
++        {booking.attendee.phoneNumber && (
++          <div className="grid gap-1 sm:grid-cols-[90px_1fr]">
++            <dt className="text-[#9aa4ae]">Contact</dt>
++            <dd>{booking.attendee.phoneNumber}</dd>
++          </div>
++        )}
++      </dl>
++    </section>
++  );
++}
+--- /dev/null
++++ b/src/components/booking/SeatSelection.tsx
+@@ -0,0 +1,399 @@
++"use client";
++import { useEffect, useRef, useState } from "react";
++import Link from "next/link";
++import { useRouter } from "next/navigation";
++import PageShell from "@/components/layout/PageShell";
++import { useAccountSession } from "@/components/auth/useAccountSession";
++import { publicAuthClient, type PublicAuthClient } from "@/lib/auth/client";
++import { authHref } from "@/lib/auth/destination";
++import {
++  publicBookingClient,
++  BookingClientError,
++  bookingErrorMessage,
++  type PublicBookingClient,
++} from "@/lib/booking/client";
++import { readDraft, saveDraft, clearDraft } from "@/lib/booking/draft";
++import {
++  assertMatchesDraft,
++  draftEstimate,
++  refreshDraft,
++  toggleSeat,
++  validateDraft,
++} from "@/lib/booking/rules";
++import {
++  requireBooking,
++  requireOptions,
++  requireSeats,
++} from "@/lib/booking/validate";
++import { formatBookingAmount as formatPrice } from "@/lib/booking/format";
++import type {
++  BookingDraft,
++  EventSeat,
++  TicketOptions,
++} from "@/lib/booking/types";
++import {
++  BookingHeading,
++  ErrorNotice,
++  primary,
++  secondary,
++  panel,
++} from "./BookingPrimitives";
++
++export default function SeatSelection({
++  eventId,
++  client = publicBookingClient,
++  auth = publicAuthClient,
++}: {
++  eventId: string;
++  client?: PublicBookingClient;
++  auth?: PublicAuthClient;
++}) {
++  const access = useAccountSession(auth);
++  const router = useRouter();
++  const [options, setOptions] = useState<TicketOptions>();
++  const [seats, setSeats] = useState<EventSeat[]>([]);
++  const [draft, setDraft] = useState<BookingDraft>({
++    version: 1,
++    eventId,
++    items: [],
++  });
++  const [categoryId, setCategoryId] = useState("");
++  const [error, setError] = useState("");
++  const [loading, setLoading] = useState(true);
++  const [busy, setBusy] = useState(false);
++  const [uncertain, setUncertain] = useState(false);
++  const busyRef = useRef(false);
++  const [reload, setReload] = useState(0);
++  useEffect(() => {
++    if (!access.session?.canBook) return;
++    let active = true;
++    async function load() {
++      try {
++        if (!client.getTicketOptions || !client.getSeats)
++          throw new BookingClientError("UNAVAILABLE");
++        const next = requireOptions(
++          await client.getTicketOptions(eventId),
++          eventId,
++        );
++        const layout = requireSeats(await client.getSeats(eventId), next);
++        const saved = readDraft(eventId);
++        const refreshed = refreshDraft(saved, layout);
++        // Keep an operation identity after an uncertain request; never auto-retry it.
++        refreshed.operationKey = saved.operationKey;
++        if (active) {
++          setOptions(next);
++          setSeats(layout);
++          setDraft(refreshed);
++          setCategoryId(refreshed.items[0]?.ticketCategoryId ?? "");
++          setUncertain(!!saved.operationKey);
++          saveDraft(refreshed);
++        }
++      } catch (e) {
++        if (active) {
++          setOptions(undefined);
++          setError(bookingErrorMessage(e));
++        }
++      } finally {
++        if (active) setLoading(false);
++      }
++    }
++    void load();
++    return () => {
++      active = false;
++    };
++  }, [eventId, client, access.session, reload]);
++
++  async function reserve() {
++    if (busyRef.current || uncertain || !options) return;
++    const problems = validateDraft(draft, options, seats);
++    if (problems.length) {
++      setError(problems.join(" "));
++      return;
++    }
++    busyRef.current = true;
++    setBusy(true);
++    setError("");
++    let attempted = false;
++    try {
++      if (!client.createBooking) throw new BookingClientError("UNAVAILABLE");
++      const operationKey = draft.operationKey ?? crypto.randomUUID();
++      const request = { ...draft, operationKey };
++      if (!saveDraft(request)) throw new Error("Selection cannot be saved");
++      attempted = true;
++      const booking = requireBooking(
++        await client.createBooking(request, operationKey),
++      );
++      assertMatchesDraft(booking, request);
++      clearDraft(eventId);
++      router.push(`/bookings/${encodeURIComponent(booking.id)}/summary`);
++    } catch (e) {
++      setError(bookingErrorMessage(e));
++      const knownAtomicRejection =
++        e instanceof BookingClientError &&
++        [
++          "SEAT_UNAVAILABLE",
++          "SEAT_SELECTION_INVALID",
++          "PURCHASE_LIMIT_EXCEEDED",
++          "BOOKING_EVENT_MISMATCH",
++          "INVENTORY_CHANGED",
++          "UNAUTHENTICATED",
++          "FORBIDDEN",
++        ].includes(e.code);
++      if (attempted && !knownAtomicRejection) setUncertain(true);
++      if (knownAtomicRejection) {
++        const next = { ...draft, operationKey: undefined };
++        saveDraft(next);
++        setDraft(next);
++        if (
++          [
++            "SEAT_UNAVAILABLE",
++            "INVENTORY_CHANGED",
++            "PURCHASE_LIMIT_EXCEEDED",
++          ].includes(e.code)
++        ) {
++          setLoading(true);
++          setReload((n) => n + 1);
++        }
++      }
++    } finally {
++      busyRef.current = false;
++      setBusy(false);
++    }
++  }
++  function choose(seat: EventSeat) {
++    if (busy || uncertain) return;
++    const next = toggleSeat(draft, seat);
++    setDraft(next);
++    setError("");
++    if (!saveDraft(next))
++      setError(
++        "Your browser could not save the selected seats. No reservation has been created.",
++      );
++  }
++
++  const ticketHref = `/events/${encodeURIComponent(eventId)}/tickets`;
++  if (access.loading)
++    return (
++      <PageShell>
++        <p role="status" className="p-10">
++          Checking your account…
++        </p>
++      </PageShell>
++    );
++  if (!access.session)
++    return (
++      <PageShell>
++        <div className="mx-auto max-w-2xl px-6 py-20">
++          <h1 className="font-display text-3xl font-bold">
++            Log in to select numbered seats
++          </h1>
++          <p className="mt-5 text-[#c5c6c7]">
++            {access.unavailable
++              ? "The shared account service is not connected. No reservation can be created."
++              : "Your account must be verified before selecting seats."}
++          </p>
++          <Link
++            href={authHref("/login", ticketHref)}
++            className={`${primary} mt-6`}
++          >
++            Log in
++          </Link>
++        </div>
++      </PageShell>
++    );
++  if (!access.session.canBook)
++    return (
++      <PageShell>
++        <div className="p-10">
++          <h1 className="text-3xl font-bold">
++            Seat selection is unavailable for this account
++          </h1>
++          <Link href={ticketHref} className={`${secondary} mt-6`}>
++            Back to tickets
++          </Link>
++        </div>
++      </PageShell>
++    );
++  if (!options)
++    return (
++      <PageShell>
++        <div className="mx-auto max-w-3xl px-6 py-20">
++          <h1 className="text-3xl font-bold">Select your seat plan</h1>
++          {loading ? (
++            <p role="status" className="mt-5">
++              Loading numbered-seat availability…
++            </p>
++          ) : (
++            <ErrorNotice message={error} />
++          )}
++          <Link href={ticketHref} className={`${secondary} mt-6`}>
++            Back to tickets
++          </Link>
++        </div>
++      </PageShell>
++    );
++
++  const categorySeats = seats.filter((s) => s.ticketCategoryId === categoryId);
++  const groups = new Map<string, EventSeat[]>();
++  for (const seat of categorySeats) {
++    const key = [seat.section, seat.row].filter(Boolean).join(" · ") || "Seats";
++    groups.set(key, [...(groups.get(key) ?? []), seat]);
++  }
++  const selected = draft.items.flatMap((i) => i.seatIds);
++  const required = draft.items.reduce((n, i) => n + i.quantity, 0);
++  return (
++    <PageShell>
++      <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-16">
++        <BookingHeading
++          name="Select your seat plan"
++          date={options.event.startsAt}
++          venue={options.event.venue.name}
++          backHref={ticketHref}
++          backLabel="Back to tickets"
++        />
++        <p className="mb-6 text-sm text-[#c5c6c7]">
++          {options.event.name}. Seats shown are current service data; selecting
++          them does not hold them.
++        </p>
++        {uncertain && (
++          <ErrorNotice message="A booking request may already exist for this selection. Creating another is blocked. Check your booking history with the team’s attendee page or contact support before starting over." />
++        )}
++        {error && <ErrorNotice message={error} />}
++        {!draft.items.length ? (
++          <div className={panel}>
++            <p>Choose ticket categories and quantities first.</p>
++            <Link href={ticketHref} className={`${primary} mt-5`}>
++              Choose tickets
++            </Link>
++          </div>
++        ) : (
++          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
++            <section className="min-w-0">
++              <label
++                htmlFor="seat-category"
++                className="mb-3 block text-sm font-semibold"
++              >
++                Ticket category
++              </label>
++              <select
++                id="seat-category"
++                value={categoryId}
++                disabled={busy || uncertain}
++                onChange={(e) => setCategoryId(e.target.value)}
++                className="mb-8 min-h-12 w-full rounded-lg border border-[#2c3644] bg-[#1f2833] px-4"
++              >
++                {draft.items.map((i) => (
++                  <option key={i.ticketCategoryId} value={i.ticketCategoryId}>
++                    {
++                      options.event.categories.find(
++                        (c) => c.id === i.ticketCategoryId,
++                      )?.name
++                    }{" "}
++                    — choose {i.quantity} seats
++                  </option>
++                ))}
++              </select>
++              <h2 className="mb-10 border-y border-[#2c3644] py-6 text-center font-display text-4xl font-bold">
++                STAGE
++              </h2>
++              {!categorySeats.length && (
++                <p className={panel}>
++                  No numbered-seat layout is available for this category. This
++                  step cannot be skipped.
++                </p>
++              )}
++              <div className="space-y-6">
++                {Array.from(groups).map(([label, rowSeats]) => (
++                  <section key={label} aria-label={label}>
++                    <h3 className="mb-3 text-xs font-semibold text-[#9aa4ae]">
++                      {label}
++                    </h3>
++                    <div className="flex flex-wrap gap-3">
++                      {rowSeats.map((seat) => {
++                        const chosen = selected.includes(seat.id);
++                        return (
++                          <button
++                            key={seat.id}
++                            type="button"
++                            disabled={
++                              seat.status !== "AVAILABLE" || busy || uncertain
++                            }
++                            aria-label={`${seat.displayLabel}, ${chosen ? "selected" : seat.status.toLowerCase()}`}
++                            aria-pressed={chosen}
++                            title={`${seat.displayLabel} · ${seat.status}`}
++                            onClick={() => choose(seat)}
++                            className={`min-h-11 min-w-11 rounded-sm border px-2 text-xs font-semibold ${chosen ? "border-[#66fcf1] bg-[#66fcf1] text-[#0b0c10]" : seat.status === "AVAILABLE" ? "border-[#66fcf1] bg-white text-[#0b0c10] hover:bg-[#b9fff9]" : "cursor-not-allowed border-[#666] bg-[#a6a6a6] text-[#343434]"}`}
++                          >
++                            {seat.seatNumber}
++                          </button>
++                        );
++                      })}
++                    </div>
++                  </section>
++                ))}
++              </div>
++            </section>
++            <aside className="space-y-6 border-[#26303b] lg:border-l lg:pl-7">
++              <h2 className="font-display text-xl font-bold">Seat selection</h2>
++              <ul className="space-y-4 text-sm">
++                <li className="flex items-center gap-3">
++                  <span className="h-6 w-6 bg-[#a6a6a6]" />
++                  Unavailable / held / sold
++                </li>
++                <li className="flex items-center gap-3">
++                  <span className="h-6 w-6 bg-[#66fcf1]" />
++                  Selected in browser
++                </li>
++                <li className="flex items-center gap-3">
++                  <span className="h-6 w-6 border border-[#66fcf1] bg-white" />
++                  Available
++                </li>
++              </ul>
++              <p role="status" className="text-sm text-[#c5c6c7]">
++                Selected {selected.length} of {required} required numbered
++                seats.
++              </p>
++              <ul className="space-y-2 text-sm text-[#66fcf1]">
++                {selected.map((id) => (
++                  <li key={id}>
++                    {seats.find((s) => s.id === id)?.displayLabel}
++                  </li>
++                ))}
++              </ul>
++              <p className="text-xs text-[#9aa4ae]">Estimated subtotal</p>
++              <p className="text-2xl font-bold">
++                {formatPrice(draftEstimate(draft, options))}
++              </p>
++              <button
++                type="button"
++                disabled={
++                  busy || uncertain || !required || selected.length !== required
++                }
++                onClick={reserve}
++                className={`${primary} w-full`}
++              >
++                {busy ? "Requesting reservation…" : "Confirm seats & review"}
++              </button>
++              <button
++                type="button"
++                disabled={busy}
++                onClick={() => {
++                  setLoading(true);
++                  setReload((n) => n + 1);
++                }}
++                className={`${secondary} w-full`}
++              >
++                Refresh seat availability
++              </button>
++              <p className="text-xs leading-5 text-[#9aa4ae]">
++                The server may reject a concurrent seat claim or
++                cumulative-limit change. All requested seats must succeed
++                together.
++              </p>
++            </aside>
++          </div>
++        )}
++      </div>
++    </PageShell>
++  );
++}
+--- /dev/null
++++ b/src/components/booking/TicketSelection.tsx
+@@ -0,0 +1,319 @@
++"use client";
++import { useEffect, useState } from "react";
++import { useRouter } from "next/navigation";
++import Link from "next/link";
++import PageShell from "@/components/layout/PageShell";
++import { useAccountSession } from "@/components/auth/useAccountSession";
++import { publicAuthClient, type PublicAuthClient } from "@/lib/auth/client";
++import {
++  publicBookingClient,
++  bookingErrorMessage,
++  BookingClientError,
++  type PublicBookingClient,
++} from "@/lib/booking/client";
++import { readDraft, saveDraft } from "@/lib/booking/draft";
++import {
++  draftEstimate,
++  remainingAllowance,
++  setQuantity,
++  validateDraft,
++} from "@/lib/booking/rules";
++import { requireOptions } from "@/lib/booking/validate";
++import { categoryStateLabel, isCategoryBookable } from "@/lib/event-booking";
++import { formatBookingAmount as formatPrice } from "@/lib/booking/format";
++import type { BookingDraft, TicketOptions } from "@/lib/booking/types";
++import {
++  BookingHeading,
++  ErrorNotice,
++  panel,
++  primary,
++  secondary,
++  SeatPlan,
++} from "./BookingPrimitives";
++
++export default function TicketSelection({
++  eventId,
++  initialCategory,
++  fallback,
++  client = publicBookingClient,
++  auth = publicAuthClient,
++}: {
++  eventId: string;
++  initialCategory?: string;
++  fallback: React.ReactNode;
++  client?: PublicBookingClient;
++  auth?: PublicAuthClient;
++}) {
++  const access = useAccountSession(auth);
++  const router = useRouter();
++  const [options, setOptions] = useState<TicketOptions>();
++  const [draft, setDraft] = useState<BookingDraft>({
++    version: 1,
++    eventId,
++    items: [],
++  });
++  const [error, setError] = useState("");
++  const [reload, setReload] = useState(0);
++  const [loading, setLoading] = useState(true);
++  useEffect(() => {
++    if (!access.session?.canBook) return;
++    let active = true;
++    async function load() {
++      try {
++        if (!client.getTicketOptions)
++          throw new BookingClientError("UNAVAILABLE");
++        const next = requireOptions(
++          await client.getTicketOptions(eventId),
++          eventId,
++        );
++        if (active) {
++          setOptions(next);
++          setDraft(readDraft(eventId));
++          setError("");
++        }
++      } catch (e) {
++        if (active) {
++          setOptions(undefined);
++          setError(bookingErrorMessage(e));
++        }
++      } finally {
++        if (active) setLoading(false);
++      }
++    }
++    void load();
++    return () => {
++      active = false;
++    };
++  }, [eventId, client, access.session, reload]);
++
++  if (access.loading)
++    return (
++      <PageShell>
++        <p role="status" className="mx-auto max-w-[1440px] px-6 py-16">
++          Checking your account…
++        </p>
++      </PageShell>
++    );
++  if (!access.session) return fallback;
++  if (!access.session.canBook)
++    return (
++      <PageShell>
++        <div className="mx-auto max-w-3xl px-6 py-20">
++          <h1 className="font-display text-3xl font-bold">
++            Booking is unavailable for this account
++          </h1>
++          <p className="mt-4 text-[#c5c6c7]">
++            The shared account service has not authorized attendee booking.
++            Contact support or use an eligible account.
++          </p>
++          <Link
++            href={`/events/${encodeURIComponent(eventId)}`}
++            className={`${secondary} mt-6`}
++          >
++            Back to Event
++          </Link>
++        </div>
++      </PageShell>
++    );
++  if (!options)
++    return (
++      <PageShell>
++        <div className="mx-auto max-w-3xl px-6 py-20">
++          <h1 className="font-display text-3xl font-bold">Ticket selection</h1>
++          {loading ? (
++            <p role="status" className="mt-6">
++              Loading current ticket options…
++            </p>
++          ) : (
++            <>
++              <ErrorNotice message={error} />
++              <button
++                type="button"
++                className={secondary}
++                onClick={() => {
++                  setLoading(true);
++                  setReload((n) => n + 1);
++                }}
++              >
++                Refresh ticket options
++              </button>
++            </>
++          )}
++        </div>
++      </PageShell>
++    );
++
++  function update(categoryId: string, quantity: number) {
++    const next = setQuantity(draft, categoryId, quantity);
++    setDraft(next);
++    setError("");
++    if (!saveDraft(next))
++      setError(
++        "Your browser could not save this selection for the next step. No booking has been created.",
++      );
++  }
++  function next() {
++    const errors = validateDraft(draft, options!);
++    if (errors.length) {
++      setError(errors.join(" "));
++      return;
++    }
++    if (!saveDraft(draft)) {
++      setError(
++        "Browser storage is unavailable. Your selection cannot be carried to numbered-seat selection.",
++      );
++      return;
++    }
++    router.push(`/events/${encodeURIComponent(eventId)}/seats`);
++  }
++  return (
++    <PageShell>
++      <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-[72px]">
++        <BookingHeading
++          name={options.event.name}
++          date={options.event.startsAt}
++          venue={options.event.venue.name}
++          backHref={`/events/${encodeURIComponent(eventId)}`}
++        />
++        <div className="grid gap-10 lg:grid-cols-[minmax(0,408px)_minmax(0,1fr)]">
++          <SeatPlan src={options.seatPlanUrl} />
++          <section
++            className="min-w-0"
++            aria-labelledby="ticket-selection-heading"
++          >
++            <h2
++              id="ticket-selection-heading"
++              className="border-b border-[#26303b] pb-4 text-lg font-bold"
++            >
++              TICKETS
++            </h2>
++            <p className="my-4 text-sm text-[#9aa4ae]">
++              Event limit: {options.purchaseLimit}. Confirmed:{" "}
++              {options.confirmedQuantity}. Active holds: {options.heldQuantity}.
++              You can select up to {remainingAllowance(options)} more.
++            </p>
++            {!options.event.categories.length && (
++              <p className={panel}>No ticket categories are available.</p>
++            )}
++            <ul className="space-y-3">
++              {options.event.categories.map((category) => {
++                const quantity =
++                  draft.items.find((i) => i.ticketCategoryId === category.id)
++                    ?.quantity ?? 0;
++                const bookable = isCategoryBookable(options.event, category);
++                const maximum = Math.min(
++                  remainingAllowance(options),
++                  category.remaining ?? Infinity,
++                  options.categoryLimits?.[category.id] ?? Infinity,
++                );
++                return (
++                  <li
++                    key={category.id}
++                    className={`${panel} ${initialCategory === category.id ? "border-[#66fcf1]/60" : ""}`}
++                  >
++                    <div className="flex flex-wrap justify-between gap-4">
++                      <div className="min-w-0 flex-1">
++                        <h3 className="text-sm font-bold uppercase">
++                          {category.name}
++                        </h3>
++                        {category.description && (
++                          <p className="mt-2 text-xs leading-5 text-[#9aa4ae]">
++                            {category.description}
++                          </p>
++                        )}
++                        <p className="mt-2 text-xs text-[#66fcf1]">
++                          {bookable
++                            ? `${category.remaining ?? "Current"} available · numbered seats required`
++                            : categoryStateLabel(options.event, category)}
++                        </p>
++                      </div>
++                      <p className="text-sm font-semibold">
++                        {formatPrice(category.price)}
++                      </p>
++                    </div>
++                    <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
++                      <span className="text-xs text-[#9aa4ae]">
++                        Choose numbered seats on the next step
++                      </span>
++                      <div className="flex items-center gap-2">
++                        <button
++                          type="button"
++                          className={`${secondary} px-4`}
++                          disabled={quantity <= 0}
++                          aria-label={`Remove one ${category.name} ticket`}
++                          onClick={() =>
++                            update(category.id, Math.max(0, quantity - 1))
++                          }
++                        >
++                          −
++                        </button>
++                        <label
++                          className="sr-only"
++                          htmlFor={`quantity-${category.id}`}
++                        >
++                          {category.name} quantity
++                        </label>
++                        <input
++                          id={`quantity-${category.id}`}
++                          type="number"
++                          inputMode="numeric"
++                          min={0}
++                          max={Number.isFinite(maximum) ? maximum : undefined}
++                          step={1}
++                          disabled={!bookable}
++                          value={quantity}
++                          onChange={(e) =>
++                            update(category.id, Number(e.target.value))
++                          }
++                          className="h-11 w-20 rounded-lg border border-[#2c3644] bg-[#1f2833] px-3 text-center text-sm"
++                        />
++                        <button
++                          type="button"
++                          className={`${primary} px-4`}
++                          disabled={!bookable || quantity >= maximum}
++                          aria-label={`Add one ${category.name} ticket`}
++                          onClick={() => update(category.id, quantity + 1)}
++                        >
++                          +
++                        </button>
++                      </div>
++                    </div>
++                  </li>
++                );
++              })}
++            </ul>
++            {error && <ErrorNotice message={error} />}
++            <div className={`${panel} mt-6`}>
++              <div className="flex justify-between gap-4 text-lg font-bold">
++                <span>Estimated subtotal</span>
++                <span className="text-[#66fcf1]">
++                  {formatPrice(draftEstimate(draft, options))}
++                </span>
++              </div>
++              <p className="mt-2 text-xs leading-5 text-[#9aa4ae]">
++                This is an estimate. The server will validate inventory, your
++                cumulative limit, configured fees, and all prices before
++                creating a hold.
++              </p>
++              <div className="mt-6 flex flex-wrap gap-3">
++                <button type="button" onClick={next} className={primary}>
++                  Continue to numbered seats
++                </button>
++                <button
++                  type="button"
++                  onClick={() => {
++                    setLoading(true);
++                    setReload((n) => n + 1);
++                  }}
++                  className={secondary}
++                >
++                  Refresh availability
++                </button>
++              </div>
++            </div>
++          </section>
++        </div>
++      </div>
++    </PageShell>
++  );
++}
+--- /dev/null
++++ b/src/components/events/EventSearchField.tsx
+@@ -0,0 +1,155 @@
++"use client";
++import { useId, useRef, useState } from "react";
++import { useRouter } from "next/navigation";
++import { Search, X } from "lucide-react";
++import type { EventDetails } from "@/types/event";
++import { formatShortDate } from "@/lib/format";
++
++/** Suggestions use a supplied public index only; no speculative API endpoint. */
++export default function EventSearchField({
++  events,
++  onSearch,
++  onNavigate,
++  compact = false,
++}: {
++  events?: EventDetails[];
++  onSearch?: (query: string) => void;
++  onNavigate?: () => void;
++  compact?: boolean;
++}) {
++  const router = useRouter();
++  const id = useId();
++  const input = useRef<HTMLInputElement>(null);
++  const [query, setQuery] = useState("");
++  const [open, setOpen] = useState(false);
++  const [active, setActive] = useState(-1);
++  const matches =
++    query.trim().length >= 2
++      ? events
++          ?.filter((event) =>
++            `${event.name} ${event.performers.join(" ")}`
++              .toLowerCase()
++              .includes(query.trim().toLowerCase()),
++          )
++          .slice(0, 6)
++      : undefined;
++  const expanded = open && matches !== undefined;
++  function navigate(index?: number) {
++    setOpen(false);
++    onNavigate?.();
++    if (index !== undefined && matches?.[index])
++      router.push(`/events/${encodeURIComponent(matches[index].id)}`);
++    else if (onSearch) onSearch(query);
++    else
++      router.push(
++        query.trim()
++          ? `/events?q=${encodeURIComponent(query.trim())}`
++          : "/events",
++      );
++  }
++  return (
++    <form
++      role="search"
++      className={`relative ${compact ? "w-full" : "w-48 lg:w-56"}`}
++      onSubmit={(event) => {
++        event.preventDefault();
++        navigate(expanded && active >= 0 ? active : undefined);
++      }}
++      onBlur={(event) => {
++        if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
++      }}
++    >
++      <Search
++        aria-hidden
++        className="pointer-events-none absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#c5c6c7]"
++      />
++      <input
++        ref={input}
++        role="combobox"
++        aria-label="Search events"
++        aria-autocomplete="list"
++        aria-expanded={expanded}
++        aria-controls={`${id}-results`}
++        aria-activedescendant={
++          expanded && active >= 0 ? `${id}-${active}` : undefined
++        }
++        value={query}
++        onChange={(event) => {
++          setQuery(event.target.value);
++          setOpen(true);
++          setActive(-1);
++        }}
++        onFocus={() => setOpen(true)}
++        onKeyDown={(event) => {
++          if (event.key === "Escape") {
++            setOpen(false);
++            setActive(-1);
++          }
++          if (
++            matches?.length &&
++            (event.key === "ArrowDown" || event.key === "ArrowUp")
++          ) {
++            event.preventDefault();
++            setOpen(true);
++            setActive(
++              (index) =>
++                (index +
++                  (event.key === "ArrowDown" ? 1 : -1) +
++                  matches.length) %
++                matches.length,
++            );
++          }
++        }}
++        type="search"
++        placeholder="Search events..."
++        className="h-[38px] w-full rounded-full border border-[#2c3644] bg-[#1f2833] pl-10 pr-10 text-sm text-white placeholder:text-[#c5c6c7]/80 focus:border-[#66fcf1] focus:outline-none focus:ring-1 focus:ring-[#66fcf1]"
++      />
++      {query && (
++        <button
++          type="button"
++          aria-label="Clear search"
++          onClick={() => {
++            setQuery("");
++            setActive(-1);
++            setOpen(false);
++            input.current?.focus();
++          }}
++          className="absolute right-1 top-0 flex h-[38px] w-9 items-center justify-center rounded-full text-[#9aa4ae]"
++        >
++          <X size={14} />
++        </button>
++      )}
++      {expanded && (
++        <div className="absolute right-0 top-full z-[60] mt-2 w-full min-w-[280px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-[#2c3644] bg-[#1f2833] p-2 shadow-2xl">
++          <ul id={`${id}-results`} role="listbox" aria-label="Matching events">
++            {matches.map((event, index) => (
++              <li
++                key={event.id}
++                id={`${id}-${index}`}
++                role="option"
++                aria-selected={active === index}
++                onPointerMove={() => setActive(index)}
++                onPointerDown={(e) => e.preventDefault()}
++                onClick={() => navigate(index)}
++                className={`cursor-pointer rounded-xl p-3 ${active === index ? "bg-[#2c3644]" : ""}`}
++              >
++                <span className="block text-sm font-medium text-white">
++                  {event.name}
++                </span>
++                <span className="mt-1 block text-xs text-[#c5c6c7]">
++                  {formatShortDate(event.startsAt)} ·{" "}
++                  {event.venue.city ?? event.venue.name}
++                </span>
++              </li>
++            ))}
++          </ul>
++          {matches.length === 0 && (
++            <p role="status" className="p-3 text-xs leading-5 text-[#c5c6c7]">
++              No matching events. Press Enter to search all events.
++            </p>
++          )}
++        </div>
++      )}
++    </form>
++  );
++}
+--- a/src/components/events/EventsBrowser.tsx
++++ b/src/components/events/EventsBrowser.tsx
+@@ -1,46 +1,14 @@
+ "use client";
+ 
+ import React, { useMemo, useState } from "react";
+-import { ChevronDown, Search } from "lucide-react";
++import { Search } from "lucide-react";
+ import type { EventDetails } from "@/types/event";
++import FilterSelect from "./FilterSelect";
+ import EventCard from "./EventCard";
+ import { DATE_FILTERS, eventLocation, matchesDate, monthKey, uniqueSorted, type DateFilter } from "@/lib/event-filters";
+ 
+ const field =
+   "h-[58px] w-full rounded-[14px] border border-[#2c3644] bg-[#1f2833] text-[13px] font-medium text-[#c5c6c7] focus:border-[#66fcf1] focus:outline-none focus:ring-1 focus:ring-[#66fcf1]";
+-
+-function Select({
+-  label,
+-  value,
+-  onChange,
+-  options,
+-}: {
+-  label: string;
+-  value: string;
+-  onChange: (v: string) => void;
+-  options: { value: string; label: string }[];
+-}) {
+-  return (
+-    <div className="relative">
+-      <label className="sr-only" htmlFor={`f-${label}`}>
+-        {label}
+-      </label>
+-      <select
+-        id={`f-${label}`}
+-        value={value}
+-        onChange={(e) => onChange(e.target.value)}
+-        className={`${field} cursor-pointer appearance-none pl-[17px] pr-10`}
+-      >
+-        {options.map((o) => (
+-          <option key={o.value} value={o.value} className="bg-[#1f2833] text-white">
+-            {o.label}
+-          </option>
+-        ))}
+-      </select>
+-      <ChevronDown aria-hidden className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2" />
+-    </div>
+-  );
+-}
+ 
+ export default function EventsBrowser({ events, initialQuery = "", initialLocation = "all", initialDate = "all", initialCategory = "all" }: { events: EventDetails[]; initialQuery?: string; initialLocation?: string; initialDate?: string; initialCategory?: string }) {
+   const [query, setQuery] = useState(initialQuery);
+@@ -93,8 +61,8 @@
+             Find your next event
+           </h2>
+           {filtersActive && <button type="button" onClick={clear} className="mt-3 text-sm text-[#66fcf1] underline">Clear all filters</button>}
+-          <div className="mt-3.5 grid gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,430px)_repeat(4,minmax(0,1fr))] lg:gap-5">
+-            <div className="relative sm:col-span-2 lg:col-span-1">
++          <div className="mt-3.5 grid gap-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,430px)_repeat(4,minmax(0,1fr))] lg:gap-5">
++            <div className="relative sm:col-span-2 xl:col-span-1">
+               <label className="sr-only" htmlFor="event-search">
+                 Search by artist or event
+               </label>
+@@ -108,20 +76,20 @@
+                 className={`${field} pl-12 pr-4 text-sm font-normal placeholder:text-[#c5c6c7]`}
+               />
+             </div>
+-            <Select
++            <FilterSelect
+               label="Location"
+               value={location}
+               onChange={setLocation}
+               options={[{ value: "all", label: "All Locations" }, ...locations.map((l) => ({ value: l, label: l }))]}
+             />
+-            <Select label="Date" value={date} onChange={(v) => setDate(v as DateFilter)} options={/^\d{4}-\d{2}-\d{2}$/.test(initialDate) ? [...DATE_FILTERS, { value: initialDate, label: initialDate }] : DATE_FILTERS} />
+-            <Select
++            <FilterSelect label="Date" value={date} onChange={(v) => setDate(v as DateFilter)} options={/^\d{4}-\d{2}-\d{2}$/.test(initialDate) ? [...DATE_FILTERS, { value: initialDate, label: initialDate }] : DATE_FILTERS} />
++            <FilterSelect
+               label="Category"
+               value={category}
+               onChange={setCategory}
+               options={[{ value: "all", label: "All Categories" }, ...categories.map((c) => ({ value: c, label: c }))]}
+             />
+-            <Select
++            <FilterSelect
+               label="Genre"
+               value={genre}
+               onChange={setGenre}
+--- /dev/null
++++ b/src/components/events/FilterSelect.tsx
+@@ -0,0 +1,140 @@
++"use client";
++import { useEffect, useId, useRef, useState } from "react";
++import { ChevronDown } from "lucide-react";
++
++export default function FilterSelect({
++  label,
++  value,
++  onChange,
++  options,
++}: {
++  label: string;
++  value: string;
++  onChange: (value: string) => void;
++  options: { value: string; label: string }[];
++}) {
++  const id = useId();
++  const root = useRef<HTMLDivElement>(null);
++  const trigger = useRef<HTMLButtonElement>(null);
++  const [open, setOpen] = useState(false);
++  const [active, setActive] = useState(0);
++  const selected = Math.max(
++    0,
++    options.findIndex((option) => option.value === value),
++  );
++  useEffect(() => {
++    if (!open) return;
++    const close = (event: PointerEvent) => {
++      if (!root.current?.contains(event.target as Node)) setOpen(false);
++    };
++    document.addEventListener("pointerdown", close);
++    return () => document.removeEventListener("pointerdown", close);
++  }, [open]);
++  useEffect(() => {
++    if (open)
++      document
++        .getElementById(`${id}-${active}`)
++        ?.scrollIntoView?.({ block: "nearest" });
++  }, [open, active, id]);
++  function choose(index: number) {
++    onChange(options[index].value);
++    setOpen(false);
++    trigger.current?.focus();
++  }
++  return (
++    <div
++      ref={root}
++      className="relative min-w-0"
++      onBlur={(event) => {
++        if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
++      }}
++    >
++      <span id={`${id}-label`} className="sr-only">
++        {label}
++      </span>
++      <button
++        ref={trigger}
++        type="button"
++        role="combobox"
++        aria-labelledby={`${id}-label ${id}-value`}
++        aria-expanded={open}
++        aria-haspopup="listbox"
++        aria-controls={`${id}-list`}
++        aria-activedescendant={open ? `${id}-${active}` : undefined}
++        onClick={() => {
++          setActive(selected);
++          setOpen(!open);
++        }}
++        onKeyDown={(event) => {
++          if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
++            event.preventDefault();
++            if (!open) {
++              setOpen(true);
++              setActive(selected);
++            } else
++              setActive((index) =>
++                event.key === "Home"
++                  ? 0
++                  : event.key === "End"
++                    ? options.length - 1
++                    : (index +
++                        (event.key === "ArrowDown" ? 1 : -1) +
++                        options.length) %
++                      options.length,
++              );
++          }
++          if (event.key === "Escape") {
++            event.preventDefault();
++            setOpen(false);
++          }
++          if (event.key === "Enter" || event.key === " ") {
++            event.preventDefault();
++            if (open) choose(active);
++            else {
++              setOpen(true);
++              setActive(selected);
++            }
++          }
++          if (event.key.length === 1 && event.key !== " ") {
++            const found = options.findIndex((option) =>
++              option.label.toLowerCase().startsWith(event.key.toLowerCase()),
++            );
++            if (found >= 0) {
++              setOpen(true);
++              setActive(found);
++            }
++          }
++        }}
++        className="flex h-[58px] w-full items-center justify-between gap-3 rounded-[14px] border border-[#2c3644] bg-[#1f2833] px-[17px] text-left text-[13px] font-medium text-[#c5c6c7] hover:border-[#66fcf1]/50"
++      >
++        <span id={`${id}-value`} className="truncate">
++          {options[selected]?.label}
++        </span>
++        <ChevronDown aria-hidden size={15} className="shrink-0" />
++      </button>
++      {open && (
++        <ul
++          id={`${id}-list`}
++          role="listbox"
++          aria-label={label}
++          className="absolute left-0 top-full z-50 mt-2 max-h-72 w-full min-w-[180px] overflow-y-auto rounded-[14px] border border-[#2c3644] bg-[#1f2833] p-2 shadow-2xl"
++        >
++          {options.map((option, index) => (
++            <li
++              id={`${id}-${index}`}
++              key={option.value}
++              role="option"
++              aria-selected={value === option.value}
++              onPointerMove={() => setActive(index)}
++              onPointerDown={(event) => event.preventDefault()}
++              onClick={() => choose(index)}
++              className={`cursor-pointer rounded-xl px-3 py-3 text-[13px] text-[#c5c6c7] ${active === index ? "bg-[#2c3644] text-white" : ""}`}
++            >
++              {option.label}
++            </li>
++          ))}
++        </ul>
++      )}
++    </div>
++  );
++}
+--- a/src/components/layout/PageShell.tsx
++++ b/src/components/layout/PageShell.tsx
+@@ -1,10 +1,11 @@
++import type { EventDetails } from "@/types/event";
+ import Navbar from "@/components/Navbar";
+ import Footer from "@/components/Footer";
+ 
+-export default function PageShell({ children }: { children: React.ReactNode }) {
++export default function PageShell({ children, searchEvents }: { children: React.ReactNode; searchEvents?: EventDetails[] }) {
+   return (
+     <div className="flex min-h-screen flex-col bg-[#0b0c10] font-sans text-white">
+-      <Navbar />
++      <Navbar searchEvents={searchEvents} />
+       <main id="main-content" className="flex-1">{children}</main>
+       <Footer />
+     </div>
+--- a/src/lib/auth/client.ts
++++ b/src/lib/auth/client.ts
+@@ -8,6 +8,13 @@
+   password: string; termsAccepted: true;
+ };
+ export type AuthResult = { destination?: string; allowBookingReturn?: boolean };
++export interface AccountSession {
++  userId: string;
++  displayName: string;
++  /** Effective booking eligibility from the shared backend/session client. */
++  canBook: boolean;
++  navigation?: { label: string; href: string }[];
++}
+ export type AuthErrorCode = "INVALID_CREDENTIALS" | "ACCOUNT_DISABLED" | "DUPLICATE_EMAIL" |
+   "INVALID_RECOVERY_LINK" | "EXPIRED_RECOVERY_LINK" | "USED_RECOVERY_LINK" | "RATE_LIMITED" | "UNAVAILABLE";
+ export class AuthClientError extends Error {
+@@ -15,6 +22,8 @@
+ }
+ export interface PublicAuthClient {
+   rememberMeSupported: boolean;
++  getSession?: () => Promise<AccountSession | null>;
++  logout?: () => Promise<void>;
+   passwordRules?: { description: string; validate: (password: string) => string | undefined };
+   login?: (data: { email: string; password: string; rememberMe?: boolean }) => Promise<AuthResult>;
+   registerAttendee?: (data: AttendeeRegistration) => Promise<void>;
+--- a/src/lib/auth/destination.ts
++++ b/src/lib/auth/destination.ts
+@@ -1,6 +1,6 @@
+ /** Only public event/ticket destinations may be supplied by a visitor. */
+ export function safeReturnTo(value?: string | null): string | undefined {
+-  if (!value || !/^\/events\/[^/?#]+(?:\/tickets)?(?:\?category=[^&#]+)?$/.test(value)) return;
++  if (!value || !(/^(?:\/events\/[^/?#]+(?:\/(?:tickets|seats))?(?:\?category=[^&#]+)?|\/bookings\/[^/?#]+\/(?:summary|payment|confirmation))$/.test(value))) return;
+   try {
+     const decoded = decodeURIComponent(value);
+     if (/[\\\x00-\x1f]/.test(decoded) || decoded.includes("..") || decoded.includes("//")) return;
+--- /dev/null
++++ b/src/lib/booking/client.ts
+@@ -0,0 +1,88 @@
++import type {
++  BookingDraft,
++  BookingRecord,
++  EventSeat,
++  PaymentInstructions,
++  PaymentMethod,
++  TicketOptions,
++} from "./types";
++
++export type BookingErrorCode =
++  | "UNAVAILABLE"
++  | "UNAUTHENTICATED"
++  | "FORBIDDEN"
++  | "NOT_FOUND"
++  | "SEAT_UNAVAILABLE"
++  | "SEAT_SELECTION_INVALID"
++  | "PURCHASE_LIMIT_EXCEEDED"
++  | "BOOKING_EVENT_MISMATCH"
++  | "BOOKING_EXPIRED"
++  | "BOOKING_NOT_CANCELLABLE"
++  | "INVENTORY_CHANGED"
++  | "NETWORK_UNCERTAIN"
++  | "CONTRACT_MISMATCH";
++
++export class BookingClientError extends Error {
++  constructor(public code: BookingErrorCode) {
++    super(code);
++  }
++}
++
++/** Map these view operations to the existing agreed API client once supplied.
++ * No URLs, credentials, transport payloads, session store, or backend are invented.
++ * Mutations must be authorized and atomic on the server. operationKey is a UI
++ * request identity; map it to approved idempotency support, never assume support.
++ */
++export interface PublicBookingClient {
++  getTicketOptions?: (eventId: string) => Promise<TicketOptions>;
++  getSeats?: (eventId: string) => Promise<EventSeat[]>;
++  createBooking?: (
++    draft: BookingDraft,
++    operationKey: string,
++  ) => Promise<BookingRecord>;
++  getBooking?: (bookingId: string) => Promise<BookingRecord>;
++  getPaymentMethods?: (bookingId: string) => Promise<PaymentMethod[]>;
++  startPayment?: (
++    bookingId: string,
++    methodId: string,
++    operationKey: string,
++  ) => Promise<PaymentInstructions>;
++  cancelUnpaidBooking?: (
++    bookingId: string,
++    operationKey: string,
++  ) => Promise<BookingRecord>;
++  trustedPaymentOrigins?: string[];
++}
++export const publicBookingClient: PublicBookingClient = {};
++
++export function bookingErrorMessage(error: unknown): string {
++  if (!(error instanceof BookingClientError))
++    return "We couldn’t complete this request. Refresh the current booking before trying again.";
++  const messages: Record<BookingErrorCode, string> = {
++    UNAVAILABLE:
++      "The booking service is not connected yet. No seats, bookings, or payments have been created.",
++    UNAUTHENTICATED: "Please log in again to continue.",
++    FORBIDDEN:
++      "This account cannot access this booking or perform this action.",
++    NOT_FOUND: "This booking is unavailable or could not be found.",
++    SEAT_UNAVAILABLE:
++      "One or more seats are no longer available. Refresh the layout and choose replacements.",
++    SEAT_SELECTION_INVALID:
++      "The seat selection no longer matches the ticket quantities. Review each category.",
++    PURCHASE_LIMIT_EXCEEDED:
++      "Your confirmed tickets and active holds exceed the event’s purchase limit. Refresh your selection.",
++    BOOKING_EVENT_MISMATCH:
++      "The selected tickets do not all belong to this event. Review your selection.",
++    BOOKING_EXPIRED:
++      "This reservation has expired. Return to the event and make a fresh selection.",
++    BOOKING_NOT_CANCELLABLE:
++      "This booking cannot be cancelled. Refresh to see its current status.",
++    INVENTORY_CHANGED:
++      "Availability has changed. Refresh the current options before continuing.",
++    NETWORK_UNCERTAIN:
++      "The request result is unknown. Do not create another booking or payment. Refresh your existing booking or check your booking history first.",
++    CONTRACT_MISMATCH:
++      "The service returned inconsistent booking data. No further action is available until the current booking is refreshed.",
++  };
++  return messages[error.code];
++}
+--- /dev/null
++++ b/src/lib/booking/draft.ts
+@@ -0,0 +1,32 @@
++import type { BookingDraft } from "./types";
++import { parseDraft } from "./rules";
++
++const key = (eventId: string) => `aventix:booking-draft:v1:${eventId}`;
++/** Selection only: never persist customer details, payment data, sessions or prices. */
++export function readDraft(eventId: string): BookingDraft {
++  try {
++    return (
++      parseDraft(
++        JSON.parse(sessionStorage.getItem(key(eventId)) ?? "null"),
++        eventId,
++      ) ?? { version: 1, eventId, items: [] }
++    );
++  } catch {
++    return { version: 1, eventId, items: [] };
++  }
++}
++export function saveDraft(draft: BookingDraft): boolean {
++  try {
++    sessionStorage.setItem(key(draft.eventId), JSON.stringify(draft));
++    return true;
++  } catch {
++    return false;
++  }
++}
++export function clearDraft(eventId: string): void {
++  try {
++    sessionStorage.removeItem(key(eventId));
++  } catch {
++    /* Storage may be disabled. */
++  }
++}
+--- /dev/null
++++ b/src/lib/booking/format.ts
+@@ -0,0 +1,9 @@
++/** Booking and payment amounts retain centavos, including configured fees. */
++export function formatBookingAmount(amount: number): string {
++  return new Intl.NumberFormat("en-PH", {
++    style: "currency",
++    currency: "PHP",
++    minimumFractionDigits: 2,
++    maximumFractionDigits: 2,
++  }).format(amount);
++}
+--- /dev/null
++++ b/src/lib/booking/rules.ts
+@@ -0,0 +1,333 @@
++import { isCategoryBookable } from "@/lib/event-booking";
++import type {
++  BookingDraft,
++  BookingRecord,
++  DraftItem,
++  EventSeat,
++  TicketOptions,
++} from "./types";
++import { BookingClientError } from "./client";
++
++export function remainingAllowance(options: TicketOptions): number {
++  return Math.max(
++    0,
++    options.purchaseLimit - options.confirmedQuantity - options.heldQuantity,
++  );
++}
++export function validateDraft(
++  draft: BookingDraft,
++  options: TicketOptions,
++  seats?: EventSeat[],
++): string[] {
++  const errors: string[] = [];
++  if (draft.eventId !== options.event.id)
++    return ["Ticket selection belongs to another event."];
++  if (!draft.items.length) return ["Select at least one ticket."];
++  const categories = new Set<string>();
++  const selectedSeats = new Set<string>();
++  let total = 0;
++  for (const item of draft.items) {
++    const category = options.event.categories.find(
++      (c) => c.id === item.ticketCategoryId,
++    );
++    if (!category || categories.has(item.ticketCategoryId)) {
++      errors.push("Each configured category may appear only once.");
++      continue;
++    }
++    categories.add(item.ticketCategoryId);
++    if (!Number.isInteger(item.quantity) || item.quantity < 1) {
++      errors.push(`Choose a valid quantity for ${category.name}.`);
++      continue;
++    }
++    total += item.quantity;
++    if (!isCategoryBookable(options.event, category))
++      errors.push(`${category.name} is not currently on sale.`);
++    if (category.remaining !== undefined && item.quantity > category.remaining)
++      errors.push(`${category.name} has insufficient availability.`);
++    if (
++      options.categoryLimits?.[category.id] !== undefined &&
++      item.quantity > options.categoryLimits[category.id]
++    )
++      errors.push(`${category.name} exceeds its purchase limit.`);
++    if (seats) {
++      if (item.seatIds.length !== item.quantity)
++        errors.push(
++          `Choose exactly ${item.quantity} numbered seats for ${category.name}.`,
++        );
++      for (const seatId of item.seatIds) {
++        const seat = seats.find((s) => s.id === seatId);
++        if (
++          !seat ||
++          seat.eventId !== draft.eventId ||
++          seat.ticketCategoryId !== category.id ||
++          seat.status !== "AVAILABLE"
++        )
++          errors.push(
++            "A selected seat is unavailable or belongs to another event/category.",
++          );
++        if (selectedSeats.has(seatId))
++          errors.push("A numbered seat cannot be selected more than once.");
++        selectedSeats.add(seatId);
++      }
++    }
++  }
++  if (total > remainingAllowance(options))
++    errors.push(
++      "Your selected quantity exceeds the event-wide allowance after confirmed tickets and active holds.",
++    );
++  return Array.from(new Set(errors));
++}
++
++export function draftEstimate(
++  draft: BookingDraft,
++  options: TicketOptions,
++): number {
++  return draft.items.reduce(
++    (sum, item) =>
++      sum +
++      (options.event.categories.find((c) => c.id === item.ticketCategoryId)
++        ?.price ?? 0) *
++        item.quantity,
++    0,
++  );
++}
++export function setQuantity(
++  draft: BookingDraft,
++  categoryId: string,
++  quantity: number,
++): BookingDraft {
++  const items = draft.items.filter(
++    (item) => item.ticketCategoryId !== categoryId,
++  );
++  const old = draft.items.find((item) => item.ticketCategoryId === categoryId);
++  if (quantity > 0)
++    items.push({
++      ticketCategoryId: categoryId,
++      quantity,
++      seatIds: old?.quantity === quantity ? old.seatIds : [],
++    });
++  return { ...draft, items, operationKey: undefined };
++}
++export function toggleSeat(draft: BookingDraft, seat: EventSeat): BookingDraft {
++  if (seat.eventId !== draft.eventId || seat.status !== "AVAILABLE")
++    return draft;
++  const item = draft.items.find(
++    (item) => item.ticketCategoryId === seat.ticketCategoryId,
++  );
++  if (!item) return draft;
++  const chosen = item.seatIds.includes(seat.id);
++  if (
++    !chosen &&
++    (item.seatIds.length >= item.quantity ||
++      draft.items.some((i) => i.seatIds.includes(seat.id)))
++  )
++    return draft;
++  return {
++    ...draft,
++    operationKey: undefined,
++    items: draft.items.map((i) =>
++      i !== item
++        ? i
++        : {
++            ...i,
++            seatIds: chosen
++              ? i.seatIds.filter((id) => id !== seat.id)
++              : [...i.seatIds, seat.id],
++          },
++    ),
++  };
++}
++export function refreshDraft(
++  draft: BookingDraft,
++  seats: EventSeat[],
++): BookingDraft {
++  return {
++    ...draft,
++    operationKey: undefined,
++    items: draft.items.map((i) => ({
++      ...i,
++      seatIds: i.seatIds.filter((id) =>
++        seats.some(
++          (s) =>
++            s.id === id &&
++            s.eventId === draft.eventId &&
++            s.ticketCategoryId === i.ticketCategoryId &&
++            s.status === "AVAILABLE",
++        ),
++      ),
++    })),
++  };
++}
++export function isConfirmed(booking: BookingRecord): boolean {
++  return (
++    booking.event.status !== "CANCELLED" &&
++    booking.status === "CONFIRMED" &&
++    booking.paymentStatus === "PAID"
++  );
++}
++export function secondsRemaining(
++  booking: Pick<BookingRecord, "expiresAt" | "serverNow">,
++  elapsedMilliseconds: number,
++): number {
++  return Math.max(
++    0,
++    Math.ceil(
++      (Date.parse(booking.expiresAt) -
++        Date.parse(booking.serverNow) -
++        elapsedMilliseconds) /
++        1000,
++    ),
++  );
++}
++export function canPay(booking: BookingRecord, remaining: number): boolean {
++  return (
++    booking.event.status === "PUBLISHED" &&
++    booking.status === "PENDING_PAYMENT" &&
++    booking.paymentStatus !== "PAID" &&
++    booking.paymentStatus !== "REFUNDED" &&
++    booking.canPay &&
++    remaining > 0
++  );
++}
++export function canCancel(booking: BookingRecord, remaining: number): boolean {
++  return (
++    booking.status === "PENDING_PAYMENT" &&
++    booking.paymentStatus !== "PAID" &&
++    booking.canCancel &&
++    remaining > 0
++  );
++}
++export function reconcileBooking(
++  previous: BookingRecord | undefined,
++  next: BookingRecord,
++): BookingRecord {
++  if (
++    previous &&
++    (previous.id !== next.id ||
++      previous.event.id !== next.event.id ||
++      Date.parse(previous.expiresAt) !== Date.parse(next.expiresAt))
++  )
++    throw new BookingClientError("CONTRACT_MISMATCH");
++  if (previous && Date.parse(next.serverNow) < Date.parse(previous.serverNow))
++    throw new BookingClientError("CONTRACT_MISMATCH");
++  if (
++    previous &&
++    previous.status !== "PENDING_PAYMENT" &&
++    next.status === "PENDING_PAYMENT"
++  )
++    throw new BookingClientError("CONTRACT_MISMATCH");
++  if (
++    previous &&
++    ["CANCELLED", "EXPIRED", "REFUNDED"].includes(previous.status) &&
++    next.status === "CONFIRMED"
++  )
++    throw new BookingClientError("CONTRACT_MISMATCH");
++  if (previous?.status === "REFUNDED" && next.status !== "REFUNDED")
++    throw new BookingClientError("CONTRACT_MISMATCH");
++  // A failed later attempt is never proof that a paid booking became unpaid.
++  if (
++    previous &&
++    ["PAID", "REFUNDED"].includes(previous.paymentStatus) &&
++    !["PAID", "REFUNDED"].includes(next.paymentStatus)
++  )
++    throw new BookingClientError("CONTRACT_MISMATCH");
++  return next;
++}
++export function safeLocalHref(value?: string): string | undefined {
++  if (!value || !value.startsWith("/") || value.startsWith("//")) return;
++  try {
++    const decoded = decodeURIComponent(value);
++    if (
++      /[\\\x00-\x1f]/.test(decoded) ||
++      decoded.includes("..") ||
++      decoded.includes("//")
++    )
++      return;
++    const url = new URL(value, "https://aventix.invalid");
++    if (url.origin === "https://aventix.invalid")
++      return url.pathname + url.search + url.hash;
++  } catch {
++    return;
++  }
++}
++export function trustedPaymentUrl(
++  value: string | undefined,
++  origins: string[] = [],
++): string | undefined {
++  try {
++    const url = new URL(value ?? "");
++    if (
++      url.protocol === "https:" &&
++      !url.username &&
++      !url.password &&
++      origins.includes(url.origin)
++    )
++      return url.href;
++  } catch {
++    return;
++  }
++}
++export function assertMatchesDraft(
++  booking: BookingRecord,
++  draft: BookingDraft,
++): void {
++  const expected = new Map(draft.items.map((i) => [i.ticketCategoryId, i]));
++  if (
++    booking.event.id !== draft.eventId ||
++    booking.items.length !== expected.size
++  )
++    throw new BookingClientError("CONTRACT_MISMATCH");
++  for (const item of booking.items) {
++    const requested = expected.get(item.ticketCategoryId);
++    if (
++      !requested ||
++      requested.quantity !== item.quantity ||
++      requested.seatIds.length !== item.seats.length ||
++      item.seats.some((s) => !requested.seatIds.includes(s.id))
++    )
++      throw new BookingClientError("CONTRACT_MISMATCH");
++    expected.delete(item.ticketCategoryId);
++  }
++  if (expected.size) throw new BookingClientError("CONTRACT_MISMATCH");
++}
++
++export function parseDraft(
++  value: unknown,
++  eventId: string,
++): BookingDraft | undefined {
++  if (!value || typeof value !== "object") return;
++  const d = value as Partial<BookingDraft>;
++  if (
++    d.version !== 1 ||
++    d.eventId !== eventId ||
++    !Array.isArray(d.items) ||
++    d.items.length > 100
++  )
++    return;
++  const items: DraftItem[] = [];
++  for (const item of d.items) {
++    if (
++      !item ||
++      typeof item.ticketCategoryId !== "string" ||
++      !Number.isInteger(item.quantity) ||
++      item.quantity < 1 ||
++      !Array.isArray(item.seatIds) ||
++      !item.seatIds.every((id) => typeof id === "string") ||
++      item.seatIds.length > item.quantity
++    )
++      return;
++    items.push({
++      ticketCategoryId: item.ticketCategoryId,
++      quantity: item.quantity,
++      seatIds: [...item.seatIds],
++    });
++  }
++  return {
++    version: 1,
++    eventId,
++    items,
++    ...(typeof d.operationKey === "string"
++      ? { operationKey: d.operationKey }
++      : {}),
++  };
++}
+--- /dev/null
++++ b/src/lib/booking/types.ts
+@@ -0,0 +1,87 @@
++import type { EventDetails } from "@/types/event";
++
++/** Frontend view models, not approved HTTP payloads or new server contracts. */
++export type SeatState = "AVAILABLE" | "HELD" | "SOLD" | "DISABLED";
++export interface EventSeat {
++  id: string;
++  eventId: string;
++  ticketCategoryId: string;
++  section?: string;
++  row?: string;
++  seatNumber: string;
++  displayLabel: string;
++  status: SeatState;
++}
++export interface TicketOptions {
++  event: EventDetails;
++  seatPlanUrl?: string;
++  purchaseLimit: number;
++  confirmedQuantity: number;
++  heldQuantity: number;
++  /** Server-supplied per-category limit, when applicable. */
++  categoryLimits?: Record<string, number>;
++}
++export interface DraftItem {
++  ticketCategoryId: string;
++  quantity: number;
++  seatIds: string[];
++}
++export interface BookingDraft {
++  version: 1;
++  eventId: string;
++  items: DraftItem[];
++  operationKey?: string;
++}
++export type BookingStatus =
++  "PENDING_PAYMENT" | "CONFIRMED" | "CANCELLED" | "EXPIRED" | "REFUNDED";
++export type PaymentStatus = "PENDING" | "PAID" | "FAILED" | "REFUNDED";
++export type RefundStatus =
++  "NOT_APPLICABLE" | "PENDING" | "PROCESSING" | "FAILED" | "REFUNDED";
++export interface AllocatedSeat {
++  id: string;
++  displayLabel: string;
++  section?: string;
++  row?: string;
++}
++export interface BookingItem {
++  ticketCategoryId: string;
++  name: string;
++  quantity: number;
++  unitPrice: number;
++  seats: AllocatedSeat[];
++}
++export interface BookingRecord {
++  id: string;
++  reference: string;
++  event: Pick<EventDetails, "id" | "name" | "startsAt" | "venue" | "status">;
++  attendee: { name: string; email: string; phoneNumber?: string };
++  status: BookingStatus;
++  /** Authoritative booking-level summary, not the latest payment attempt. */
++  paymentStatus: PaymentStatus;
++  paymentMethod?: string;
++  refundStatus?: RefundStatus;
++  items: BookingItem[];
++  subtotal: number;
++  fees: { name: string; amount: number }[];
++  total: number;
++  currency: "PHP";
++  expiresAt: string;
++  serverNow: string;
++  canPay: boolean;
++  canCancel: boolean;
++  seatPlanUrl?: string;
++  /** Supplied by the team's attendee integration; do not guess Sherwin's routes. */
++  myTicketsHref?: string;
++  issuedTickets?: { id: string; seatLabel: string; href: string }[];
++}
++export interface PaymentMethod {
++  id: string;
++  label: string;
++  description?: string;
++}
++export interface PaymentInstructions {
++  message?: string;
++  redirectUrl?: string;
++  qrImageUrl?: string;
++  /** Informational instructions only; this response never confirms payment. */
++}
+--- /dev/null
++++ b/src/lib/booking/validate.ts
+@@ -0,0 +1,174 @@
++import { isEventPayload } from "@/lib/event-payload";
++import { BookingClientError } from "./client";
++import type { BookingRecord, EventSeat, TicketOptions } from "./types";
++
++const record = (v: unknown): v is Record<string, unknown> =>
++  typeof v === "object" && v !== null && !Array.isArray(v);
++const text = (v: unknown): v is string => typeof v === "string" && v.length > 0;
++const money = (v: unknown): v is number =>
++  typeof v === "number" && Number.isFinite(v) && v >= 0;
++const count = (v: unknown): v is number => money(v) && Number.isSafeInteger(v);
++const date = (v: unknown) => text(v) && Number.isFinite(Date.parse(v));
++const fail = () => {
++  throw new BookingClientError("CONTRACT_MISMATCH");
++};
++
++export function requireOptions(value: unknown, eventId: string): TicketOptions {
++  if (
++    !record(value) ||
++    !isEventPayload(value.event) ||
++    value.event.id !== eventId ||
++    !count(value.purchaseLimit) ||
++    value.purchaseLimit < 1 ||
++    !count(value.confirmedQuantity) ||
++    !count(value.heldQuantity)
++  )
++    return fail();
++  if (
++    value.categoryLimits !== undefined &&
++    (!record(value.categoryLimits) ||
++      !Object.values(value.categoryLimits).every(count))
++  )
++    return fail();
++  if (value.seatPlanUrl !== undefined && typeof value.seatPlanUrl !== "string")
++    return fail();
++  return value as unknown as TicketOptions;
++}
++export function requireSeats(
++  value: unknown,
++  options: TicketOptions,
++): EventSeat[] {
++  if (!Array.isArray(value)) return fail();
++  const ids = new Set<string>();
++  const labels = new Set<string>();
++  for (const s of value) {
++    if (
++      !record(s) ||
++      !text(s.id) ||
++      s.eventId !== options.event.id ||
++      !options.event.categories.some((c) => c.id === s.ticketCategoryId) ||
++      !text(s.seatNumber) ||
++      !text(s.displayLabel) ||
++      !["AVAILABLE", "HELD", "SOLD", "DISABLED"].includes(String(s.status)) ||
++      (s.row !== undefined && typeof s.row !== "string") ||
++      (s.section !== undefined && typeof s.section !== "string") ||
++      ids.has(s.id) ||
++      labels.has(s.displayLabel)
++    )
++      return fail();
++    ids.add(s.id);
++    labels.add(s.displayLabel);
++  }
++  return value;
++}
++export function requireBooking(
++  value: unknown,
++  bookingId?: string,
++): BookingRecord {
++  if (
++    !record(value) ||
++    !text(value.id) ||
++    (bookingId && value.id !== bookingId) ||
++    !text(value.reference) ||
++    !record(value.event) ||
++    !text(value.event.id) ||
++    !text(value.event.name) ||
++    !date(value.event.startsAt) ||
++    !record(value.event.venue) ||
++    !text(value.event.venue.name) ||
++    !text(value.event.venue.address) ||
++    !record(value.attendee) ||
++    !text(value.attendee.name) ||
++    !text(value.attendee.email)
++  )
++    return fail();
++  if (
++    !["PUBLISHED", "CANCELLED", "COMPLETED"].includes(
++      String(value.event.status),
++    )
++  )
++    return fail();
++  if (
++    ![
++      "PENDING_PAYMENT",
++      "CONFIRMED",
++      "CANCELLED",
++      "EXPIRED",
++      "REFUNDED",
++    ].includes(String(value.status)) ||
++    !["PENDING", "PAID", "FAILED", "REFUNDED"].includes(
++      String(value.paymentStatus),
++    ) ||
++    !date(value.expiresAt) ||
++    !date(value.serverNow) ||
++    value.currency !== "PHP" ||
++    typeof value.canPay !== "boolean" ||
++    typeof value.canCancel !== "boolean" ||
++    !money(value.subtotal) ||
++    !money(value.total) ||
++    !Array.isArray(value.fees) ||
++    !value.fees.every((f) => record(f) && text(f.name) && money(f.amount))
++  )
++    return fail();
++  if (
++    value.refundStatus !== undefined &&
++    !["NOT_APPLICABLE", "PENDING", "PROCESSING", "FAILED", "REFUNDED"].includes(
++      String(value.refundStatus),
++    )
++  )
++    return fail();
++  if (!Array.isArray(value.items) || !value.items.length) return fail();
++  const categories = new Set<string>();
++  const seats = new Set<string>();
++  for (const item of value.items) {
++    if (
++      !record(item) ||
++      !text(item.ticketCategoryId) ||
++      !text(item.name) ||
++      !count(item.quantity) ||
++      item.quantity < 1 ||
++      !money(item.unitPrice) ||
++      !Array.isArray(item.seats) ||
++      item.seats.length !== item.quantity ||
++      categories.has(item.ticketCategoryId)
++    )
++      return fail();
++    categories.add(item.ticketCategoryId);
++    for (const seat of item.seats) {
++      if (
++        !record(seat) ||
++        !text(seat.id) ||
++        !text(seat.displayLabel) ||
++        seats.has(seat.id)
++      )
++        return fail();
++      seats.add(seat.id);
++    }
++  }
++  if (
++    Math.abs(
++      value.total -
++        (value.subtotal + value.fees.reduce((sum, f) => sum + f.amount, 0)),
++    ) > 0.011
++  )
++    return fail();
++  if (
++    (value.attendee.phoneNumber !== undefined &&
++      typeof value.attendee.phoneNumber !== "string") ||
++    (value.paymentMethod !== undefined &&
++      typeof value.paymentMethod !== "string") ||
++    (value.myTicketsHref !== undefined &&
++      typeof value.myTicketsHref !== "string") ||
++    (value.seatPlanUrl !== undefined && typeof value.seatPlanUrl !== "string")
++  )
++    return fail();
++  if (
++    value.issuedTickets !== undefined &&
++    (!Array.isArray(value.issuedTickets) ||
++      !value.issuedTickets.every(
++        (t) => record(t) && text(t.id) && text(t.seatLabel) && text(t.href),
++      ))
++  )
++    return fail();
++  return value as unknown as BookingRecord;
++}
+--- a/src/lib/format.ts
++++ b/src/lib/format.ts
+@@ -27,5 +27,5 @@
+ }
+ 
+ export function formatPrice(amount: number): string {
+-  return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", maximumFractionDigits: 0 }).format(amount);
++  return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(amount);
+ }
+--- /dev/null
++++ b/tests/booking-frontend.test.mjs
+@@ -0,0 +1,316 @@
++import test from "node:test";
++import assert from "node:assert/strict";
++import { load } from "./load-typescript.mjs";
++const { MOCK_EVENTS } = load("src/lib/mock-events.ts");
++const {
++  validateDraft,
++  remainingAllowance,
++  toggleSeat,
++  refreshDraft,
++  setQuantity,
++  secondsRemaining,
++  canPay,
++  canCancel,
++  isConfirmed,
++  reconcileBooking,
++  trustedPaymentUrl,
++  parseDraft,
++  assertMatchesDraft,
++} = load("src/lib/booking/rules.ts");
++const { requireBooking, requireOptions, requireSeats } = load(
++  "src/lib/booking/validate.ts",
++);
++const { safeReturnTo } = load("src/lib/auth/destination.ts");
++const event = structuredClone(MOCK_EVENTS[0]);
++const options = {
++  event,
++  purchaseLimit: 4,
++  confirmedQuantity: 1,
++  heldQuantity: 1,
++};
++const seats = [1, 2, 3].map((n) => ({
++  id: `seat-${n}`,
++  eventId: event.id,
++  ticketCategoryId: event.categories[0].id,
++  section: "Main",
++  row: "A",
++  seatNumber: String(n),
++  displayLabel: `A${n}`,
++  status: "AVAILABLE",
++}));
++const draft = {
++  version: 1,
++  eventId: event.id,
++  items: [
++    {
++      ticketCategoryId: event.categories[0].id,
++      quantity: 2,
++      seatIds: ["seat-1", "seat-2"],
++    },
++  ],
++};
++const booking = {
++  id: "booking-1",
++  reference: "TEST-ONLY",
++  event: {
++    id: event.id,
++    name: event.name,
++    startsAt: event.startsAt,
++    venue: event.venue,
++    status: event.status,
++  },
++  attendee: { name: "Test attendee", email: "test@example.invalid" },
++  status: "PENDING_PAYMENT",
++  paymentStatus: "PENDING",
++  items: [
++    {
++      ticketCategoryId: event.categories[0].id,
++      name: "Test category",
++      quantity: 2,
++      unitPrice: 2200,
++      seats: [
++        { id: "seat-1", displayLabel: "A1" },
++        { id: "seat-2", displayLabel: "A2" },
++      ],
++    },
++  ],
++  subtotal: 4400,
++  fees: [],
++  total: 4400,
++  currency: "PHP",
++  expiresAt: "2026-10-18T10:08:00Z",
++  serverNow: "2026-10-18T10:03:00Z",
++  canPay: true,
++  canCancel: true,
++};
++
++test("cumulative confirmed tickets and active holds constrain every selected category", () => {
++  assert.equal(remainingAllowance(options), 2);
++  assert.deepEqual(validateDraft(draft, options, seats), []);
++  assert.ok(
++    validateDraft(
++      { ...draft, items: [{ ...draft.items[0], quantity: 3 }] },
++      options,
++    ).some((x) => x.includes("allowance")),
++  );
++  assert.ok(validateDraft({ ...draft, eventId: "other" }, options).length);
++  assert.ok(
++    validateDraft(
++      { ...draft, items: [...draft.items, ...draft.items] },
++      options,
++    ).length,
++  );
++  assert.ok(
++    validateDraft(
++      { ...draft, items: [{ ...draft.items[0], quantity: 1.5 }] },
++      options,
++    ).length,
++  );
++});
++test("numbered seats must match count, category, event, uniqueness and effective availability", () => {
++  assert.ok(
++    validateDraft(
++      { ...draft, items: [{ ...draft.items[0], seatIds: ["seat-1"] }] },
++      options,
++      seats,
++    ).length,
++  );
++  assert.ok(
++    validateDraft(
++      {
++        ...draft,
++        items: [{ ...draft.items[0], seatIds: ["seat-1", "seat-1"] }],
++      },
++      options,
++      seats,
++    ).length,
++  );
++  for (const changed of [
++    { status: "HELD" },
++    { status: "SOLD" },
++    { status: "DISABLED" },
++    { eventId: "other" },
++    { ticketCategoryId: "wrong" },
++  ])
++    assert.ok(
++      validateDraft(draft, options, [
++        { ...seats[0], ...changed },
++        ...seats.slice(1),
++      ]).length,
++    );
++});
++test("seat toggles respect category quantity and refresh removes conflicting choices", () => {
++  const empty = { ...draft, items: [{ ...draft.items[0], seatIds: [] }] };
++  let next = toggleSeat(toggleSeat(empty, seats[0]), seats[1]);
++  assert.equal(next.items[0].seatIds.length, 2);
++  assert.equal(toggleSeat(next, seats[2]).items[0].seatIds.length, 2);
++  next = toggleSeat(next, seats[0]);
++  assert.deepEqual(next.items[0].seatIds, ["seat-2"]);
++  assert.deepEqual(
++    refreshDraft(draft, [{ ...seats[0], status: "HELD" }, ...seats.slice(1)])
++      .items[0].seatIds,
++    ["seat-2"],
++  );
++  assert.deepEqual(
++    setQuantity(draft, event.categories[0].id, 1).items[0].seatIds,
++    [],
++  );
++});
++test("draft persistence allowlists selection fields and never persists prices or customer data", () => {
++  const parsed = parseDraft(
++    { ...draft, total: 0, attendee: { name: "secret" }, role: "ADMIN" },
++    event.id,
++  );
++  assert.deepEqual(Object.keys(parsed).sort(), ["eventId", "items", "version"]);
++  assert.equal(parseDraft(draft, "other"), undefined);
++  assert.equal(
++    parseDraft(
++      { ...draft, items: [{ ...draft.items[0], quantity: -1 }] },
++      event.id,
++    ),
++    undefined,
++  );
++});
++test("reservation countdown uses server timestamps and never renews a deadline locally", () => {
++  assert.equal(secondsRemaining(booking, 0), 300);
++  assert.equal(secondsRemaining(booking, 90000), 210);
++  assert.equal(secondsRemaining(booking, 900000), 0);
++  assert.equal(canPay(booking, 0), false);
++  assert.equal(canCancel(booking, 0), false);
++  const confirmed = { ...booking, status: "CONFIRMED", paymentStatus: "PAID" };
++  assert.equal(isConfirmed(confirmed), true);
++  assert.equal(canPay(confirmed, 100), false);
++  assert.equal(canCancel(confirmed, 100), false);
++  assert.equal(
++    isConfirmed({ ...booking, status: "CONFIRMED", paymentStatus: "FAILED" }),
++    false,
++  );
++  assert.equal(
++    isConfirmed({ ...booking, status: "CANCELLED", paymentStatus: "PAID" }),
++    false,
++  );
++  assert.equal(
++    isConfirmed({
++      ...confirmed,
++      event: { ...booking.event, status: "CANCELLED" },
++    }),
++    false,
++  );
++});
++test("refresh cannot extend expiry, regress paid state or revive a released booking", () => {
++  assert.throws(
++    () =>
++      reconcileBooking(booking, {
++        ...booking,
++        serverNow: "2026-10-18T10:02:00Z",
++      }),
++    /CONTRACT_MISMATCH/,
++  );
++  assert.throws(
++    () =>
++      reconcileBooking(booking, {
++        ...booking,
++        expiresAt: "2026-10-18T10:18:00Z",
++      }),
++    /CONTRACT_MISMATCH/,
++  );
++  const paid = { ...booking, status: "CONFIRMED", paymentStatus: "PAID" };
++  assert.throws(
++    () => reconcileBooking(paid, { ...paid, paymentStatus: "FAILED" }),
++    /CONTRACT_MISMATCH/,
++  );
++  assert.throws(
++    () => reconcileBooking({ ...booking, status: "EXPIRED" }, paid),
++    /CONTRACT_MISMATCH/,
++  );
++  assert.throws(
++    () => reconcileBooking({ ...booking, status: "CANCELLED" }, booking),
++    /CONTRACT_MISMATCH/,
++  );
++  assert.equal(
++    reconcileBooking(paid, {
++      ...paid,
++      status: "REFUNDED",
++      paymentStatus: "REFUNDED",
++    }).status,
++    "REFUNDED",
++  );
++});
++test("server-created booking must contain exactly the requested seat allocations", () => {
++  assert.doesNotThrow(() => assertMatchesDraft(booking, draft));
++  assert.throws(
++    () =>
++      assertMatchesDraft(
++        {
++          ...booking,
++          items: [
++            {
++              ...booking.items[0],
++              seats: [
++                { id: "unknown", displayLabel: "B1" },
++                { id: "seat-2", displayLabel: "A2" },
++              ],
++            },
++          ],
++        },
++        draft,
++      ),
++    /CONTRACT_MISMATCH/,
++  );
++  assert.throws(
++    () =>
++      assertMatchesDraft(
++        { ...booking, event: { ...booking.event, id: "other" } },
++        draft,
++      ),
++    /CONTRACT_MISMATCH/,
++  );
++});
++test("booking and seat response validation rejects inconsistent service payloads", () => {
++  assert.equal(requireBooking(booking).id, booking.id);
++  assert.equal(requireOptions(options, event.id).event.id, event.id);
++  assert.equal(requireSeats(seats, options).length, 3);
++  assert.throws(
++    () => requireBooking({ ...booking, total: 1 }),
++    /CONTRACT_MISMATCH/,
++  );
++  assert.throws(
++    () =>
++      requireBooking({
++        ...booking,
++        attendee: { ...booking.attendee, phoneNumber: {} },
++      }),
++    /CONTRACT_MISMATCH/,
++  );
++  assert.throws(
++    () => requireSeats([...seats, seats[0]], options),
++    /CONTRACT_MISMATCH/,
++  );
++});
++test("payment links need an explicitly trusted HTTPS origin and booking returns stay local", () => {
++  assert.equal(
++    trustedPaymentUrl("https://pay.example.invalid/checkout", [
++      "https://pay.example.invalid",
++    ]),
++    "https://pay.example.invalid/checkout",
++  );
++  for (const url of [
++    "javascript:alert(1)",
++    "http://pay.example.invalid/",
++    "https://evil.invalid/",
++    "https://user:pass@pay.example.invalid/",
++  ])
++    assert.equal(
++      trustedPaymentUrl(url, ["https://pay.example.invalid"]),
++      undefined,
++    );
++  assert.equal(safeReturnTo("/bookings/b1/payment"), "/bookings/b1/payment");
++  assert.equal(safeReturnTo("/bookings/b1/payment?success=true"), undefined);
++  assert.equal(safeReturnTo("/events/e1/seats"), "/events/e1/seats");
++});
++
++const { formatBookingAmount } = load("src/lib/booking/format.ts");
++test("booking amounts preserve centavos and show configured fees precisely", () => {
++  assert.ok(formatBookingAmount(100.25).includes("100.25"));
++  assert.ok(formatBookingAmount(2200).includes("2,200.00"));
++});
+--- /dev/null
++++ b/tests/load-typescript.mjs
+@@ -0,0 +1,33 @@
++import fs from "node:fs";
++import path from "node:path";
++import { createRequire } from "node:module";
++import { fileURLToPath } from "node:url";
++import ts from "typescript";
++const externalRequire = createRequire(import.meta.url);
++const __dirname = path.dirname(fileURLToPath(import.meta.url));
++export const root = path.resolve(__dirname, "..");
++export const cache = new Map();
++export function load(file) {
++  file = path.resolve(root, file);
++  if (cache.has(file)) return cache.get(file).exports;
++  const loadedModule = { exports: {} };
++  cache.set(file, loadedModule);
++  const code = ts.transpileModule(fs.readFileSync(file, "utf8"), {
++    compilerOptions: {
++      module: ts.ModuleKind.CommonJS,
++      target: ts.ScriptTarget.ES2020,
++    },
++  }).outputText;
++  const localRequire = (id) =>
++    id.startsWith("@/")
++      ? load("src/" + id.slice(2) + ".ts")
++      : id.startsWith(".")
++        ? load(path.resolve(path.dirname(file), id + ".ts"))
++        : externalRequire(id);
++  new Function("require", "module", "exports", code)(
++    localRequire,
++    loadedModule,
++    loadedModule.exports,
++  );
++  return loadedModule.exports;
++}
+--- a/tests/public-frontend.test.mjs
++++ b/tests/public-frontend.test.mjs
+@@ -1,24 +1,8 @@
+ /* Run with: node --test tests/public-frontend.test.mjs (no additional packages). */
+ import test from 'node:test';
+ import assert from 'node:assert/strict';
+-import fs from 'node:fs';
+ import path from 'node:path';
+-import { createRequire } from 'node:module';
+-import { fileURLToPath } from 'node:url';
+-import ts from 'typescript';
+-const externalRequire = createRequire(import.meta.url);
+-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+-const root = path.resolve(__dirname, '..');
+-const cache = new Map();
+-function load(file) {
+-  file = path.resolve(root, file);
+-  if (cache.has(file)) return cache.get(file).exports;
+-  const loadedModule = { exports: {} }; cache.set(file, loadedModule);
+-  const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText;
+-  const localRequire = id => id.startsWith('@/') ? load('src/' + id.slice(2) + '.ts') : id.startsWith('.') ? load(path.resolve(path.dirname(file), id + '.ts')) : externalRequire(id);
+-  new Function('require', 'module', 'exports', code)(localRequire, loadedModule, loadedModule.exports);
+-  return loadedModule.exports;
+-}
++import { load, cache, root } from './load-typescript.mjs';
+ const { safeReturnTo, authHref } = load('src/lib/auth/destination.ts');
+ const { normalizePhone, attendeePayload, passwordError, validEmail } = load('src/lib/auth/validation.ts');
+ const { getBookingState, bookingHref, isCategoryBookable } = load('src/lib/event-booking.ts');

@@ -1,0 +1,122 @@
+import type { EventDetails } from "@/types/event";
+
+/**
+ * TEMPORARY fallback used only while NEXT_PUBLIC_API_URL is unset (the public
+ * events API is not available yet). Remove once GET /events/:id is live.
+ */
+const baseVenue = {
+  name: "SM Mall of Asia Arena",
+  address: "Seaside Blvd, Mall of Asia Complex, Pasay, 1300 Metro Manila",
+  city: "Pasay",
+  latitude: 14.5323,
+  longitude: 120.9822,
+};
+const organizer = {
+  name: "Live Nation Philippines",
+  description: "Promoter of international tours and arena shows across the Philippines.",
+};
+
+export const MOCK_EVENTS: EventDetails[] = [
+  {
+    id: "puth-2026",
+    genre: "Pop",
+    name: "Charlie Puth - Whatever's Clever! World Tour",
+    performers: ["Charlie Puth"],
+    type: "Concert",
+    description:
+      "Charlie Puth brings the Whatever's Clever! World Tour to Manila for one night only, with songs from Charlie, Voicenotes and his latest record.",
+    bannerUrl: "/images/charlie_puth.jpg",
+    posterUrl: "/images/charlie_puth.jpg",
+    gallery: ["/images/charlie_puth.jpg"],
+    startsAt: "2026-10-14T19:30:00+08:00",
+    endsAt: "2026-10-14T22:30:00+08:00",
+    venue: baseVenue,
+    organizer,
+    status: "PUBLISHED",
+    salesStartAt: "2026-06-01T10:00:00+08:00",
+    salesEndAt: "2026-10-14T18:00:00+08:00",
+    categories: [
+      {
+        id: "puth-ga",
+        name: "Charlie Puth - Whatever's Clever World Tour",
+        description: "General admission. Numbered seat selection on the next step.",
+        price: 2200,
+        status: "ACTIVE",
+        availability: "AVAILABLE",
+        remaining: 412,
+      },
+      {
+        id: "puth-mc",
+        name: "Charlie Puth - Whatever's Clever World Tour - Mastercard Preferred",
+        description: "Mastercard Preferred presale seats with priority entry.",
+        price: 4500,
+        status: "ACTIVE",
+        availability: "AVAILABLE",
+        remaining: 38,
+      },
+    ],
+    playlist: {
+      label: "Album Playlist / Charlie",
+      title: "Charlie Puth Voicenotes (Full...)",
+      coverUrl: "/images/charlie_puth.jpg",
+      tracks: [
+        { id: "t1", title: "Changes", artist: "Charlie Puth", verified: true, views: "1.3M views", publishedAgo: "6 months ago", duration: "3:05", thumbUrl: "/images/charlie_puth.jpg" },
+        { id: "t2", title: "Beat Yourself Up", artist: "Charlie Puth", verified: true, views: "1.3M views", publishedAgo: "6 months ago", duration: "2:59", thumbUrl: "/images/charlie_puth.jpg" },
+        { id: "t3", title: "Cry (feat. Kenny G)", artist: "Charlie Puth", verified: true, views: "567K views", publishedAgo: "6 months ago", duration: "3:08", thumbUrl: "/images/charlie_puth.jpg" },
+        { id: "t4", title: "Washed Up", artist: "Charlie Puth", verified: true, views: "483K views", publishedAgo: "6 months ago", duration: "3:01", thumbUrl: "/images/charlie_puth.jpg" },
+      ],
+    },
+  },
+  {
+    id: "wte-2026",
+    genre: "Indie",
+    name: "wave to earth - The Pieces Tour",
+    performers: ["wave to earth", "Milena"],
+    type: "Concert",
+    description: "wave to earth performs The Pieces Tour live in Manila with special guest Milena.",
+    bannerUrl: "/images/wave_to_earth.jpg",
+    posterUrl: "/images/wave_to_earth.jpg",
+    startsAt: "2026-11-15T19:00:00+08:00",
+    venue: baseVenue,
+    organizer,
+    status: "PUBLISHED",
+    categories: [
+      { id: "wte-ga", name: "General Admission", price: 2200, status: "ACTIVE", availability: "SOLD_OUT", remaining: 0 },
+      { id: "wte-vip", name: "VIP", description: "Front section with early entry.", price: 5500, status: "ACTIVE", availability: "SOLD_OUT", remaining: 0 },
+    ],
+  },
+  {
+    id: "m5-2027",
+    genre: "Pop",
+    name: "Maroon 5 Asia 2027",
+    performers: ["Maroon 5"],
+    type: "Concert",
+    description: "Maroon 5 return to Manila on their Asia 2027 run.",
+    bannerUrl: "/images/maroon5.jpg",
+    posterUrl: "/images/maroon5.jpg",
+    startsAt: "2027-02-07T20:00:00+08:00",
+    venue: baseVenue,
+    organizer,
+    status: "PUBLISHED",
+    salesStartAt: "2026-12-01T10:00:00+08:00",
+    categories: [
+      { id: "m5-ga", name: "General Admission", price: 2200, status: "ACTIVE", availability: "NOT_YET_OPEN", salesStartAt: "2026-12-01T10:00:00+08:00" },
+      { id: "m5-vip", name: "VIP", price: 6500, status: "ACTIVE", availability: "NOT_YET_OPEN", salesStartAt: "2026-12-01T10:00:00+08:00" },
+    ],
+  },
+  {
+    id: "bts-2027",
+    genre: "Pop",
+    name: "BTS World Tour 'ARIRANG' in Bulacan",
+    performers: ["BTS"],
+    type: "Concert",
+    description: "BTS World Tour 'ARIRANG' at the Philippine Sports Stadium.",
+    bannerUrl: "/images/bts.jpg",
+    posterUrl: "/images/bts.jpg",
+    startsAt: "2027-03-13T18:00:00+08:00",
+    venue: { name: "Philippine Sports Stadium", address: "Ciudad de Victoria, Bocaue, Bulacan", city: "Bulacan" },
+    organizer,
+    status: "CANCELLED",
+    categories: [{ id: "bts-ga", name: "General Admission", price: 3200, status: "ACTIVE", availability: "AVAILABLE", remaining: 900 }],
+  },
+];

@@ -1,4 +1,9 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
+
+/** Drop the logo file at public/images/aventix-logo.png (or change this path). */
+const LOGO_SRC = "/images/aventix-logo.png";
 
 interface LogoProps {
   className?: string;
@@ -18,6 +23,21 @@ export default function AventixLogo({ className = "", size = "md" }: LogoProps) 
     lg: "text-2xl",
   };
 
+  const [failed, setFailed] = useState(false);
+  const imgHeights = { sm: "h-6", md: "h-9", lg: "h-12" };
+
+  if (!failed) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={LOGO_SRC}
+        alt="Aventix"
+        onError={() => setFailed(true)}
+        className={`${imgHeights[size]} w-auto select-none ${className}`}
+      />
+    );
+  }
+
   return (
     <div className={`flex items-center gap-2.5 select-none ${className}`}>
       {/* Exact Aventix Cyan Geometric Mark */}
@@ -29,15 +49,15 @@ export default function AventixLogo({ className = "", size = "md" }: LogoProps) 
       >
         <path
           d="M17.5 4L2 32H11L20 16L17.5 4Z"
-          fill="#00e5be"
+          fill="#66fcf1"
         />
         <path
           d="M22.5 4L38 32H29L20 16L22.5 4Z"
-          fill="#00e5be"
+          fill="#66fcf1"
         />
         <path
           d="M11 25.5H29L26 31H14L11 25.5Z"
-          fill="#00e5be"
+          fill="#66fcf1"
           fillOpacity="0.85"
         />
       </svg>
