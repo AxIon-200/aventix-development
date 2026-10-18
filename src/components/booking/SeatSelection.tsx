@@ -304,7 +304,7 @@ export default function SeatSelection({
               )}
               <div className="space-y-6">
                 {Array.from(groups).map(([label, rowSeats]) => (
-                  <section key={label} aria-label={label}>
+                  <section key={label} id={Array.from(groups).find(([, group]) => group[0]?.section === rowSeats[0]?.section)?.[0] === label ? `section-${encodeURIComponent(rowSeats[0]?.section || label)}` : undefined} className="scroll-mt-28" aria-label={label}>
                     <h3 className="mb-3 text-xs font-semibold text-[#9aa4ae]">
                       {label}
                     </h3>
