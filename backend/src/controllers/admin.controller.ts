@@ -1,26 +1,22 @@
 import { Request, Response } from "express";
+import { AdminService } from "../services/admin.service.js";
 
 export const getAdminOverview = async (req: Request, res: Response) => {
-  return res.json({
-    success: true,
-    data: {
-      totalUsers: 1420,
-      totalOrganizers: 38,
-      totalEvents: 64,
-      ticketsSold: 9450,
-      grossRevenue: 2845000,
-    },
-  });
+  const data = await AdminService.getOverview();
+  return res.json({ success: true, data });
 };
 
 export const listAllUsers = async (req: Request, res: Response) => {
-  return res.json({ success: true, data: [] });
+  const users = await AdminService.getUsers();
+  return res.json({ success: true, data: users });
 };
 
 export const listAllOrganizers = async (req: Request, res: Response) => {
-  return res.json({ success: true, data: [] });
+  const organizers = await AdminService.getOrganizers();
+  return res.json({ success: true, data: organizers });
 };
 
 export const listAllBookings = async (req: Request, res: Response) => {
-  return res.json({ success: true, data: [] });
+  const bookings = await AdminService.getBookings();
+  return res.json({ success: true, data: bookings });
 };
