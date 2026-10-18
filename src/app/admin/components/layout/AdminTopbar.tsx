@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Search, X } from "lucide-react";
 import { NotificationBell } from "@/app/admin/components/ui/NotificationBell";
 import { getProfile } from "@/app/admin/services/profileService";
+import RoleDropdownSwitcher from "@/components/shared/RoleDropdownSwitcher";
 
 type AdminTopbarProps = {
   adminName?: string;
@@ -130,6 +131,9 @@ export function AdminTopbar({
 
   return (
     <header className="relative z-40 flex h-16 items-center justify-end gap-3 border-b border-white/10 px-4 sm:px-8">
+      {/* Demo Role Switcher */}
+      <RoleDropdownSwitcher />
+
       {/* Expandable Search */}
       <div
         className={`flex items-center transition-all duration-200 ${

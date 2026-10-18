@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Search, X, Plus } from "lucide-react";
 import { NotificationBell } from "@/app/admin/components/ui/NotificationBell";
 
+import RoleDropdownSwitcher from "@/components/shared/RoleDropdownSwitcher";
+
 type OrganizerTopbarProps = {
   organizerName?: string;
   roleLabel?: string;
@@ -36,6 +38,9 @@ export default function OrganizerTopbar({
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center justify-end gap-3 border-b border-white/10 bg-[#0B0F19] px-4 sm:px-8">
+      {/* Demo Role Switcher */}
+      <RoleDropdownSwitcher />
+
       {/* Expandable Search */}
       <div
         className={`flex items-center transition-all duration-200 ${
