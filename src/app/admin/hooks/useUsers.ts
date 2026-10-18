@@ -3,11 +3,18 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ManagedUser,
-  PaginatedResult,
-  UserListParams,
   UserStats,
+  UserStatusFilter,
 } from "@/app/admin/types/users";
+import { PaginatedResult } from "@/app/admin/types/common";
 import { getUsers, getUserStats } from "@/app/admin/services/userService";
+
+export type UserListParams = {
+  page: number;
+  pageSize: number;
+  search: string;
+  status: UserStatusFilter;
+};
 
 type QueryState<T> = {
   data: T | null;
@@ -26,7 +33,7 @@ export function useUsers({ page, pageSize, search, status }: UserListParams) {
   useEffect(() => {
     let cancelled = false;
     setState((s) => ({ ...s, isLoading: true, error: null }));
-    getUsers({ page, pageSize, search, status })
+    getUsers({ page, pageSize, search, filters: { status } })
       .then((data) => !cancelled && setState({ data, isLoading: false, error: null }))
       .catch(
         (err) =>
