@@ -1,172 +1,119 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState, useRef } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import EventSearchField from "./events/EventSearchField";
+import type { EventDetails } from "@/types/event";
+import AccountMenu from "./auth/AccountMenu";
+import { useAccountSession } from "./auth/useAccountSession";
+import { publicAuthClient } from "@/lib/auth/client";
 import AventixLogo from "./AventixLogo";
-import { Search, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 
 interface NavbarProps {
+  /** Landing page opens its auth modal; other pages fall back to /login and /register. */
   onOpenAuth?: (mode: "login" | "register") => void;
   onSearch?: (query: string) => void;
+  searchEvents?: EventDetails[];
 }
 
-export default function Navbar({ onOpenAuth, onSearch }: NavbarProps) {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [searchVal, setSearchVal] = useState("");
+const NAV_LINKS = [
+  { label: "Home", href: "/" },
+  { label: "Events", href: "/events" },
+  { label: "About", href: "/about" },
+  { label: "Contact", href: "/contact" },
+];
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (onSearch) onSearch(searchVal);
-  };
+const pillButton =
+  "inline-flex items-center justify-center rounded-full bg-[#66fcf1] px-5 py-2 text-sm font-semibold text-[#0b0c10] shadow-glow transition hover:bg-[#8afff6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#66fcf1]";
+
+export default function Navbar({ onOpenAuth, onSearch, searchEvents }: NavbarProps) {
+  const { session, clearSession } = useAccountSession();
+  const pathname = usePathname();
+  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`));
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  const authControl = (mode: "login" | "register", label: string, className: string, onClick?: () => void) =>
+    onOpenAuth ? (
+      <button
+        type="button"
+        className={className}
+        onClick={() => {
+          onClick?.();
+          onOpenAuth(mode);
+        }}
+      >
+        {label}
+      </button>
+    ) : (
+      <Link href={`/${mode}`} className={className} onClick={onClick}>
+        {label}
+      </Link>
+    );
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-[#0b0f15]/85 backdrop-blur-md border-b border-[#182332]/60 transition-all">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
-        {/* Brand Logo */}
-        <div className="flex items-center gap-8">
-          <a href="#" className="flex items-center group transition-transform hover:scale-[1.02]">
-            <AventixLogo size="md" />
-          </a>
+    <header onKeyDown={(event) => { if (event.key === "Escape") { setMobileMenuOpen(false); menuButton.current?.focus(); } }} className="sticky top-0 z-50 w-full border-b border-[#1f2833] bg-[#0b0c10]">
+      <div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-16">
+        <Link href="/" aria-label="Aventix home" className="flex shrink-0 items-center">
+          <AventixLogo size="md" />
+        </Link>
 
-          {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-7 text-sm font-medium">
-            <a
-              href="#"
-              className="text-white hover:text-[#00e5be] transition-colors relative py-1"
+        <nav aria-label="Primary" className="hidden items-center gap-9 text-sm font-medium xl:flex">
+          {NAV_LINKS.map((l) => (
+            <Link
+              key={l.label}
+              href={l.href}
+              aria-current={isActive(l.href) ? "page" : undefined}
+              className={`transition-colors hover:text-[#66fcf1] focus-visible:text-[#66fcf1] focus-visible:outline-none ${
+                isActive(l.href) ? "text-[#66fcf1]" : "text-[#c5c6c7]"
+              }`}
             >
-              Home
-              <span className="absolute bottom-0 left-0 w-full h-[2px] bg-[#00e5be] rounded-full" />
-            </a>
-            <a
-              href="#trending-events"
-              className="text-slate-300 hover:text-[#00e5be] transition-colors py-1"
-            >
-              Events
-            </a>
-            <a
-              href="#how-it-works"
-              className="text-slate-300 hover:text-[#00e5be] transition-colors py-1"
-            >
-              About
-            </a>
-            <a
-              href="#footer"
-              className="text-slate-300 hover:text-[#00e5be] transition-colors py-1"
-            >
-              Contact
-            </a>
-          </nav>
+              {l.label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="hidden items-center gap-4 xl:flex">
+          <EventSearchField events={searchEvents} onSearch={onSearch} onNavigate={() => setMobileMenuOpen(false)} />
+          {session ? <AccountMenu session={session} client={publicAuthClient} onLoggedOut={clearSession} /> : <>{authControl("login", "Log in", pillButton)}{authControl("register", "Register", pillButton)}</>}
         </div>
 
-        {/* Right side: Search bar & Auth Buttons */}
-        <div className="hidden sm:flex items-center gap-3 md:gap-4">
-          {/* Search pill */}
-          <form
-            onSubmit={handleSearchSubmit}
-            className="relative flex items-center w-48 lg:w-64"
-          >
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
-            <input
-              type="text"
-              value={searchVal}
-              onChange={(e) => setSearchVal(e.target.value)}
-              placeholder="Search events..."
-              className="w-full bg-[#182333]/90 text-sm text-slate-100 placeholder-slate-400 pl-9 pr-3.5 py-2 rounded-full border border-[#27384e]/70 focus:outline-none focus:border-[#00e5be] focus:ring-1 focus:ring-[#00e5be] transition-all"
-            />
-          </form>
-
-          {/* Log in Button */}
+        <div className="flex items-center xl:hidden">
           <button
-            onClick={() => onOpenAuth?.("login")}
-            className="px-5 py-2 rounded-full text-sm font-semibold text-[#00e5be] bg-[#00e5be]/10 hover:bg-[#00e5be]/20 border border-[#00e5be]/40 transition-all hover:scale-105"
-          >
-            Log in
-          </button>
-
-          {/* Register Button */}
-          <button
-            onClick={() => onOpenAuth?.("register")}
-            className="px-5 py-2 rounded-full text-sm font-bold text-[#091519] bg-[#00e5be] hover:bg-[#35f0cb] transition-all shadow-[0_0_20px_rgba(0,229,190,0.35)] hover:shadow-[0_0_25px_rgba(0,229,190,0.55)] hover:scale-105"
-          >
-            Register
-          </button>
-        </div>
-
-        {/* Mobile menu button */}
-        <div className="flex sm:hidden items-center gap-2">
-          <button
+            type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 rounded-lg bg-[#182333] text-slate-300 hover:text-white"
+            className="rounded-lg bg-[#1f2833] p-2 text-[#c5c6c7] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#66fcf1]"
+            ref={menuButton}
             aria-label="Toggle menu"
+            aria-controls="mobile-navigation"
+            aria-expanded={mobileMenuOpen}
           >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile drawer */}
       {mobileMenuOpen && (
-        <div className="sm:hidden px-4 pt-2 pb-6 bg-[#0e141c] border-b border-[#1e2a3a] space-y-4">
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-            <input
-              type="text"
-              value={searchVal}
-              onChange={(e) => setSearchVal(e.target.value)}
-              placeholder="Search events..."
-              className="w-full bg-[#182333] text-sm text-slate-100 placeholder-slate-400 pl-9 pr-4 py-2.5 rounded-full border border-[#27384e]"
-            />
-          </div>
-          <div className="flex flex-col space-y-2 text-sm font-medium">
-            <a
-              href="#"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-md bg-[#131b26] text-[#00e5be]"
-            >
-              Home
-            </a>
-            <a
-              href="#trending-events"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 text-slate-300 hover:text-white"
-            >
-              Events
-            </a>
-            <a
-              href="#how-it-works"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 text-slate-300 hover:text-white"
-            >
-              About
-            </a>
-            <a
-              href="#footer"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 text-slate-300 hover:text-white"
-            >
-              Contact
-            </a>
+        <nav id="mobile-navigation" aria-label="Mobile navigation" className="space-y-4 border-t border-[#1f2833] bg-[#0b0c10] px-4 pb-6 pt-4 xl:hidden">
+          <EventSearchField events={searchEvents} onSearch={onSearch} onNavigate={() => setMobileMenuOpen(false)} compact />
+          <div className="flex flex-col text-sm font-medium">
+            {NAV_LINKS.map((l) => (
+              <Link
+                key={l.label}
+                href={l.href}
+                onClick={() => setMobileMenuOpen(false)}
+                aria-current={isActive(l.href) ? "page" : undefined}
+                className={`rounded-md px-3 py-2 hover:text-white ${isActive(l.href) ? "text-[#66fcf1]" : "text-[#c5c6c7]"}`}
+              >
+                {l.label}
+              </Link>
+            ))}
           </div>
           <div className="flex gap-2 pt-2">
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                onOpenAuth?.("login");
-              }}
-              className="flex-1 py-2.5 rounded-full text-sm font-semibold text-[#00e5be] border border-[#00e5be]/40 bg-[#00e5be]/10 text-center"
-            >
-              Log in
-            </button>
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                onOpenAuth?.("register");
-              }}
-              className="flex-1 py-2.5 rounded-full text-sm font-bold text-[#091519] bg-[#00e5be] text-center"
-            >
-              Register
-            </button>
+            {session ? <AccountMenu session={session} client={publicAuthClient} onLoggedOut={clearSession} /> : <>{authControl("login", "Log in", `${pillButton} flex-1`, () => setMobileMenuOpen(false))}{authControl("register", "Register", `${pillButton} flex-1`, () => setMobileMenuOpen(false))}</>}
           </div>
-        </div>
+        </nav>
       )}
     </header>
   );

@@ -1,0 +1,2592 @@
+--- /dev/null
++++ b/src/app/about/experience/page.tsx
+@@ -0,0 +1,8 @@
++import type { Metadata } from "next";
++import Link from "next/link";
++import PageShell from "@/components/layout/PageShell";
++import AboutHero from "@/components/AboutHero";
++export const metadata: Metadata = { title: "The Aventix experience | Aventix" };
++export default function ExperiencePage() {
++  return <PageShell><AboutHero /><div className="mx-auto max-w-[1440px] px-6 pb-12 lg:px-16"><Link href="/about" className="text-sm text-[#66fcf1]">Read our story →</Link></div></PageShell>;
++}
+--- a/src/app/about/page.tsx
++++ b/src/app/about/page.tsx
+@@ -1,6 +1,6 @@
+ import type { Metadata } from "next";
+ import PageShell from "@/components/layout/PageShell";
+-import OrganizerBanner from "@/components/OrganizerBanner";
++import Link from "next/link";
+ 
+ export const metadata: Metadata = {
+   title: "About | Aventix",
+@@ -37,6 +37,7 @@
+             <p className="mt-[18px] max-w-[560px] text-lg leading-7 text-[#c5c6c7]">
+               Aventix is a concert, gig, and live music ticketing platform built to make discovering events, securing tickets, and experiencing the moment simpler.
+             </p>
++            <Link href="/about/experience" className="mt-6 inline-block text-sm text-[#66fcf1]">Explore the Aventix experience →</Link>
+           </div>
+           <div
+             aria-hidden
+@@ -85,7 +86,7 @@
+         </div>
+       </section>
+ 
+-      <OrganizerBanner href="/register" />
++
+     </PageShell>
+   );
+ }
+--- a/src/app/contact/page.tsx
++++ b/src/app/contact/page.tsx
+@@ -93,7 +93,7 @@
+           <ul className="mt-4 flex flex-col gap-4">
+             {FAQ.map((q) => (
+               <li key={q} className="rounded-[14px] border border-[#2c3644] bg-[#1f2833] px-[22px] py-[18px] text-sm font-semibold text-white">
+-                {q}
++                <details><summary className="cursor-pointer">{q}</summary><p className="mt-3 text-sm font-normal leading-6 text-[#c5c6c7]">{q.startsWith("Need") ? "Include the event name and your booking reference when contacting support. Never send passwords or payment card details." : q.startsWith("Want") ? "Organizer onboarding is awaiting the team’s agreed policy. The public organizer form is currently a preview." : "Approved refund and policy documents have not been published in this preview. Contact support for event-specific guidance."}</p></details>
+               </li>
+             ))}
+           </ul>
+--- a/src/app/events/[id]/not-found.tsx
++++ b/src/app/events/[id]/not-found.tsx
+@@ -6,14 +6,14 @@
+   return (
+     <div className="flex min-h-screen flex-col bg-[#0b0c10]">
+       <Navbar />
+-      <main className="flex flex-1 flex-col items-center justify-center px-4 py-24 text-center">
++      <main id="main-content" className="flex flex-1 flex-col items-center justify-center px-4 py-24 text-center">
+         <p className="text-sm font-semibold tracking-wide text-[#66fcf1]">EVENT UNAVAILABLE</p>
+         <h1 className="mt-3 font-display text-4xl font-bold text-white">We couldn&apos;t find that event</h1>
+         <p className="mt-3 max-w-md text-[#c5c6c7]">
+           It may have been removed or the link may be wrong. Browse upcoming events instead.
+         </p>
+         <Link
+-          href="/#trending-events"
++          href="/events"
+           className="mt-8 rounded-full bg-[#66fcf1] px-8 py-3.5 text-[15px] font-bold text-[#0b0c0b] shadow-glow transition hover:bg-[#8afff6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+         >
+           Browse events
+--- a/src/app/events/[id]/page.tsx
++++ b/src/app/events/[id]/page.tsx
+@@ -1,5 +1,7 @@
+ import type { Metadata } from "next";
+ import { notFound } from "next/navigation";
++import RelatedEvents from "@/components/event/RelatedEvents";
++import DemoNotice from "@/components/events/DemoNotice";
+ import Navbar from "@/components/Navbar";
+ import Footer from "@/components/Footer";
+ import EventHero from "@/components/event/EventHero";
+@@ -34,13 +36,15 @@
+   return (
+     <div className="flex min-h-screen flex-col bg-[#0b0c10] font-sans text-white">
+       <Navbar />
+-      <main className="flex-1">
++      <main id="main-content" className="flex-1">
++        <div className="mx-auto max-w-[1440px] px-4 pt-6 sm:px-6 lg:px-16"><DemoNotice /></div>
+         <EventHero event={event} booking={booking} />
+         <EventSectionNav hasPlaylist={!!event.playlist} hasLineup={event.performers.length > 1} />
+         <TicketCategories event={event} booking={booking} />
+         <EventInfo event={event} booking={booking} />
+         {event.playlist && <Playlist playlist={event.playlist} />}
+         {event.performers.length > 1 && <Lineup performers={event.performers} />}
++        <RelatedEvents eventId={event.id} eventType={event.type} />
+       </main>
+       <Footer />
+     </div>
+--- /dev/null
++++ b/src/app/events/[id]/tickets/page.tsx
+@@ -0,0 +1,40 @@
++import type { Metadata } from "next";
++import Link from "next/link";
++import { notFound } from "next/navigation";
++import PageShell from "@/components/layout/PageShell";
++import DemoNotice from "@/components/events/DemoNotice";
++import BookingLoginNotice from "@/components/event/BookingLoginNotice";
++import { getEventById } from "@/lib/events-api";
++import { bookingHref, categoryStateLabel, getBookingState, isCategoryBookable } from "@/lib/event-booking";
++import { formatDateTime, formatPrice } from "@/lib/format";
++import { authHref } from "@/lib/auth/destination";
++
++export const metadata: Metadata = { title: "Ticket options | Aventix" };
++
++export default async function TicketsPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ category?: string }> }) {
++  const { id } = await params;
++  const { category } = await searchParams;
++  const event = await getEventById(id);
++  if (!event) notFound();
++  const selected = typeof category === "string" ? event.categories.find(c => c.id === category) : undefined;
++  const returnTo = bookingHref(event.id, selected?.id);
++  const booking = getBookingState(event);
++  return <PageShell><div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-[72px]">
++    <Link href={`/events/${encodeURIComponent(event.id)}`} className="inline-block rounded-full bg-[#1f2833] px-5 py-2 text-xs text-[#66fcf1]">← Back to Event</Link>
++    <div className="mb-7 mt-4 flex flex-col justify-between gap-4 lg:flex-row lg:items-center"><div><h1 className="font-display text-2xl font-bold uppercase sm:text-3xl">{event.name}</h1><p className="mt-2 text-sm text-[#9aa4ae]">{formatDateTime(event.startsAt)} · {event.venue.name}{event.venue.city ? `, ${event.venue.city}` : ""}</p></div><span className="shrink-0 self-start rounded-full bg-[#66fcf1] px-6 py-2 text-[11px] font-semibold text-[#0b0c10]">LOGIN REQUIRED TO BOOK</span></div>
++    <DemoNotice />
++    {booking.message && <p role="status" className="mb-6 rounded-lg border border-amber-400/30 bg-amber-400/5 p-4 text-sm text-amber-200">{booking.message} Signing in does not override ticket availability.</p>}
++    {category && !selected && <p role="status" className="mb-4 text-sm text-amber-200">That ticket category is no longer available. Review the current categories below.</p>}
++    <BookingLoginNotice returnTo={returnTo} />
++    <div className="grid gap-10 py-12 lg:grid-cols-[minmax(0,408px)_minmax(0,1fr)]">
++      <aside><h2 className="mb-5 text-lg font-bold">SEAT PLAN</h2><div className="flex aspect-[408/350] flex-col items-center justify-center rounded-2xl border border-[#26303b] bg-[#151b23] p-8 text-center"><p className="font-semibold text-[#66fcf1]">Seat plan preview unavailable</p><p className="mt-3 text-sm leading-6 text-[#9aa4ae]">A verified seat map has not been supplied for this event. Ticket controls remain locked.</p></div><h3 className="mt-10 text-sm font-bold">NOTICE TO ALL ONLINE CUSTOMERS</h3><p className="mt-3 text-sm leading-6 text-[#9aa4ae]">Log in before selecting a ticket. Ticket quantities, numbered seats, and checkout are unavailable in this public-page preview.</p><ol className="mt-5 list-inside list-decimal space-y-3 text-sm text-[#c5c6c7]"><li>Log in to your Aventix account.</li><li>Return to the selected event.</li><li>Follow the agreed ticket and numbered-seat flow when it becomes available.</li></ol></aside>
++      <section className="min-w-0" aria-labelledby="ticket-options"><h2 id="ticket-options" className="border-b border-[#26303b] pb-4 text-lg font-bold">TICKETS</h2>
++        {event.categories.length === 0 ? <p className="py-8 text-[#9aa4ae]">No ticket categories have been announced.</p> : <ul className="mt-5 space-y-3">{event.categories.map(c => <li key={c.id} className={`rounded-lg border p-5 ${selected?.id === c.id ? "border-[#66fcf1]/50" : "border-transparent"} bg-[#151b23] even:bg-[#11151b]`}>
++          <div className="flex flex-wrap items-center justify-between gap-4"><div className="min-w-0 flex-1"><h3 className="text-sm font-bold uppercase">{c.name}</h3>{c.description && <p className="mt-2 text-xs leading-5 text-[#9aa4ae]">{c.description}</p>}</div><p className="text-sm font-semibold">{formatPrice(c.price)}</p></div>
++          <div className="mt-4 grid grid-cols-[1fr_auto] gap-3 sm:grid-cols-[1fr_80px_100px]"><div className="rounded border border-[#2c3644] px-3 py-3 text-xs text-[#9aa4ae]">{isCategoryBookable(event, c) ? "Log in to select" : categoryStateLabel(event, c)}</div><button type="button" disabled aria-label={`Quantity locked for ${c.name}`} className="rounded bg-[#252f38] px-5 text-[#9aa4ae]">—</button><button type="button" disabled className="col-span-2 rounded bg-[#303e4c] px-4 py-3 text-[11px] text-[#c5c6c7] sm:col-span-1">LOCKED</button></div>
++        </li>)}</ul>}
++        <div className="mt-5 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[#1b4975] bg-[#10304a] p-5"><div><h3 className="font-semibold">Ready to choose your tickets?</h3><p className="mt-1 text-xs text-[#9aa4ae]">Your event and category stay in the login link.</p></div><Link href={authHref("/login", returnTo)} className="rounded-full bg-[#66fcf1] px-8 py-3 text-xs font-bold text-[#0b0c10]">LOG IN</Link></div>
++      </section>
++    </div>
++  </div></PageShell>;
++}
+--- /dev/null
++++ b/src/app/events/loading.tsx
+@@ -0,0 +1,4 @@
++import PageShell from "@/components/layout/PageShell";
++export default function LoadingEvents() {
++  return <PageShell><div aria-busy="true" role="status" className="mx-auto max-w-[1440px] px-4 py-16 sm:px-6 lg:px-16"><p className="text-[#66fcf1]">Loading events…</p><div aria-hidden className="mt-8 grid animate-pulse gap-6 sm:grid-cols-2 lg:grid-cols-4">{[1, 2, 3, 4].map(n => <div key={n} className="h-80 rounded-2xl bg-[#1f2833]" />)}</div></div></PageShell>;
++}
+--- a/src/app/events/page.tsx
++++ b/src/app/events/page.tsx
+@@ -1,5 +1,6 @@
+ import type { Metadata } from "next";
+ import PageShell from "@/components/layout/PageShell";
++import DemoNotice from "@/components/events/DemoNotice";
+ import EventsBrowser from "@/components/events/EventsBrowser";
+ import { getEvents } from "@/lib/events-api";
+ 
+@@ -8,8 +9,8 @@
+   description: "Discover concerts and live experiences happening across the Philippines.",
+ };
+ 
+-export default async function EventsPage({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
+-  const { q } = await searchParams;
++export default async function EventsPage({ searchParams }: { searchParams: Promise<{ q?: string | string[]; location?: string; date?: string; category?: string }> }) {
++  const { q, location, date, category } = await searchParams;
+   const events = await getEvents(); // failures bubble to error.tsx
+   const initialQuery = Array.isArray(q) ? q[0] : q ?? "";
+ 
+@@ -24,7 +25,8 @@
+           <p className="mt-2 text-[17px] text-[#c5c6c7]">Discover concerts and live experiences happening across the Philippines.</p>
+         </div>
+       </section>
+-      <EventsBrowser events={events} initialQuery={initialQuery} />
++      <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-16"><DemoNotice /></div>
++      <EventsBrowser key={JSON.stringify([initialQuery, location, date, category])} events={events} initialQuery={initialQuery} initialLocation={typeof location === "string" ? location : undefined} initialDate={typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : undefined} initialCategory={typeof category === "string" ? category : undefined} />
+     </PageShell>
+   );
+ }
+--- /dev/null
++++ b/src/app/forgot-password/page.tsx
+@@ -0,0 +1,11 @@
++import type { Metadata } from "next";
++import AuthShell from "@/components/auth/AuthShell";
++import AuthForm from "@/components/auth/AuthForm";
++import { safeReturnTo } from "@/lib/auth/destination";
++
++export const metadata: Metadata = { title: "Forgot password | Aventix", robots: { index: false, follow: false } };
++export default async function Page({ searchParams }: { searchParams: Promise<{ returnTo?: string | string[] }> }) {
++  const params = await searchParams;
++  const returnTo = safeReturnTo(typeof params.returnTo === "string" ? params.returnTo : undefined);
++  return <AuthShell><AuthForm mode="forgot" returnTo={returnTo} /></AuthShell>;
++}
+--- a/src/app/globals.css
++++ b/src/app/globals.css
+@@ -67,3 +67,12 @@
+ .text-glow {
+   text-shadow: 0 0 20px rgba(102, 252, 241, 0.4);
+ }
++
++/* Shared keyboard and motion accessibility; scoped visual styles remain in pages. */
++:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
++input, textarea, select { scroll-margin-top: 7rem; }
++dialog::backdrop { background: rgb(0 0 0 / .7); backdrop-filter: blur(4px); }
++@media (prefers-reduced-motion: reduce) {
++  html { scroll-behavior: auto; }
++  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
++}
+--- a/src/app/layout.tsx
++++ b/src/app/layout.tsx
+@@ -43,6 +43,7 @@
+   return (
+     <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable} ${geist.variable}`}>
+       <body className="font-sans bg-[#0b0c10] text-slate-100 antialiased selection:bg-[#66fcf1] selection:text-[#0b0c10]">
++        <a href="#main-content" className="sr-only z-[100] rounded bg-[#66fcf1] p-3 text-[#0b0c10] focus:not-sr-only focus:fixed focus:left-4 focus:top-4">Skip to content</a>
+         {children}
+       </body>
+     </html>
+--- /dev/null
++++ b/src/app/legal/[policy]/page.tsx
+@@ -0,0 +1,10 @@
++import { notFound } from "next/navigation";
++import Link from "next/link";
++import PageShell from "@/components/layout/PageShell";
++const policies: Record<string, string> = { terms: "Terms & Conditions", privacy: "Privacy Policy", refunds: "Refund Policy", cookies: "Cookie Policy", security: "Data Security" };
++export default async function PolicyPage({ params }: { params: Promise<{ policy: string }> }) {
++  const { policy } = await params;
++  const title = policies[policy];
++  if (!title) notFound();
++  return <PageShell><section className="mx-auto max-w-3xl px-6 py-24"><p className="text-sm text-amber-200">POLICY NOT YET PUBLISHED</p><h1 className="mt-4 font-display text-4xl font-bold">{title}</h1><p className="mt-6 leading-7 text-[#c5c6c7]">The approved {title.toLowerCase()} has not been supplied for this frontend preview. This page does not establish legal terms or make refund, privacy, or security promises.</p><p className="mt-4 leading-7 text-[#c5c6c7]">Account creation must remain unavailable until approved terms and the account service are connected.</p><Link href="/contact" className="mt-8 inline-block rounded-full bg-[#66fcf1] px-6 py-3 font-semibold text-[#0b0c10]">Contact Aventix</Link></section></PageShell>;
++}
+--- /dev/null
++++ b/src/app/login/page.tsx
+@@ -0,0 +1,11 @@
++import type { Metadata } from "next";
++import AuthShell from "@/components/auth/AuthShell";
++import AuthForm from "@/components/auth/AuthForm";
++import { safeReturnTo } from "@/lib/auth/destination";
++
++export const metadata: Metadata = { title: "Login | Aventix", robots: { index: false, follow: false } };
++export default async function Page({ searchParams }: { searchParams: Promise<{ returnTo?: string | string[] }> }) {
++  const params = await searchParams;
++  const returnTo = safeReturnTo(typeof params.returnTo === "string" ? params.returnTo : undefined);
++  return <AuthShell><AuthForm mode="login" returnTo={returnTo} /></AuthShell>;
++}
+--- a/src/app/page.tsx
++++ b/src/app/page.tsx
+@@ -1,94 +1,20 @@
+-"use client";
+-
+-import React, { useState } from "react";
+-import Navbar from "@/components/Navbar";
++import PageShell from "@/components/layout/PageShell";
+ import Hero from "@/components/Hero";
+ import TrendingEvents from "@/components/TrendingEvents";
+-import BrowseCategory, { CategoryItem } from "@/components/BrowseCategory";
++import BrowseCategory from "@/components/BrowseCategory";
+ import HowItWorks from "@/components/HowItWorks";
+ import WhyChooseUs from "@/components/WhyChooseUs";
+ import Testimonials from "@/components/Testimonials";
+ import OrganizerBanner from "@/components/OrganizerBanner";
+-import Footer from "@/components/Footer";
+-import AuthModal from "@/components/AuthModal";
+-import OrganizerModal from "@/components/OrganizerModal";
+ 
+ export default function Home() {
+-  const [authModalOpen, setAuthModalOpen] = useState(false);
+-  const [authMode, setAuthMode] = useState<"login" | "register">("login");
+-  const [organizerModalOpen, setOrganizerModalOpen] = useState(false);
+-  const [activeCategoryFilter, setActiveCategoryFilter] = useState<string | null>(null);
+-
+-  const handleOpenAuth = (mode: "login" | "register") => {
+-    setAuthMode(mode);
+-    setAuthModalOpen(true);
+-  };
+-
+-  const handleSearchSubmit = (filters: { query: string; location: string; date: string }) => {
+-    // Smooth scroll to events and could filter
+-    const element = document.getElementById("trending-events");
+-    if (element) {
+-      element.scrollIntoView({ behavior: "smooth" });
+-    }
+-  };
+-
+-  return (
+-    <div className="min-h-screen bg-[#0b0c10] text-slate-100 flex flex-col font-sans selection:bg-[#66fcf1] selection:text-[#0b0c10]">
+-      {/* Top Navbar */}
+-      <Navbar
+-        onOpenAuth={handleOpenAuth}
+-      />
+-
+-      {/* Main Landing Page Content */}
+-      <main className="flex-1">
+-        {/* Hero Section */}
+-        <Hero
+-          onSearchSubmit={handleSearchSubmit}
+-          onExploreClick={() => {
+-            const element = document.getElementById("trending-events");
+-            if (element) element.scrollIntoView({ behavior: "smooth" });
+-          }}
+-        />
+-
+-        {/* Section 1: Trending Events */}
+-        <TrendingEvents />
+-
+-        {/* Section 2: Browse by Category */}
+-        <BrowseCategory
+-          onSelectCategory={(cat: CategoryItem) => {
+-            setActiveCategoryFilter(cat.name);
+-          }}
+-        />
+-
+-        {/* Section 3: How It Works */}
+-        <HowItWorks />
+-
+-        {/* Section 4: Why Choose Aventix */}
+-        <WhyChooseUs />
+-
+-        {/* Section 5: Attendee Stories / Testimonials */}
+-        <Testimonials />
+-
+-        {/* Section 6: Are You an Organizer Banner */}
+-        <OrganizerBanner
+-          onBecomeOrganizer={() => setOrganizerModalOpen(true)}
+-        />
+-      </main>
+-
+-      {/* Footer */}
+-      <Footer />
+-
+-      {/* Interactive Modals */}
+-      <AuthModal
+-        isOpen={authModalOpen}
+-        initialMode={authMode}
+-        onClose={() => setAuthModalOpen(false)}
+-      />
+-
+-      <OrganizerModal
+-        isOpen={organizerModalOpen}
+-        onClose={() => setOrganizerModalOpen(false)}
+-      />
+-    </div>
+-  );
++  return <PageShell>
++    <Hero />
++    <TrendingEvents />
++    <BrowseCategory />
++    <HowItWorks />
++    <WhyChooseUs />
++    <Testimonials />
++    <OrganizerBanner href="/register/organizer" />
++  </PageShell>;
+ }
+--- /dev/null
++++ b/src/app/register/attendee/page.tsx
+@@ -0,0 +1,11 @@
++import type { Metadata } from "next";
++import AuthShell from "@/components/auth/AuthShell";
++import AuthForm from "@/components/auth/AuthForm";
++import { safeReturnTo } from "@/lib/auth/destination";
++
++export const metadata: Metadata = { title: "Attendee registration | Aventix", robots: { index: false, follow: false } };
++export default async function Page({ searchParams }: { searchParams: Promise<{ returnTo?: string | string[] }> }) {
++  const params = await searchParams;
++  const returnTo = safeReturnTo(typeof params.returnTo === "string" ? params.returnTo : undefined);
++  return <AuthShell><AuthForm mode="attendee" returnTo={returnTo} /></AuthShell>;
++}
+--- /dev/null
++++ b/src/app/register/organizer/page.tsx
+@@ -0,0 +1,11 @@
++import type { Metadata } from "next";
++import AuthShell from "@/components/auth/AuthShell";
++import OrganizerPreview from "@/components/auth/OrganizerPreview";
++import { safeReturnTo } from "@/lib/auth/destination";
++
++export const metadata: Metadata = { title: "Organizer application preview | Aventix", robots: { index: false, follow: false } };
++export default async function Page({ searchParams }: { searchParams: Promise<{ returnTo?: string | string[] }> }) {
++  const params = await searchParams;
++  const returnTo = safeReturnTo(typeof params.returnTo === "string" ? params.returnTo : undefined);
++  return <AuthShell><OrganizerPreview  returnTo={returnTo} /></AuthShell>;
++}
+--- /dev/null
++++ b/src/app/register/page.tsx
+@@ -0,0 +1,11 @@
++import type { Metadata } from "next";
++import AuthShell from "@/components/auth/AuthShell";
++import AccountChoice from "@/components/auth/AccountChoice";
++import { safeReturnTo } from "@/lib/auth/destination";
++
++export const metadata: Metadata = { title: "Create account | Aventix", robots: { index: false, follow: false } };
++export default async function Page({ searchParams }: { searchParams: Promise<{ returnTo?: string | string[] }> }) {
++  const params = await searchParams;
++  const returnTo = safeReturnTo(typeof params.returnTo === "string" ? params.returnTo : undefined);
++  return <AuthShell wide><AccountChoice  returnTo={returnTo} /></AuthShell>;
++}
+--- /dev/null
++++ b/src/app/reset-password/page.tsx
+@@ -0,0 +1,11 @@
++import type { Metadata } from "next";
++import AuthShell from "@/components/auth/AuthShell";
++import AuthForm from "@/components/auth/AuthForm";
++import { safeReturnTo } from "@/lib/auth/destination";
++
++export const metadata: Metadata = { title: "Reset password | Aventix", robots: { index: false, follow: false } };
++export default async function Page({ searchParams }: { searchParams: Promise<{ returnTo?: string | string[] }> }) {
++  const params = await searchParams;
++  const returnTo = safeReturnTo(typeof params.returnTo === "string" ? params.returnTo : undefined);
++  return <AuthShell><AuthForm mode="reset" returnTo={returnTo} /></AuthShell>;
++}
+--- /dev/null
++++ b/src/components/AboutHero.tsx
+@@ -0,0 +1,10 @@
++import Link from "next/link";
++
++/** Alternate hero from Figma 705:24443; public, without authenticated controls. */
++export default function AboutHero() {
++  return <section className="relative isolate mx-auto grid max-w-[1440px] items-center gap-12 overflow-hidden px-4 py-16 sm:px-6 lg:grid-cols-[1fr_440px] lg:gap-16 lg:px-16 lg:py-[88px]">
++    <div aria-hidden className="pointer-events-none absolute bottom-0 left-24 -z-10 h-72 w-96 rounded-full bg-[#66fcf1]/10 blur-[70px]" />
++    <div className="space-y-6"><p className="inline-flex items-center gap-2 rounded-full border border-[#45a29e]/40 bg-[#1f2833]/80 px-4 py-1.5 text-xs text-[#66fcf1]"><span className="h-2 w-2 rounded-full bg-[#66fcf1]" />About Aventix</p><h1 className="font-display text-4xl font-bold leading-tight sm:text-5xl lg:text-[60px] lg:leading-[75px]">Bringing Fans<br />Closer to<br /><span className="text-[#66fcf1]">Live Music</span></h1><p className="text-lg leading-[29px] text-[#c5c6c7]">Aventix is the Philippines&apos; trusted ticketing platform for concerts, gigs, and festivals — connecting fans, organizers, and venues with secure booking and instant digital tickets.</p><div className="flex flex-wrap gap-4"><Link href="/events" className="rounded-full bg-gradient-to-r from-[#45a29e] to-[#66fcf1] px-8 py-4 font-bold text-[#0b0c10] shadow-glow">Explore Events</Link><Link href="/register/organizer" className="rounded-full border border-[#66fcf1]/50 px-8 py-4 font-bold text-[#66fcf1]">Become an Organizer</Link></div></div>
++    <div aria-label="Illustration of a digital ticket, not a valid ticket" className="relative w-full space-y-5 rounded-3xl border border-[#2c3644] bg-[#1f2833] p-8 shadow-[0_0_40px_rgba(102,252,241,0.15)]"><div className="flex justify-between gap-4 text-xs font-semibold tracking-widest"><span className="text-[#66fcf1]">ADMIT ONE</span><span>AVENTIX</span></div><p className="font-display text-4xl font-bold leading-[48px]">Your night.<br /><span className="text-[#66fcf1]">Your ticket.</span></p><p className="text-sm text-[#c5c6c7]">Secure checkout. Instant e-tickets. Zero printing.</p><div className="border-t border-dashed border-[#2c3644]" /><p className="text-xs tracking-widest text-[#c5c6c7]">DESIGN PREVIEW · NOT A VALID TICKET</p></div>
++  </section>;
++}
+--- a/src/components/AuthModal.tsx
++++ b/src/components/AuthModal.tsx
+@@ -1,160 +1,13 @@
+ "use client";
++import Link from "next/link";
++import Dialog from "./auth/Dialog";
++import { submitClass } from "./auth/FormField";
++import { authHref } from "@/lib/auth/destination";
+ 
+-import React, { useState } from "react";
+-import { X, Lock, Mail, User } from "lucide-react";
+-import AventixLogo from "./AventixLogo";
+-
+-interface AuthModalProps {
+-  isOpen: boolean;
+-  initialMode?: "login" | "register";
+-  onClose: () => void;
++/** Compatibility entry for existing consumers; all credentials use shared pages. */
++export default function AuthModal({ isOpen, initialMode = "login", onClose, returnTo }: { isOpen: boolean; initialMode?: "login" | "register"; onClose: () => void; returnTo?: string }) {
++  return <Dialog open={isOpen} onClose={onClose} title="Log in to continue">
++    <p className="my-6 text-sm text-[#c5c6c7]">Use your Aventix account to continue. Access is determined by the account service.</p>
++    <Link className={submitClass} href={authHref(initialMode === "login" ? "/login" : "/register", returnTo)}>Continue to {initialMode === "login" ? "Login" : "Registration"}</Link>
++  </Dialog>;
+ }
+-
+-export default function AuthModal({
+-  isOpen,
+-  initialMode = "login",
+-  onClose,
+-}: AuthModalProps) {
+-  const [mode, setMode] = useState<"login" | "register">(initialMode);
+-  const [email, setEmail] = useState("");
+-  const [password, setPassword] = useState("");
+-  const [name, setName] = useState("");
+-  const [isSuccess, setIsSuccess] = useState(false);
+-
+-  if (!isOpen) return null;
+-
+-  const handleSubmit = (e: React.FormEvent) => {
+-    e.preventDefault();
+-    setIsSuccess(true);
+-    setTimeout(() => {
+-      setIsSuccess(false);
+-      onClose();
+-    }, 1200);
+-  };
+-
+-  return (
+-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+-      <div className="relative w-full max-w-md bg-[#0e1622] border border-[#213145] rounded-3xl p-6 sm:p-8 overflow-hidden shadow-2xl">
+-        {/* Close Button */}
+-        <button
+-          onClick={onClose}
+-          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-[#1f2833] text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+-        >
+-          <X className="w-4 h-4" />
+-        </button>
+-
+-        {/* Modal Header */}
+-        <div className="text-center mb-6">
+-          <AventixLogo size="md" className="justify-center mb-3" />
+-          <h3 className="text-xl font-bold text-white">
+-            {mode === "login" ? "Welcome Back" : "Create Your Account"}
+-          </h3>
+-          <p className="text-xs text-slate-400 mt-1">
+-            {mode === "login"
+-              ? "Access your concert tickets and upcoming events"
+-              : "Join millions of music lovers across the Philippines"}
+-          </p>
+-        </div>
+-
+-        {/* Tabs */}
+-        <div className="flex rounded-xl bg-[#151b23] p-1 border border-[#1e2a39] mb-5">
+-          <button
+-            type="button"
+-            onClick={() => setMode("login")}
+-            className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
+-              mode === "login"
+-                ? "bg-[#66fcf1] text-[#0b0c10] shadow-md"
+-                : "text-slate-400 hover:text-white"
+-            }`}
+-          >
+-            Log In
+-          </button>
+-          <button
+-            type="button"
+-            onClick={() => setMode("register")}
+-            className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
+-              mode === "register"
+-                ? "bg-[#66fcf1] text-[#0b0c10] shadow-md"
+-                : "text-slate-400 hover:text-white"
+-            }`}
+-          >
+-            Register
+-          </button>
+-        </div>
+-
+-        {/* Form */}
+-        <form onSubmit={handleSubmit} className="space-y-4">
+-          {mode === "register" && (
+-            <div>
+-              <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+-                Full Name
+-              </label>
+-              <div className="relative flex items-center">
+-                <User className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
+-                <input
+-                  type="text"
+-                  required
+-                  value={name}
+-                  onChange={(e) => setName(e.target.value)}
+-                  placeholder="e.g. Juan dela Cruz"
+-                  className="w-full bg-[#1f2833] text-sm text-white placeholder-slate-500 pl-9 pr-3.5 py-2.5 rounded-xl border border-[#233348] focus:outline-none focus:border-[#66fcf1]"
+-                />
+-              </div>
+-            </div>
+-          )}
+-
+-          <div>
+-            <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+-              Email Address
+-            </label>
+-            <div className="relative flex items-center">
+-              <Mail className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
+-              <input
+-                type="email"
+-                required
+-                value={email}
+-                onChange={(e) => setEmail(e.target.value)}
+-                placeholder="you@domain.com"
+-                className="w-full bg-[#1f2833] text-sm text-white placeholder-slate-500 pl-9 pr-3.5 py-2.5 rounded-xl border border-[#233348] focus:outline-none focus:border-[#66fcf1]"
+-              />
+-            </div>
+-          </div>
+-
+-          <div>
+-            <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+-              Password
+-            </label>
+-            <div className="relative flex items-center">
+-              <Lock className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
+-              <input
+-                type="password"
+-                required
+-                value={password}
+-                onChange={(e) => setPassword(e.target.value)}
+-                placeholder="••••••••"
+-                className="w-full bg-[#1f2833] text-sm text-white placeholder-slate-500 pl-9 pr-3.5 py-2.5 rounded-xl border border-[#233348] focus:outline-none focus:border-[#66fcf1]"
+-              />
+-            </div>
+-          </div>
+-
+-          <button
+-            type="submit"
+-            className="w-full py-3 rounded-xl bg-[#66fcf1] hover:bg-[#8afff6] text-[#0b0c10] font-bold text-sm transition-all shadow-[0_0_20px_rgba(102,252,241,0.3)] hover:scale-[1.02] active:scale-98 mt-2"
+-          >
+-            {isSuccess
+-              ? "✓ Success!"
+-              : mode === "login"
+-              ? "Sign In"
+-              : "Create Account"}
+-          </button>
+-        </form>
+-
+-        <p className="text-[11px] text-slate-500 text-center mt-5">
+-          By continuing, you agree to Aventix&apos;s{" "}
+-          <span className="text-[#66fcf1] cursor-pointer hover:underline">Terms</span> &amp;{" "}
+-          <span className="text-[#66fcf1] cursor-pointer hover:underline">Privacy Policy</span>.
+-        </p>
+-      </div>
+-    </div>
+-  );
+-}
+--- a/src/components/BookingModal.tsx
++++ b/src/components/BookingModal.tsx
+@@ -1,239 +1,13 @@
+ "use client";
++import Link from "next/link";
++import type { EventItem } from "./TrendingEvents";
++import Dialog from "./auth/Dialog";
++import { submitClass } from "./auth/FormField";
++import { bookingHref } from "@/lib/event-booking";
+ 
+-import React, { useState } from "react";
+-import Image from "next/image";
+-import { X, Calendar, MapPin, CheckCircle, ShieldCheck, QrCode } from "lucide-react";
+-import { EventItem } from "./TrendingEvents";
+-
+-interface BookingModalProps {
+-  event: EventItem | null;
+-  onClose: () => void;
++/** Legacy entry retained without the former simulated payment/QR confirmation. */
++export default function BookingModal({ event, onClose }: { event: EventItem | null; onClose: () => void }) {
++  return <Dialog open={!!event} onClose={onClose} title="View ticket options">
++    {event && <><p className="my-6 text-sm text-[#c5c6c7]">{event.title}</p><Link href={bookingHref(event.id)} className={submitClass}>Continue to event tickets</Link></>}
++  </Dialog>;
+ }
+-
+-export default function BookingModal({ event, onClose }: BookingModalProps) {
+-  const [selectedTier, setSelectedTier] = useState<string>("genad");
+-  const [quantity, setQuantity] = useState<number>(1);
+-  const [step, setStep] = useState<"select" | "success">("select");
+-  const [paymentMethod, setPaymentMethod] = useState<"gcash" | "maya" | "card">("gcash");
+-
+-  if (!event) return null;
+-
+-  const tiers: Record<string, { name: string; price: number }> = {
+-    genad: { name: "General Admission", price: 2200 },
+-    vip: { name: "VIP Standing", price: 4500 },
+-    svip: { name: "SVIP with Soundcheck", price: 7800 },
+-  };
+-
+-  const totalPrice = tiers[selectedTier].price * quantity;
+-
+-  const handleCheckout = (e: React.FormEvent) => {
+-    e.preventDefault();
+-    setStep("success");
+-  };
+-
+-  return (
+-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+-      <div className="relative w-full max-w-xl bg-[#0e1622] border border-[#213145] rounded-3xl overflow-hidden shadow-2xl">
+-        {/* Close Button */}
+-        <button
+-          onClick={onClose}
+-          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-[#1f2833] text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+-        >
+-          <X className="w-4 h-4" />
+-        </button>
+-
+-        {step === "select" ? (
+-          <div>
+-            {/* Header with Event Image Preview */}
+-            <div className="relative h-44 w-full bg-[#141d29]">
+-              <Image
+-                src={event.imageUrl}
+-                alt={event.title}
+-                fill
+-                className="object-cover opacity-60"
+-              />
+-              <div className="absolute inset-0 bg-gradient-to-t from-[#0e1622] via-[#0e1622]/60 to-transparent" />
+-              <div className="absolute bottom-4 left-6 right-6">
+-                <span className="text-[11px] font-bold text-[#66fcf1] tracking-wider uppercase">
+-                  {event.artist}
+-                </span>
+-                <h3 className="text-xl font-extrabold text-white leading-tight">
+-                  {event.title}
+-                </h3>
+-                <div className="flex items-center gap-4 text-xs text-slate-300 mt-1">
+-                  <span className="flex items-center gap-1">
+-                    <Calendar className="w-3.5 h-3.5 text-[#66fcf1]" /> {event.month}{" "}
+-                    {event.day}, {event.year}
+-                  </span>
+-                  <span className="flex items-center gap-1">
+-                    <MapPin className="w-3.5 h-3.5 text-[#66fcf1]" /> {event.venue}
+-                  </span>
+-                </div>
+-              </div>
+-            </div>
+-
+-            {/* Selection Form */}
+-            <form onSubmit={handleCheckout} className="p-6 space-y-5">
+-              {/* Ticket Tier Options */}
+-              <div>
+-                <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-2">
+-                  Select Ticket Tier
+-                </label>
+-                <div className="space-y-2">
+-                  {Object.entries(tiers).map(([key, tier]) => (
+-                    <div
+-                      key={key}
+-                      onClick={() => setSelectedTier(key)}
+-                      className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+-                        selectedTier === key
+-                          ? "bg-[#182637] border-[#66fcf1] shadow-[0_0_15px_rgba(102,252,241,0.15)]"
+-                          : "bg-[#151b23] border-[#1e2c3e] hover:border-[#2b3e55]"
+-                      }`}
+-                    >
+-                      <div className="flex items-center gap-3">
+-                        <div
+-                          className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+-                            selectedTier === key
+-                              ? "border-[#66fcf1] bg-[#66fcf1]"
+-                              : "border-slate-500"
+-                          }`}
+-                        >
+-                          {selectedTier === key && (
+-                            <div className="w-1.5 h-1.5 rounded-full bg-[#0b0c10]" />
+-                          )}
+-                        </div>
+-                        <div>
+-                          <p className="text-sm font-semibold text-white">
+-                            {tier.name}
+-                          </p>
+-                          <p className="text-[11px] text-slate-400">
+-                            Instant QR E-Ticket Delivery
+-                          </p>
+-                        </div>
+-                      </div>
+-                      <span className="text-sm font-bold text-[#66fcf1]">
+-                        ₱{tier.price.toLocaleString()}
+-                      </span>
+-                    </div>
+-                  ))}
+-                </div>
+-              </div>
+-
+-              {/* Quantity Selector */}
+-              <div className="flex items-center justify-between p-3 rounded-xl bg-[#151b23] border border-[#1e2c3e]">
+-                <span className="text-sm font-medium text-slate-300">
+-                  Number of Tickets
+-                </span>
+-                <div className="flex items-center gap-3">
+-                  <button
+-                    type="button"
+-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+-                    className="w-8 h-8 rounded-lg bg-[#1a2638] text-white hover:bg-[#22334b] flex items-center justify-center font-bold text-base"
+-                  >
+-                    -
+-                  </button>
+-                  <span className="text-white font-bold text-base w-6 text-center">
+-                    {quantity}
+-                  </span>
+-                  <button
+-                    type="button"
+-                    onClick={() => setQuantity(Math.min(6, quantity + 1))}
+-                    className="w-8 h-8 rounded-lg bg-[#66fcf1] text-[#0b0c10] hover:bg-[#8afff6] flex items-center justify-center font-bold text-base"
+-                  >
+-                    +
+-                  </button>
+-                </div>
+-              </div>
+-
+-              {/* Payment Method Selector */}
+-              <div>
+-                <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-2">
+-                  Payment Method
+-                </label>
+-                <div className="grid grid-cols-3 gap-2">
+-                  {[
+-                    { id: "gcash", label: "GCash" },
+-                    { id: "maya", label: "Maya" },
+-                    { id: "card", label: "Card" },
+-                  ].map((p) => (
+-                    <button
+-                      key={p.id}
+-                      type="button"
+-                      onClick={() => setPaymentMethod(p.id as any)}
+-                      className={`py-2 rounded-lg text-xs font-semibold border transition-all ${
+-                        paymentMethod === p.id
+-                          ? "bg-[#182637] border-[#66fcf1] text-[#66fcf1]"
+-                          : "bg-[#151b23] border-[#1e2c3e] text-slate-400 hover:text-white"
+-                      }`}
+-                    >
+-                      {p.label}
+-                    </button>
+-                  ))}
+-                </div>
+-              </div>
+-
+-              {/* Total & Submit Button */}
+-              <div className="pt-2 border-t border-[#1c2a3b] flex items-center justify-between gap-4">
+-                <div>
+-                  <span className="text-xs text-slate-400 block">Total Amount</span>
+-                  <span className="text-xl font-extrabold text-white">
+-                    ₱{totalPrice.toLocaleString()}
+-                  </span>
+-                </div>
+-
+-                <button
+-                  type="submit"
+-                  className="px-6 py-3 rounded-xl bg-[#66fcf1] hover:bg-[#8afff6] text-[#0b0c10] font-extrabold text-sm transition-all shadow-[0_0_20px_rgba(102,252,241,0.35)] hover:scale-105 active:scale-95"
+-                >
+-                  Confirm &amp; Pay Now
+-                </button>
+-              </div>
+-            </form>
+-          </div>
+-        ) : (
+-          /* Success Screen */
+-          <div className="p-8 text-center space-y-5">
+-            <div className="w-16 h-16 rounded-full bg-[#66fcf1]/15 border border-[#66fcf1] text-[#66fcf1] flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(102,252,241,0.3)]">
+-              <CheckCircle className="w-8 h-8 stroke-[2.5]" />
+-            </div>
+-
+-            <div>
+-              <h3 className="text-2xl font-extrabold text-white">
+-                Booking Confirmed!
+-              </h3>
+-              <p className="text-slate-400 text-sm mt-1">
+-                Your e-tickets for {event.title} have been secured.
+-              </p>
+-            </div>
+-
+-            {/* Mock QR Ticket Card */}
+-            <div className="p-4 rounded-2xl bg-[#151b23] border border-[#1e2a39] max-w-sm mx-auto flex items-center gap-4 text-left">
+-              <div className="w-20 h-20 bg-white rounded-xl p-1.5 flex items-center justify-center shrink-0">
+-                <QrCode className="w-full h-full text-[#0b0c10]" />
+-              </div>
+-              <div className="text-xs space-y-1">
+-                <p className="font-bold text-white line-clamp-1">{event.title}</p>
+-                <p className="text-[#66fcf1] font-semibold">
+-                  {tiers[selectedTier].name} ({quantity}x)
+-                </p>
+-                <p className="text-slate-400 font-mono text-[10px]">
+-                  AVX-2026-{Math.floor(100000 + Math.random() * 900000)}
+-                </p>
+-                <p className="text-slate-400 text-[10px] flex items-center gap-1">
+-                  <ShieldCheck className="w-3 h-3 text-[#66fcf1]" /> Verified Digital Pass
+-                </p>
+-              </div>
+-            </div>
+-
+-            <button
+-              onClick={onClose}
+-              className="px-6 py-2.5 rounded-full bg-[#66fcf1] text-[#0b0c10] font-bold text-sm hover:bg-[#8afff6] transition-all"
+-            >
+-              Done
+-            </button>
+-          </div>
+-        )}
+-      </div>
+-    </div>
+-  );
+-}
+--- a/src/components/BrowseCategory.tsx
++++ b/src/components/BrowseCategory.tsx
+@@ -1,6 +1,7 @@
+ "use client";
+ 
+ import React, { useState } from "react";
++import { useRouter } from "next/navigation";
+ import {
+   Music,
+   PartyPopper,
+@@ -31,22 +32,27 @@
+ }
+ 
+ export default function BrowseCategory({ onSelectCategory }: BrowseCategoryProps) {
+-  const [activeCategory, setActiveCategory] = useState<string>("concerts");
++  const router = useRouter();
++  const [activeCategory, setActiveCategory] = useState<string>("");
+ 
+   const handleClick = (cat: CategoryItem) => {
+     setActiveCategory(cat.id);
+     if (onSelectCategory) onSelectCategory(cat);
++    else {
++      const types: Record<string, string> = { concerts: "Concert", festivals: "Festival", gigs: "Gig", theater: "Theater", sports: "Sports", comedy: "Comedy" };
++      router.push(`/events?category=${encodeURIComponent(types[cat.id])}`);
++    }
+   };
+ 
+   return (
+     <section className="py-16">
+-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
++      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-16">
+         {/* Section Header */}
+         <div className="text-center mb-10">
+           <span className="text-[#66fcf1] text-xs font-bold tracking-[0.2em] uppercase block mb-1">
+             EXPLORE
+           </span>
+-          <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
++          <h2 className="font-display text-3xl sm:text-4xl font-bold text-white tracking-tight">
+             Browse by Category
+           </h2>
+         </div>
+@@ -60,11 +66,12 @@
+             return (
+               <button
+                 key={cat.id}
++                type="button"
+                 onClick={() => handleClick(cat)}
+                 className={`flex flex-col items-center justify-center p-6 rounded-2xl border transition-all duration-300 group text-center ${
+                   isSelected
+                     ? "bg-[#1f2833] border-[#66fcf1] shadow-[0_0_25px_rgba(102,252,241,0.25)]"
+-                    : "bg-[#121a25] border-[#1e2a39] hover:border-[#66fcf1]/50 hover:bg-[#16212f]"
++                    : "bg-[#1f2833] border-[#2c3644] hover:border-[#66fcf1]/50 hover:bg-[#16212f]"
+                 }`}
+               >
+                 {/* Icon box with glowing teal background */}
+--- a/src/components/Footer.tsx
++++ b/src/components/Footer.tsx
+@@ -7,27 +7,27 @@
+     heading: "Company",
+     links: [
+       { label: "About Us", href: "/about" },
+-      { label: "Careers", href: "#" },
+-      { label: "Press", href: "#" },
+-      { label: "Blog", href: "#" },
++      { label: "Careers", href: "/contact" },
++      { label: "Press", href: "/contact" },
++      { label: "Blog", href: "" },
+     ],
+   },
+   {
+     heading: "Support",
+     links: [
+-      { label: "Help Center", href: "#" },
++      { label: "Help Center", href: "/contact#faq-heading" },
+       { label: "Contact Us", href: "/contact" },
+-      { label: "Refund Policy", href: "#" },
+-      { label: "Organizer Help", href: "#" },
++      { label: "Refund Policy", href: "/legal/refunds" },
++      { label: "Organizer Help", href: "/register/organizer" },
+     ],
+   },
+   {
+     heading: "Legal",
+     links: [
+-      { label: "Terms of Service", href: "#" },
+-      { label: "Privacy Policy", href: "#" },
+-      { label: "Cookie Policy", href: "#" },
+-      { label: "Data Security", href: "#" },
++      { label: "Terms of Service", href: "/legal/terms" },
++      { label: "Privacy Policy", href: "/legal/privacy" },
++      { label: "Cookie Policy", href: "/legal/cookies" },
++      { label: "Data Security", href: "/legal/security" },
+     ],
+   },
+ ];
+@@ -46,27 +46,27 @@
+               The Philippines&apos; most trusted platform for concert, gig, and festival ticketing.
+             </p>
+             <div className="flex items-center gap-3 pt-1">
+-              <a href="#" aria-label="Facebook" className={socialButton}>
++              <span role="img" aria-label="Facebook — official link not supplied" title="Official link not supplied" className={socialButton}>
+                 <svg className="h-3.5 w-3.5 fill-current" viewBox="0 0 24 24" aria-hidden>
+                   <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" />
+                 </svg>
+-              </a>
+-              <a href="#" aria-label="Instagram" className={socialButton}>
++              </span>
++              <span role="img" aria-label="Instagram — official link not supplied" title="Official link not supplied" className={socialButton}>
+                 <svg className="h-3.5 w-3.5 fill-current" viewBox="0 0 24 24" aria-hidden>
+                   <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                 </svg>
+-              </a>
+-              <a href="#" aria-label="Help" className={socialButton}>
++              </span>
++              <a href="/contact#faq-heading" aria-label="Help" className={socialButton}>
+                 <svg className="h-3.5 w-3.5 fill-none stroke-current" strokeWidth="2" viewBox="0 0 24 24" aria-hidden>
+                   <circle cx="12" cy="12" r="10" />
+                   <path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01" />
+                 </svg>
+               </a>
+-              <a href="#" aria-label="TikTok" className={socialButton}>
++              <span role="img" aria-label="TikTok — official link not supplied" title="Official link not supplied" className={socialButton}>
+                 <svg className="h-3.5 w-3.5 fill-current" viewBox="0 0 24 24" aria-hidden>
+                   <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.82 4.49 6.3 6.3 0 0 0 1.94-4.52V8.42a8.28 8.28 0 0 0 4.83 1.54V6.51a4.8 4.8 0 0 1-1-.18z" />
+                 </svg>
+-              </a>
++              </span>
+             </div>
+           </div>
+ 
+@@ -77,9 +77,9 @@
+               <ul className="space-y-3 text-sm text-[#c5c6c7]">
+                 {col.links.map((l) => (
+                   <li key={l.label}>
+-                    <Link href={l.href} className="transition-colors hover:text-[#66fcf1] focus-visible:text-[#66fcf1] focus-visible:outline-none">
++                    {l.href ? <Link href={l.href} className="transition-colors hover:text-[#66fcf1] focus-visible:text-[#66fcf1] focus-visible:outline-none">
+                       {l.label}
+-                    </Link>
++                    </Link> : <span className="text-[#8a8b8c]">{l.label} — coming soon</span>}
+                   </li>
+                 ))}
+               </ul>
+--- a/src/components/Hero.tsx
++++ b/src/components/Hero.tsx
+@@ -1,7 +1,9 @@
+ "use client";
+ 
+ import React, { useState } from "react";
++import Link from "next/link";
+ import { Search, MapPin, Calendar, ArrowRight } from "lucide-react";
++import { useRouter } from "next/navigation";
+ import HeroMockups from "./HeroMockups";
+ 
+ interface HeroProps {
+@@ -10,6 +12,7 @@
+ }
+ 
+ export default function Hero({ onSearchSubmit, onExploreClick }: HeroProps) {
++  const router = useRouter();
+   const [searchQuery, setSearchQuery] = useState("");
+   const [location, setLocation] = useState("");
+   const [date, setDate] = useState("");
+@@ -18,6 +21,12 @@
+     e.preventDefault();
+     if (onSearchSubmit) {
+       onSearchSubmit({ query: searchQuery, location, date });
++    } else {
++      const params = new URLSearchParams();
++      if (searchQuery.trim()) params.set("q", searchQuery.trim());
++      if (location.trim()) params.set("location", location.trim());
++      if (date) params.set("date", date);
++      router.push(`/events?${params.toString()}`);
+     }
+   };
+ 
+@@ -27,7 +36,7 @@
+       <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[#66fcf1]/10 rounded-full blur-[140px] pointer-events-none -z-10" />
+       <div className="absolute top-1/3 right-1/4 w-[450px] h-[450px] bg-[#0099ff]/10 rounded-full blur-[130px] pointer-events-none -z-10" />
+ 
+-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
++      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-16">
+         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+           {/* Left Column: Headline, Description, Search Widget & CTA */}
+           <div className="lg:col-span-7 space-y-7 z-10">
+@@ -40,7 +49,7 @@
+             </div>
+ 
+             {/* Main Headline */}
+-            <h1 className="text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-extrabold tracking-tight text-white leading-[1.08]">
++            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl xl:text-[60px] font-bold tracking-tight text-white leading-[1.08]">
+               Discover &amp; Book{" "}
+               <span className="text-[#66fcf1] drop-shadow-[0_0_25px_rgba(102,252,241,0.35)]">
+                 Live
+@@ -66,12 +75,13 @@
+               className="bg-[#121a25]/90 border border-[#223347] backdrop-blur-xl p-2 sm:p-2.5 rounded-2xl shadow-2xl flex flex-col md:flex-row items-stretch md:items-center gap-2 max-w-2xl"
+             >
+               {/* Field 1: Search artist or event */}
+-              <div className="flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#1f2833] transition-colors">
++              <div className="min-w-0 flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#1f2833] transition-colors">
+                 <Search className="w-4 h-4 text-[#66fcf1] shrink-0" />
+                 <input
+                   type="text"
+                   value={searchQuery}
+                   onChange={(e) => setSearchQuery(e.target.value)}
++                  aria-label="Search artist or event"
+                   placeholder="Search artist or event"
+                   className="w-full bg-transparent text-sm text-white placeholder-slate-400 focus:outline-none"
+                 />
+@@ -81,12 +91,13 @@
+               <div className="hidden md:block w-px h-8 bg-[#223347]" />
+ 
+               {/* Field 2: Location */}
+-              <div className="flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#1f2833] transition-colors">
++              <div className="min-w-0 flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#1f2833] transition-colors">
+                 <MapPin className="w-4 h-4 text-[#66fcf1] shrink-0" />
+                 <input
+                   type="text"
+                   value={location}
+                   onChange={(e) => setLocation(e.target.value)}
++                  aria-label="Event location"
+                   placeholder="Location e.g. Manila"
+                   className="w-full bg-transparent text-sm text-white placeholder-slate-400 focus:outline-none"
+                 />
+@@ -96,10 +107,11 @@
+               <div className="hidden md:block w-px h-8 bg-[#223347]" />
+ 
+               {/* Field 3: Date */}
+-              <div className="flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#1f2833] transition-colors">
++              <div className="min-w-0 flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#1f2833] transition-colors">
+                 <Calendar className="w-4 h-4 text-[#66fcf1] shrink-0" />
+                 <input
+-                  type="text"
++                  type="date"
++                  aria-label="Event date"
+                   value={date}
+                   onChange={(e) => setDate(e.target.value)}
+                   placeholder="Select date"
+@@ -118,14 +130,14 @@
+ 
+             {/* Explore Events CTA */}
+             <div className="pt-2">
+-              <a
+-                href="#trending-events"
++              <Link
++                href="/events"
+                 onClick={onExploreClick}
+                 className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full bg-[#66fcf1] hover:bg-[#8afff6] text-[#0b0c10] font-extrabold text-base transition-all duration-300 shadow-[0_0_35px_rgba(102,252,241,0.5)] hover:shadow-[0_0_45px_rgba(102,252,241,0.7)] hover:scale-105 active:scale-95"
+               >
+                 <span>Explore Events</span>
+                 <ArrowRight className="w-5 h-5 stroke-[2.5]" />
+-              </a>
++              </Link>
+             </div>
+           </div>
+ 
+--- a/src/components/HeroMockups.tsx
++++ b/src/components/HeroMockups.tsx
+@@ -4,17 +4,12 @@
+ import {
+   MapPin,
+   Calendar,
+-  TrendingUp,
+-  Ticket,
+-  Users,
+-  DollarSign,
+-  ChevronRight,
+   Music,
+ } from "lucide-react";
+ 
+ export default function HeroMockups() {
+   return (
+-    <div className="relative w-full h-[620px] lg:h-[680px] pointer-events-none select-none overflow-hidden">
++    <div aria-hidden="true" inert className="relative w-full h-[620px] lg:h-[680px] pointer-events-none select-none overflow-hidden">
+       {/* Ambient background glows */}
+       <div className="absolute top-10 right-10 w-96 h-96 bg-[#66fcf1]/15 rounded-full blur-[120px]" />
+       <div className="absolute bottom-10 left-10 w-80 h-80 bg-[#0084ff]/10 rounded-full blur-[100px]" />
+--- a/src/components/HowItWorks.tsx
++++ b/src/components/HowItWorks.tsx
+@@ -29,14 +29,14 @@
+   ];
+ 
+   return (
+-    <section id="how-it-works" className="py-20 bg-[#0d1219]/60 scroll-mt-20">
+-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
++    <section id="how-it-works" className="py-16 lg:py-24 bg-[#1f2833]/40 scroll-mt-20">
++      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-16">
+         {/* Section Header */}
+         <div className="text-center mb-16">
+           <span className="text-[#66fcf1] text-xs font-bold tracking-[0.2em] uppercase block mb-1">
+             SIMPLE PROCESS
+           </span>
+-          <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
++          <h2 className="font-display text-3xl sm:text-4xl font-bold text-white tracking-tight">
+             How It Works
+           </h2>
+         </div>
+--- a/src/components/Navbar.tsx
++++ b/src/components/Navbar.tsx
+@@ -1,6 +1,6 @@
+ "use client";
+ 
+-import React, { useState } from "react";
++import React, { useState, useRef } from "react";
+ import Link from "next/link";
+ import { usePathname, useRouter } from "next/navigation";
+ import AventixLogo from "./AventixLogo";
+@@ -27,10 +27,12 @@
+   const pathname = usePathname();
+   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`));
+   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
++  const menuButton = useRef<HTMLButtonElement>(null);
+   const [searchVal, setSearchVal] = useState("");
+ 
+   const handleSearchSubmit = (e: React.FormEvent) => {
+     e.preventDefault();
++    setMobileMenuOpen(false);
+     if (onSearch) onSearch(searchVal);
+     else router.push(searchVal.trim() ? `/events?q=${encodeURIComponent(searchVal.trim())}` : "/events");
+   };
+@@ -54,13 +56,13 @@
+     );
+ 
+   return (
+-    <header className="sticky top-0 z-50 w-full border-b border-[#1f2833] bg-[#0b0c10]">
++    <header onKeyDown={(event) => { if (event.key === "Escape") { setMobileMenuOpen(false); menuButton.current?.focus(); } }} className="sticky top-0 z-50 w-full border-b border-[#1f2833] bg-[#0b0c10]">
+       <div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-16">
+         <Link href="/" aria-label="Aventix home" className="flex shrink-0 items-center">
+           <AventixLogo size="md" />
+         </Link>
+ 
+-        <nav aria-label="Primary" className="hidden items-center gap-9 text-sm font-medium md:flex">
++        <nav aria-label="Primary" className="hidden items-center gap-9 text-sm font-medium xl:flex">
+           {NAV_LINKS.map((l) => (
+             <Link
+               key={l.label}
+@@ -75,7 +77,7 @@
+           ))}
+         </nav>
+ 
+-        <div className="hidden items-center gap-4 sm:flex">
++        <div className="hidden items-center gap-4 xl:flex">
+           <form onSubmit={handleSearchSubmit} role="search" className="relative flex h-[38px] w-48 items-center lg:w-56">
+             <Search aria-hidden className="pointer-events-none absolute left-4 h-3.5 w-3.5 text-[#c5c6c7]" />
+             <input
+@@ -91,12 +93,14 @@
+           {authControl("register", "Register", pillButton)}
+         </div>
+ 
+-        <div className="flex items-center sm:hidden">
++        <div className="flex items-center xl:hidden">
+           <button
+             type="button"
+             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+             className="rounded-lg bg-[#1f2833] p-2 text-[#c5c6c7] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#66fcf1]"
++            ref={menuButton}
+             aria-label="Toggle menu"
++            aria-controls="mobile-navigation"
+             aria-expanded={mobileMenuOpen}
+           >
+             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+@@ -105,7 +109,7 @@
+       </div>
+ 
+       {mobileMenuOpen && (
+-        <div className="space-y-4 border-t border-[#1f2833] bg-[#0b0c10] px-4 pb-6 pt-4 sm:hidden">
++        <nav id="mobile-navigation" aria-label="Mobile navigation" className="space-y-4 border-t border-[#1f2833] bg-[#0b0c10] px-4 pb-6 pt-4 xl:hidden">
+           <form onSubmit={handleSearchSubmit} role="search" className="relative">
+             <Search aria-hidden className="pointer-events-none absolute left-4 top-3 h-4 w-4 text-[#c5c6c7]" />
+             <input
+@@ -134,7 +138,7 @@
+             {authControl("login", "Log in", `${pillButton} flex-1`, () => setMobileMenuOpen(false))}
+             {authControl("register", "Register", `${pillButton} flex-1`, () => setMobileMenuOpen(false))}
+           </div>
+-        </div>
++        </nav>
+       )}
+     </header>
+   );
+--- a/src/components/OrganizerModal.tsx
++++ b/src/components/OrganizerModal.tsx
+@@ -1,148 +1,11 @@
+ "use client";
++import Link from "next/link";
++import Dialog from "./auth/Dialog";
++import { submitClass } from "./auth/FormField";
+ 
+-import React, { useState } from "react";
+-import { X, CheckCircle, Building, Mail, Phone, Calendar } from "lucide-react";
+-import AventixLogo from "./AventixLogo";
+-
+-interface OrganizerModalProps {
+-  isOpen: boolean;
+-  onClose: () => void;
++export default function OrganizerModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
++  return <Dialog open={isOpen} onClose={onClose} title="Organizer applications">
++    <p className="my-6 text-sm text-[#c5c6c7]">Applications are awaiting the team’s onboarding policy. No application has been submitted.</p>
++    <Link href="/register/organizer" className={submitClass}>View form preview</Link>
++  </Dialog>;
+ }
+-
+-export default function OrganizerModal({ isOpen, onClose }: OrganizerModalProps) {
+-  const [submitted, setSubmitted] = useState(false);
+-  const [company, setCompany] = useState("");
+-  const [contactName, setContactName] = useState("");
+-  const [email, setEmail] = useState("");
+-  const [eventType, setEventType] = useState("concert");
+-
+-  if (!isOpen) return null;
+-
+-  const handleSubmit = (e: React.FormEvent) => {
+-    e.preventDefault();
+-    setSubmitted(true);
+-  };
+-
+-  return (
+-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+-      <div className="relative w-full max-w-lg bg-[#0e1622] border border-[#213145] rounded-3xl p-6 sm:p-8 overflow-hidden shadow-2xl">
+-        <button
+-          onClick={onClose}
+-          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-[#1f2833] text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+-        >
+-          <X className="w-4 h-4" />
+-        </button>
+-
+-        {!submitted ? (
+-          <div>
+-            <div className="text-center mb-6">
+-              <AventixLogo size="md" className="justify-center mb-2" />
+-              <h3 className="text-2xl font-extrabold text-white">
+-                Partner with Aventix
+-              </h3>
+-              <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+-                Host your concert, arena tour, or indie gig with our secure ticketing,
+-                instant QR scanners, and automated payouts.
+-              </p>
+-            </div>
+-
+-            <form onSubmit={handleSubmit} className="space-y-4">
+-              <div>
+-                <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+-                  Organizer / Production Name
+-                </label>
+-                <div className="relative flex items-center">
+-                  <Building className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
+-                  <input
+-                    type="text"
+-                    required
+-                    value={company}
+-                    onChange={(e) => setCompany(e.target.value)}
+-                    placeholder="e.g. Live Nation PH / Karpos Multimedia"
+-                    className="w-full bg-[#1f2833] text-sm text-white placeholder-slate-500 pl-9 pr-3.5 py-2.5 rounded-xl border border-[#233348] focus:outline-none focus:border-[#66fcf1]"
+-                  />
+-                </div>
+-              </div>
+-
+-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+-                <div>
+-                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+-                    Contact Person
+-                  </label>
+-                  <input
+-                    type="text"
+-                    required
+-                    value={contactName}
+-                    onChange={(e) => setContactName(e.target.value)}
+-                    placeholder="Full Name"
+-                    className="w-full bg-[#1f2833] text-sm text-white placeholder-slate-500 px-3.5 py-2.5 rounded-xl border border-[#233348] focus:outline-none focus:border-[#66fcf1]"
+-                  />
+-                </div>
+-
+-                <div>
+-                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+-                    Work Email
+-                  </label>
+-                  <input
+-                    type="email"
+-                    required
+-                    value={email}
+-                    onChange={(e) => setEmail(e.target.value)}
+-                    placeholder="producer@domain.ph"
+-                    className="w-full bg-[#1f2833] text-sm text-white placeholder-slate-500 px-3.5 py-2.5 rounded-xl border border-[#233348] focus:outline-none focus:border-[#66fcf1]"
+-                  />
+-                </div>
+-              </div>
+-
+-              <div>
+-                <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+-                  Event Category
+-                </label>
+-                <select
+-                  value={eventType}
+-                  onChange={(e) => setEventType(e.target.value)}
+-                  className="w-full bg-[#1f2833] text-sm text-white px-3.5 py-2.5 rounded-xl border border-[#233348] focus:outline-none focus:border-[#66fcf1]"
+-                >
+-                  <option value="concert">Major Arena Concert</option>
+-                  <option value="festival">Music &amp; Arts Festival</option>
+-                  <option value="gig">Bar / Underground Gig</option>
+-                  <option value="theater">Theater / Musical Show</option>
+-                  <option value="comedy">Comedy &amp; Special Acts</option>
+-                </select>
+-              </div>
+-
+-              <button
+-                type="submit"
+-                className="w-full py-3.5 rounded-xl bg-[#66fcf1] hover:bg-[#8afff6] text-[#0b0c10] font-extrabold text-sm transition-all shadow-[0_0_20px_rgba(102,252,241,0.35)] hover:scale-[1.02] active:scale-98 mt-2"
+-              >
+-                Submit Organizer Application
+-              </button>
+-            </form>
+-          </div>
+-        ) : (
+-          <div className="p-6 text-center space-y-4">
+-            <div className="w-16 h-16 rounded-full bg-[#66fcf1]/15 border border-[#66fcf1] text-[#66fcf1] flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(102,252,241,0.3)]">
+-              <CheckCircle className="w-8 h-8 stroke-[2.5]" />
+-            </div>
+-            <h3 className="text-2xl font-extrabold text-white">
+-              Application Received!
+-            </h3>
+-            <p className="text-slate-400 text-sm max-w-sm mx-auto">
+-              Thank you, {contactName}! Our Aventix Organizer Partnerships team in Manila
+-              will reach out to {email} within 24 hours.
+-            </p>
+-            <button
+-              onClick={() => {
+-                setSubmitted(false);
+-                onClose();
+-              }}
+-              className="px-6 py-2.5 rounded-full bg-[#66fcf1] text-[#0b0c10] font-bold text-sm hover:bg-[#8afff6] transition-all"
+-            >
+-              Close
+-            </button>
+-          </div>
+-        )}
+-      </div>
+-    </div>
+-  );
+-}
+--- a/src/components/Testimonials.tsx
++++ b/src/components/Testimonials.tsx
+@@ -36,14 +36,14 @@
+   ];
+ 
+   return (
+-    <section className="py-20 bg-[#0d1219]/60">
+-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
++    <section className="py-16 lg:py-24 bg-[#1f2833]/40">
++      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-16">
+         {/* Section Header */}
+         <div className="text-center mb-14">
+           <span className="text-[#66fcf1] text-xs font-bold tracking-[0.2em] uppercase block mb-1">
+             ATTENDEE STORIES
+           </span>
+-          <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
++          <h2 className="font-display text-3xl sm:text-4xl font-bold text-white tracking-tight">
+             What Our Users Say
+           </h2>
+         </div>
+@@ -53,7 +53,7 @@
+           {testimonials.map((t) => (
+             <div
+               key={t.id}
+-              className="bg-[#121a25] border border-[#1e2a39] rounded-2xl p-7 flex flex-col justify-between hover:border-[#66fcf1]/40 transition-all duration-300 shadow-lg"
++              className="bg-[#1f2833] border border-[#2c3644] rounded-2xl p-7 flex flex-col justify-between hover:border-[#66fcf1]/40 transition-all duration-300 shadow-lg"
+             >
+               <div>
+                 {/* 5 Cyan Stars */}
+--- a/src/components/TrendingEvents.tsx
++++ b/src/components/TrendingEvents.tsx
+@@ -1,161 +1,17 @@
+-"use client";
++import Link from "next/link";
++import { getEvents } from "@/lib/events-api";
++import EventCard from "@/components/events/EventCard";
++import DemoNotice from "@/components/events/DemoNotice";
+ 
+-import React from "react";
+-import Image from "next/image";
+-import Link from "next/link";
+-import { MapPin, ArrowRight } from "lucide-react";
++/** Retained for the legacy booking-entry component's public prop shape. */
++export interface EventItem { id: string; month: string; day: string; year: string; title: string; artist: string; venue: string; price: string; imageUrl: string }
+ 
+-export interface EventItem {
+-  id: string;
+-  month: string;
+-  day: string;
+-  year: string;
+-  title: string;
+-  artist: string;
+-  venue: string;
+-  price: string;
+-  imageUrl: string;
++export default async function TrendingEvents() {
++  let events;
++  try { events = await getEvents(); } catch { return <section className="mx-auto max-w-[1440px] px-6 py-16 lg:px-16"><h2 className="font-display text-3xl font-bold">Trending Events</h2><p role="status" className="mt-4 text-[#c5c6c7]">We couldn’t load events right now.</p><Link href="/events" className="mt-4 inline-block text-[#66fcf1]">Try the events page →</Link></section>; }
++  return <section id="trending-events" className="mx-auto max-w-[1440px] scroll-mt-24 px-4 py-16 sm:px-6 lg:px-16 lg:py-24">
++    <div className="mb-8 flex items-end justify-between gap-4"><div><p className="text-xs font-semibold tracking-widest text-[#66fcf1]">DON’T MISS OUT</p><h2 className="mt-2 font-display text-3xl font-bold sm:text-4xl">Trending Events</h2></div><Link href="/events" className="shrink-0 text-sm text-[#66fcf1]">View All →</Link></div>
++    <DemoNotice />
++    {events.length ? <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">{events.slice(0, 4).map(event => <EventCard key={event.id} event={event} />)}</ul> : <p className="py-8 text-[#c5c6c7]">No events have been published yet. Check back soon.</p>}
++  </section>;
+ }
+-
+-export const TRENDING_EVENTS: EventItem[] = [
+-  {
+-    id: "puth-2026",
+-    month: "OCT",
+-    day: "14",
+-    year: "2026",
+-    title: "Whatever's Clever! World Tour",
+-    artist: "Charlie Puth",
+-    venue: "SM Mall of Asia Arena, Pasay",
+-    price: "₱2,200",
+-    imageUrl: "/images/charlie_puth.jpg",
+-  },
+-  {
+-    id: "wte-2026",
+-    month: "NOV",
+-    day: "15",
+-    year: "2026",
+-    title: "The Pieces Tour",
+-    artist: "wave to earth, Milena",
+-    venue: "SM Mall of Asia Arena, Pasay",
+-    price: "₱2,200",
+-    imageUrl: "/images/wave_to_earth.jpg",
+-  },
+-  {
+-    id: "m5-2027",
+-    month: "FEB",
+-    day: "07",
+-    year: "2027",
+-    title: "Maroon 5 Asia 2027",
+-    artist: "Maroon 5",
+-    venue: "SM Mall of Asia Arena, Pasay",
+-    price: "₱2,200",
+-    imageUrl: "/images/maroon5.jpg",
+-  },
+-  {
+-    id: "bts-2027",
+-    month: "MAR",
+-    day: "13",
+-    year: "2027",
+-    title: "BTS World Tour 'ARIRANG' in Bulacan",
+-    artist: "BTS",
+-    venue: "Philippine Sports Stadium, Bulacan",
+-    price: "₱2,200",
+-    imageUrl: "/images/bts.jpg",
+-  },
+-];
+-
+-export default function TrendingEvents() {
+-  return (
+-    <section id="trending-events" className="py-16 scroll-mt-24">
+-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+-        {/* Section Header */}
+-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+-          <div>
+-            <span className="text-[#66fcf1] text-xs font-bold tracking-[0.2em] uppercase block mb-1">
+-              DON&apos;T MISS OUT
+-            </span>
+-            <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+-              Trending Events
+-            </h2>
+-          </div>
+-
+-          <Link href="/events" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#66fcf1] hover:text-[#8afff6] transition-colors group self-start sm:self-auto">
+-            <span>View All</span>
+-            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+-          </Link>
+-        </div>
+-
+-        {/* 4 Event Cards Grid */}
+-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+-          {TRENDING_EVENTS.map((event) => (
+-            <div
+-              key={event.id}
+-              className="bg-[#121b26] border border-[#1e2d3f] rounded-2xl overflow-hidden hover:border-[#66fcf1]/50 hover:shadow-[0_12px_30px_rgba(102,252,241,0.15)] transition-all duration-300 flex flex-col group"
+-            >
+-              {/* Image Container with Date Badge Overlay */}
+-              <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#1f2833]">
+-                <Image
+-                  src={event.imageUrl}
+-                  alt={`${event.title} - ${event.artist}`}
+-                  fill
+-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+-                />
+-
+-                {/* Floating Date Badge */}
+-                <div className="absolute top-3 left-3 bg-[#0d141e]/90 backdrop-blur-md border border-[#223347] rounded-lg px-2.5 py-1.5 text-center min-w-[48px] shadow-lg">
+-                  <span className="text-[10px] font-bold text-[#66fcf1] tracking-wider uppercase block leading-tight">
+-                    {event.month}
+-                  </span>
+-                  <span className="text-lg font-extrabold text-white block leading-none my-0.5">
+-                    {event.day}
+-                  </span>
+-                  <span className="text-[9px] font-medium text-slate-400 block leading-tight">
+-                    {event.year}
+-                  </span>
+-                </div>
+-              </div>
+-
+-              {/* Card Body */}
+-              <div className="p-4 flex-1 flex flex-col justify-between">
+-                <div>
+-                  <h3 className="font-bold text-base text-white group-hover:text-[#66fcf1] transition-colors line-clamp-1 leading-snug">
+-                    {event.title}
+-                  </h3>
+-
+-                  <p className="text-xs font-semibold text-[#66fcf1] mt-1 line-clamp-1">
+-                    {event.artist}
+-                  </p>
+-
+-                  <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-2.5">
+-                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+-                    <span className="truncate">{event.venue}</span>
+-                  </div>
+-                </div>
+-
+-                {/* Card Footer: Price & Book Now button */}
+-                <div className="pt-4 mt-3 border-t border-[#1a2737] flex items-center justify-between gap-2">
+-                  <div>
+-                    <span className="text-[11px] text-slate-400 block leading-none">
+-                      Starts from
+-                    </span>
+-                    <span className="text-sm font-extrabold text-white mt-0.5 block">
+-                      {event.price}
+-                    </span>
+-                  </div>
+-
+-                  <Link
+-                    href={`/events/${event.id}`}
+-                    className="bg-[#66fcf1] hover:bg-[#8afff6] text-[#0b0c10] font-bold text-xs px-4 py-2 rounded-full transition-all shadow-[0_0_15px_rgba(102,252,241,0.25)] hover:shadow-[0_0_20px_rgba(102,252,241,0.45)] hover:scale-105 active:scale-95 inline-block"
+-                  >
+-                    Book Now
+-                  </Link>
+-                </div>
+-              </div>
+-            </div>
+-          ))}
+-        </div>
+-      </div>
+-    </section>
+-  );
+-}
+--- a/src/components/WhyChooseUs.tsx
++++ b/src/components/WhyChooseUs.tsx
+@@ -32,14 +32,14 @@
+   ];
+ 
+   return (
+-    <section className="py-20">
+-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
++    <section className="py-16 lg:py-24">
++      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-16">
+         {/* Section Header */}
+         <div className="text-center mb-14">
+           <span className="text-[#66fcf1] text-xs font-bold tracking-[0.2em] uppercase block mb-1">
+             TRUSTED PLATFORM
+           </span>
+-          <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
++          <h2 className="font-display text-3xl sm:text-4xl font-bold text-white tracking-tight">
+             Why Choose Aventix
+           </h2>
+         </div>
+@@ -51,7 +51,7 @@
+             return (
+               <div
+                 key={idx}
+-                className="bg-[#121a25] border border-[#1e2a39] rounded-2xl p-7 text-center flex flex-col items-center hover:border-[#66fcf1]/40 hover:bg-[#16212f] transition-all duration-300 group shadow-lg"
++                className="bg-[#1f2833] border border-[#2c3644] rounded-2xl p-7 text-center flex flex-col items-center hover:border-[#66fcf1]/40 hover:bg-[#16212f] transition-all duration-300 group shadow-lg"
+               >
+                 {/* Solid Cyan Icon Badge */}
+                 <div className="w-14 h-14 rounded-2xl bg-[#66fcf1] text-[#0b0c10] flex items-center justify-center mb-5 shadow-[0_0_20px_rgba(102,252,241,0.3)] group-hover:scale-110 group-hover:shadow-[0_0_30px_rgba(102,252,241,0.5)] transition-all">
+--- /dev/null
++++ b/src/components/auth/AccountChoice.tsx
+@@ -0,0 +1,16 @@
++import Link from "next/link";
++import { authHref } from "@/lib/auth/destination";
++
++export default function AccountChoice({ returnTo }: { returnTo?: string }) {
++  return <>
++    <h1 className="text-center text-[28px] font-semibold">Create your Aventix Account</h1>
++    <p className="mt-3 text-center text-sm text-[#aeb6c2]">Choose how you will use Aventix.</p>
++    <div className="mt-8 grid gap-4 sm:grid-cols-2">
++      {[{ name: "Attendee", form: "Registration Form", body: "Discover events, book tickets, and manage your bookings.", href: "/register/attendee" }, { name: "Organizer", form: "Application Form", body: "Create events, manage listings, and sell tickets after approval.", href: "/register/organizer" }].map(item => <Link key={item.name} href={authHref(item.href, returnTo)} className="rounded-[18px] border border-[#2c3644] bg-[#181f27] px-6 py-6 text-center shadow-[0_2px_0_#66fcf1] transition hover:border-[#66fcf1] hover:bg-[#142e30] focus-visible:border-[#66fcf1] focus-visible:bg-[#142e30]">
++        <h2 className="text-[28px] font-semibold text-[#66fcf1]">{item.name}</h2><p className="mt-2 text-lg font-semibold">{item.form}</p><p className="mt-3 text-sm leading-5 text-[#aeb6c2]">{item.body}</p>
++      </Link>)}
++    </div>
++    <p className="mt-7 text-center text-[13px] leading-5 text-[#9fa3a8]">Organizer onboarding is awaiting the team’s approved policy. The organizer form is a visual preview only.</p>
++    <p className="mt-20 text-center text-[13px] text-[#aeb6c2]">Already have an account? <Link href={authHref("/login", returnTo)} className="hover:text-[#66fcf1]">Log in</Link></p>
++  </>;
++}
+--- /dev/null
++++ b/src/components/auth/AuthForm.tsx
+@@ -0,0 +1,142 @@
++"use client";
++
++import { useEffect, useRef, useState, type FormEvent } from "react";
++import Link from "next/link";
++import { useRouter } from "next/navigation";
++import FormField, { submitClass } from "./FormField";
++import { AuthClientError, authErrorMessage, publicAuthClient, type PublicAuthClient } from "@/lib/auth/client";
++import { attendeePayload, normalizePhone, passwordError, validEmail } from "@/lib/auth/validation";
++import { authHref, safeReturnTo } from "@/lib/auth/destination";
++
++type Mode = "login" | "attendee" | "forgot" | "reset";
++const titles: Record<Mode, [string, string]> = {
++  login: ["Welcome back", "Log in to continue to Aventix."],
++  attendee: ["Create your Attendee Account", "Sign up to discover events and book tickets."],
++  forgot: ["Forgot your password?", "Enter your email to request a recovery link."],
++  reset: ["Reset your password", "Choose a new password for your Aventix account."],
++};
++
++export default function AuthForm({ mode, returnTo, client = publicAuthClient }: { mode: Mode; returnTo?: string; client?: PublicAuthClient }) {
++  const router = useRouter();
++  const [errors, setErrors] = useState<Record<string, string>>({});
++  const [message, setMessage] = useState("");
++  const [success, setSuccess] = useState(false);
++  const [busy, setBusy] = useState(false);
++  const submitting = useRef(false);
++  const [recovery, setRecovery] = useState<"checking" | "valid" | "invalid" | "unavailable">("checking");
++  const recoveryLink = useRef("");
++  const destination = safeReturnTo(returnTo);
++  const connected = mode === "login" ? !!client.login : mode === "attendee" ? !!client.registerAttendee : mode === "forgot" ? !!client.requestPasswordReset : !!client.resetPassword && !!client.verifyRecoveryLink;
++
++  useEffect(() => {
++    if (mode !== "reset") return;
++    let active = true;
++    recoveryLink.current = window.location.href;
++    async function verify() {
++      if (!client.verifyRecoveryLink) { if (active) setRecovery("unavailable"); return; }
++      try {
++        await client.verifyRecoveryLink(recoveryLink.current);
++        if (active) setRecovery("valid");
++      } catch (error) {
++        if (active) { setRecovery("invalid"); setMessage(authErrorMessage(error)); }
++      }
++    }
++    void verify();
++    return () => { active = false; };
++  }, [mode, client]);
++
++  async function submit(e: FormEvent<HTMLFormElement>) {
++    e.preventDefault();
++    if (submitting.current) return;
++    const form = e.currentTarget;
++    const data = new FormData(form);
++    const get = (name: string) => String(data.get(name) ?? "");
++    const next: Record<string, string> = {};
++    setMessage("");
++    if (mode !== "reset" && !validEmail(get("email"))) next.email = "Enter a valid email address.";
++    if (mode === "login" && !get("password")) next.password = "Enter your password.";
++    if (mode === "attendee") {
++      if (!get("firstName").trim()) next.firstName = "Enter your first name.";
++      if (!get("lastName").trim()) next.lastName = "Enter your last name.";
++      if (!normalizePhone(get("phoneNumber"))) next.phoneNumber = "Enter a valid mobile number, such as 0917 123 4567 or +63 917 123 4567.";
++      if (get("terms") !== "on") next.terms = "Accept the Terms & Conditions and Privacy Policy to continue.";
++    }
++    if (mode === "attendee" || mode === "reset") {
++      const error = (client.passwordRules?.validate ?? passwordError)(get("password"));
++      if (error) next.password = error;
++      if (!get("confirmPassword") || get("password") !== get("confirmPassword")) next.confirmPassword = "Passwords must match.";
++    }
++    setErrors(next);
++    if (Object.keys(next).length) {
++      const first = form.elements.namedItem(Object.keys(next)[0]);
++      if (first instanceof HTMLElement) first.focus();
++      return;
++    }
++    submitting.current = true;
++    setBusy(true);
++    try {
++      if (mode === "login") {
++        if (!client.login) throw new AuthClientError("UNAVAILABLE");
++        const result = await client.login({ email: get("email").trim(), password: get("password"), ...(client.rememberMeSupported ? { rememberMe: get("rememberMe") === "on" } : {}) });
++        // Only the session adapter may authorize a booking return or role area.
++        const target = result.allowBookingReturn && destination ? destination : result.destination ?? "/events";
++        const parsed = new URL(target, window.location.origin);
++        if (!target.startsWith("/") || target.startsWith("//") || /[\\\x00-\x1f]/.test(decodeURIComponent(target)) || parsed.origin !== window.location.origin) throw new Error("Invalid destination");
++        router.replace(parsed.pathname + parsed.search);
++        router.refresh();
++      } else if (mode === "attendee") {
++        if (!client.registerAttendee) throw new AuthClientError("UNAVAILABLE");
++        await client.registerAttendee(attendeePayload(data));
++        form.reset();
++        setSuccess(true);
++        setMessage("Your attendee account has been created. You can now log in.");
++      } else if (mode === "forgot") {
++        if (!client.requestPasswordReset) throw new AuthClientError("UNAVAILABLE");
++        await client.requestPasswordReset({ email: get("email").trim() });
++        form.reset();
++        setSuccess(true);
++        setMessage("If an eligible account exists for that email, you’ll receive a password recovery link. Check your inbox and spam folder.");
++      } else {
++        if (recovery !== "valid" || !client.resetPassword) throw new AuthClientError("UNAVAILABLE");
++        await client.resetPassword({ recoveryLink: recoveryLink.current, password: get("password") });
++        form.reset();
++        recoveryLink.current = "";
++        // Remove the used recovery link from this history entry.
++        window.history.replaceState(null, "", "/reset-password");
++        setSuccess(true);
++        setMessage("Your password has been reset. Return to Login to sign in.");
++      }
++    } catch (error) {
++      setMessage(authErrorMessage(error));
++      if (mode === "reset" && error instanceof AuthClientError && ["INVALID_RECOVERY_LINK", "EXPIRED_RECOVERY_LINK", "USED_RECOVERY_LINK"].includes(error.code)) setRecovery("invalid");
++    } finally { submitting.current = false; setBusy(false); }
++  }
++
++  return <>
++    {mode === "attendee" && <Link className="mb-4 inline-block text-xs text-[#66fcf1]" href={authHref("/register", destination)}>← Back</Link>}
++    <h1 className={`text-center font-semibold leading-tight ${mode === "login" ? "text-[30px]" : "text-[26px]"}`}>{titles[mode][0]}</h1>
++    <p className="mt-2 text-center text-sm text-[#9fa3a8]">{titles[mode][1]}</p>
++    {destination && <p className="mt-4 rounded-lg bg-[#66fcf1]/10 p-3 text-xs text-[#66fcf1]">Your event is saved in this link. Sign in to continue when booking is available.</p>}
++    {!connected && <p className="mt-5 rounded-lg border border-amber-400/25 bg-amber-400/5 p-3 text-xs leading-5 text-amber-200">{mode === "reset" ? "We can’t verify recovery links yet. Password reset is unavailable until the account service is connected." : "Account service is not connected yet. You can review this form, but no details will be submitted."}</p>}
++    {success ? <div className="mt-8 space-y-6"><p role="status" className="text-sm leading-6 text-[#66fcf1]">{message}</p><Link href={authHref("/login", destination)} className={submitClass}>Return to Login</Link></div> : <form onSubmit={submit} noValidate aria-busy={busy} className="mt-7 space-y-5">
++      {mode === "attendee" && <div className="grid gap-4 sm:grid-cols-2">
++        <FormField name="firstName" label="First Name" autoComplete="given-name" placeholder="Enter first name" maxLength={100} error={errors.firstName} required />
++        <FormField name="lastName" label="Last Name" autoComplete="family-name" placeholder="Enter last name" maxLength={100} error={errors.lastName} required />
++      </div>}
++      {mode !== "reset" && <FormField name="email" label="Email Address" type="email" autoComplete="email" placeholder="Enter your email" maxLength={254} error={errors.email} required />}
++      {mode === "attendee" && <FormField name="phoneNumber" label="Phone / Contact Number" type="tel" autoComplete="tel" placeholder="0917 123 4567" maxLength={25} error={errors.phoneNumber} required />}
++      {mode === "reset" && recovery !== "valid" && <p role="status" className="text-sm text-[#c5c6c7]">{recovery === "checking" ? "Checking recovery link…" : recovery === "invalid" ? "Request a new recovery link to continue." : "Only a verified recovery link can unlock this form."}</p>}
++      {mode !== "forgot" && <FormField name="password" label={mode === "reset" ? "New Password" : "Password"} type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} placeholder={mode === "login" ? "Enter your password" : "Create a password"} error={errors.password} disabled={mode === "reset" && recovery !== "valid"} hint={mode === "login" ? undefined : client.passwordRules?.description ?? "Use at least 8 characters. Final password requirements await the account service."} required />}
++      {(mode === "attendee" || mode === "reset") && <FormField name="confirmPassword" label="Confirm Password" type="password" autoComplete="new-password" placeholder="Re-enter your password" error={errors.confirmPassword} disabled={mode === "reset" && recovery !== "valid"} required />}
++      {mode === "login" && <div className="space-y-2"><div className="flex flex-wrap items-center justify-between gap-3 text-xs">
++        <label className="flex items-center gap-2 text-[#c5c6c7]"><input name="rememberMe" type="checkbox" disabled={!client.rememberMeSupported} aria-describedby={!client.rememberMeSupported ? "remember-note" : undefined} className="h-4 w-4 accent-[#66fcf1]" />Remember Me</label>
++        <Link className="text-[#66fcf1]" href={authHref("/forgot-password", destination)}>Forgot password?</Link>
++      </div>{!client.rememberMeSupported && <p id="remember-note" className="text-xs text-[#9fa3a8]">Remember Me is unavailable until session persistence is supported.</p>}</div>}
++      {mode === "attendee" && <div><label className="flex items-start gap-2 text-xs leading-5 text-[#c5c6c7]"><input name="terms" type="checkbox" required aria-invalid={!!errors.terms} aria-describedby={errors.terms ? "terms-error" : undefined} className="mt-1 h-4 w-4 shrink-0 accent-[#66fcf1]" /><span>I agree to the <Link href="/legal/terms" className="text-[#66fcf1] underline" target="_blank">Terms & Conditions</Link> and <Link href="/legal/privacy" className="text-[#66fcf1] underline" target="_blank">Privacy Policy</Link>.</span></label>{errors.terms && <p id="terms-error" className="mt-2 text-xs text-red-300">{errors.terms}</p>}</div>}
++      {message && <p role="alert" className="rounded-lg border border-red-400/30 bg-red-400/5 p-3 text-sm text-red-200">{message}</p>}
++      <button type="submit" disabled={busy || (mode === "reset" && recovery !== "valid")} className={submitClass}>{busy ? "Please wait…" : mode === "login" ? "Login" : mode === "attendee" ? "Register" : mode === "forgot" ? "Request recovery link" : "Reset password"}</button>
++      {mode === "reset" && <Link className="block text-center text-sm text-[#66fcf1]" href="/forgot-password">Request a new recovery link</Link>}
++    </form>}
++    {!success && <p className="mt-8 text-center text-[13px] text-[#9fa3a8]">{mode === "login" ? <>New to Aventix? <Link className="hover:text-[#66fcf1]" href={authHref("/register", destination)}>Create an account</Link></> : <>{mode === "attendee" ? "Already have an account? " : "Back to "}<Link className="hover:text-[#66fcf1]" href={authHref("/login", destination)}>Log in</Link></>}</p>}
++  </>;
++}
+--- /dev/null
++++ b/src/components/auth/AuthShell.tsx
+@@ -0,0 +1,16 @@
++import Navbar from "@/components/Navbar";
++
++export default function AuthShell({ children, wide = false }: { children: React.ReactNode; wide?: boolean }) {
++  return <div className="min-h-screen bg-[#0b0c10]">
++    <Navbar />
++    <main id="main-content" className="relative isolate flex min-h-[calc(100svh-80px)] items-start justify-center overflow-hidden px-4 py-10 sm:py-16 lg:py-[86px]">
++      {/* Figma concert background could not be downloaded; see FRONTEND-HANDOFF.md. */}
++      <div aria-hidden className="absolute inset-0 -z-30 bg-[radial-gradient(ellipse_at_75%_20%,#17464b_0%,#0b0c10_65%)]" />
++      <div aria-hidden className="absolute inset-0 -z-20 bg-gradient-to-b from-[#0b0c10]/30 via-[#0b0c10]/20 to-[#0b0c10]/90" />
++
++      <section className={`relative w-full ${wide ? "max-w-[620px]" : "max-w-[480px]"} rounded-[20px] border border-[#1f2833] bg-[#11151b]/[0.97] p-6 shadow-2xl sm:p-10`}>
++        {children}
++      </section>
++    </main>
++  </div>;
++}
+--- /dev/null
++++ b/src/components/auth/Dialog.tsx
+@@ -0,0 +1,20 @@
++"use client";
++import { useEffect, useRef } from "react";
++import { X } from "lucide-react";
++
++export default function Dialog({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
++  const ref = useRef<HTMLDialogElement>(null);
++  useEffect(() => {
++    const dialog = ref.current;
++    if (!open || !dialog) return;
++    const previous = document.activeElement as HTMLElement | null;
++    const overflow = document.body.style.overflow;
++    dialog.showModal();
++    document.body.style.overflow = "hidden";
++    return () => { dialog.close(); document.body.style.overflow = overflow; previous?.focus(); };
++  }, [open]);
++  return <dialog ref={ref} onCancel={onClose} onClose={onClose} aria-labelledby="public-dialog-title" className="m-auto w-[calc(100%-2rem)] max-w-[440px] rounded-3xl border border-[#2c3644] bg-[#1f2833] p-8 text-center text-white shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-sm">
++    <button type="button" onClick={onClose} aria-label="Close dialog" className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full text-[#c5c6c7] hover:bg-white/10"><X size={18} /></button>
++    <h2 id="public-dialog-title" className="mt-4 text-2xl font-semibold">{title}</h2>{children}
++  </dialog>;
++}
+--- /dev/null
++++ b/src/components/auth/FormField.tsx
+@@ -0,0 +1,22 @@
++"use client";
++
++import { useState, type InputHTMLAttributes } from "react";
++import { Eye, EyeOff } from "lucide-react";
++
++export const fieldClass = "h-12 w-full min-w-0 rounded-[10px] border border-[#2c3644] bg-[#1f2833] px-4 text-sm text-white placeholder:text-[#8f969e] focus:border-[#66fcf1] focus:outline-none focus:ring-1 focus:ring-[#66fcf1] aria-[invalid=true]:border-red-400 disabled:opacity-60";
++export const submitClass = "inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[#66fcf1] px-6 py-3 text-sm font-semibold text-[#0b0c10] transition hover:bg-[#8afff6] disabled:cursor-not-allowed disabled:opacity-50";
++
++export default function FormField({ label, error, hint, ...props }: InputHTMLAttributes<HTMLInputElement> & { name: string; label: string; error?: string; hint?: string }) {
++  const [visible, setVisible] = useState(false);
++  const password = props.type === "password";
++  const id = props.id ?? props.name;
++  return <div className="min-w-0">
++    <label htmlFor={id} className="mb-2 block text-[13px] font-semibold text-[#c5c6c7]">{label}</label>
++    <div className="relative">
++      <input {...props} id={id} type={password && visible ? "text" : props.type} aria-invalid={!!error} aria-describedby={[error ? `${id}-error` : "", hint ? `${id}-hint` : ""].filter(Boolean).join(" ") || undefined} className={`${fieldClass} ${password ? "pr-12" : ""}`} />
++      {password && <button type="button" aria-label={`${visible ? "Hide" : "Show"} ${label.toLowerCase()}`} aria-pressed={visible} onClick={() => setVisible(!visible)} className="absolute right-1 top-1 flex h-10 w-10 items-center justify-center rounded-lg text-[#aeb6c2] hover:text-[#66fcf1]">{visible ? <EyeOff size={18} /> : <Eye size={18} />}</button>}
++    </div>
++    {hint && <p id={`${id}-hint`} className="mt-2 text-xs text-[#9fa3a8]">{hint}</p>}
++    {error && <p id={`${id}-error`} className="mt-2 text-xs text-red-300">{error}</p>}
++  </div>;
++}
+--- /dev/null
++++ b/src/components/auth/OrganizerPreview.tsx
+@@ -0,0 +1,45 @@
++"use client";
++import { useRef, useState } from "react";
++import Link from "next/link";
++import FormField, { fieldClass, submitClass } from "./FormField";
++import Dialog from "./Dialog";
++import { authHref } from "@/lib/auth/destination";
++
++export default function OrganizerPreview({ returnTo }: { returnTo?: string }) {
++  const [step, setStep] = useState(1);
++  const [open, setOpen] = useState(false);
++  const heading = useRef<HTMLHeadingElement>(null);
++  const move = (value: number) => { setStep(value); heading.current?.focus(); };
++  return <>
++    <Link href={authHref("/register", returnTo)} className="mb-3 inline-block text-xs text-[#66fcf1]">← Back</Link>
++    <h1 ref={heading} tabIndex={-1} className="text-center text-[26px] font-semibold">Apply as an Organizer</h1>
++    <p className="mt-2 text-center text-sm text-[#9fa3a8]">{step === 1 ? "Tell us about yourself and your organization." : "Set up your login credentials and describe your organization."}</p>
++    <p className="mt-2 text-center text-xs text-[#66fcf1]">Step {step} of 2</p>
++    <p className="my-5 rounded-lg border border-amber-400/25 bg-amber-400/5 p-3 text-xs leading-5 text-amber-200">Design preview — applications are not open. Onboarding policy is awaiting agreement. These fields are disabled and collect no data.</p>
++    <div hidden={step !== 1} className="space-y-5">
++      <fieldset disabled className="space-y-5">
++        <div className="grid gap-4 sm:grid-cols-2"><FormField name="org-first" label="First Name" placeholder="Enter first name" /><FormField name="org-last" label="Last Name" placeholder="Enter last name" /></div>
++        <div className="grid gap-4 sm:grid-cols-2"><FormField name="org-email" label="Email Address" placeholder="Enter your email" /><FormField name="org-phone" label="Phone Number" placeholder="Phone number" /></div>
++        <FormField name="org-name" label="Organization / Company Name" placeholder="Enter organization or company name" />
++        <label className="block text-[13px] font-semibold text-[#c5c6c7]">Organizer Type<select className={`${fieldClass} mt-2`} defaultValue=""><option value="">Select organizer type</option></select></label>
++      </fieldset>
++      <button type="button" onClick={() => move(2)} className={submitClass}>Preview next step</button>
++    </div>
++    <div hidden={step !== 2} className="space-y-5">
++      <fieldset disabled className="space-y-5">
++        <label className="block text-[13px] font-semibold text-[#c5c6c7]">Short Description<textarea className={`${fieldClass} mt-2 h-24 py-3`} placeholder="Briefly describe your organization and the events you plan to host" /></label>
++        <FormField name="org-username" label="Username" placeholder="Choose a username" />
++        <div className="grid gap-4 sm:grid-cols-2"><FormField name="org-password" label="Password" type="password" placeholder="Create password" /><FormField name="org-confirm" label="Confirm Password" type="password" placeholder="Confirm password" /></div>
++      </fieldset>
++      <p className="rounded-xl border border-[#2c3644] bg-[#181f27] p-4 text-xs text-[#aeb6c2]">Organizer privileges require backend authorization. No application can be submitted in this preview.</p>
++      <button type="button" disabled className={submitClass}>Submit Organizer Application — unavailable</button>
++      <button type="button" onClick={() => setOpen(true)} className="w-full text-sm text-[#66fcf1]">View application notice</button>
++      <button type="button" onClick={() => move(1)} className="w-full text-sm text-[#66fcf1]">← Back to previous step</button>
++    </div>
++    <p className="mt-6 text-center text-[13px] text-[#aeb6c2]">Already have an account? <Link href={authHref("/login", returnTo)} className="text-[#66fcf1]">Log in</Link></p>
++    <Dialog open={open} onClose={() => setOpen(false)} title="Applications not open yet">
++      <p className="my-5 text-sm leading-6 text-[#c5c6c7]">The organizer onboarding policy and service are awaiting agreement. No application has been submitted.</p>
++      <div className="my-6 border-t border-[#2c3644]" /><button type="button" onClick={() => setOpen(false)} className={`${submitClass} rounded-xl bg-gradient-to-r from-[#45a29e] to-[#66fcf1]`}>Got it</button>
++    </Dialog>
++  </>;
++}
+--- a/src/components/contact/ContactForm.tsx
++++ b/src/components/contact/ContactForm.tsx
+@@ -27,13 +27,13 @@
+     if (!values.subject.trim()) next.subject = "Please add a subject.";
+     if (values.message.trim().length < 10) next.message = "Please write at least 10 characters.";
+     setErrors(next);
+-    if (Object.keys(next).length) return;
++    if (Object.keys(next).length) { document.getElementById(Object.keys(next)[0])?.focus(); return; }
+ 
+     // No contact endpoint exists yet: hand the message to the user's email app.
+     const body = `${values.message}\n\n— ${values.name} (${values.email})`;
+     window.location.href = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(values.subject)}&body=${encodeURIComponent(body)}`;
+     setSent(true);
+-    setValues(EMPTY);
++    // Keep the draft: opening an email app is not proof of delivery.
+   };
+ 
+   const err = (k: keyof Values) =>
+@@ -46,6 +46,7 @@
+ 
+   return (
+     <form onSubmit={onSubmit} noValidate className="rounded-3xl border border-[#2c3644] bg-[#1f2833] p-6 sm:p-8">
++      <p className="mb-4 text-xs leading-5 text-[#c5c6c7]">This form prepares an email in your email app. It does not send messages directly.</p>
+       <h3 className="font-display text-2xl font-bold leading-8 text-white">Send us a message</h3>
+ 
+       <div className="mt-4">
+@@ -73,11 +74,11 @@
+         type="submit"
+         className="mt-4 h-[50px] w-full rounded-full bg-[#66fcf1] text-sm font-bold text-[#0b0c10] transition hover:bg-[#8afff6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+       >
+-        Send Message
++        Open email app
+       </button>
+       {sent && (
+         <p role="status" className="mt-3 text-sm text-[#66fcf1]">
+-          Opening your email app to send this to {SUPPORT_EMAIL}.
++          Your email app was requested. Review and send your message there; Aventix has not delivered it. If no app opened, email {SUPPORT_EMAIL} directly.
+         </p>
+       )}
+     </form>
+--- /dev/null
++++ b/src/components/event/BookingLoginNotice.tsx
+@@ -0,0 +1,16 @@
++"use client";
++import { useState } from "react";
++import Link from "next/link";
++import AuthModal from "@/components/AuthModal";
++import { authHref } from "@/lib/auth/destination";
++
++export default function BookingLoginNotice({ returnTo }: { returnTo: string }) {
++  const [open, setOpen] = useState(false);
++  return <>
++    <div className="flex flex-col gap-5 rounded-xl border border-[#1b4975] bg-[#0d2c56] p-6 sm:flex-row sm:items-center sm:justify-between">
++      <div><h2 className="font-semibold">Log in to select tickets</h2><p className="mt-1 text-sm text-[#c8d8e8]">Ticket options are shown for reference. Sign in is required before booking.</p><button type="button" className="mt-2 text-xs text-[#66fcf1] underline" onClick={() => setOpen(true)}>About account access</button></div>
++      <Link href={authHref("/login", returnTo)} className="inline-flex shrink-0 items-center justify-center rounded-full bg-[#66fcf1] px-12 py-3 text-sm font-bold text-[#0b0c10] hover:bg-[#8afff6]">LOG IN</Link>
++    </div>
++    <AuthModal isOpen={open} onClose={() => setOpen(false)} returnTo={returnTo} />
++  </>;
++}
+--- a/src/components/event/Playlist.tsx
++++ b/src/components/event/Playlist.tsx
+@@ -11,6 +11,7 @@
+           Listen before the show
+         </h2>
+ 
++        <p className="mt-3 text-xs text-[#9fa3a8]">Track information preview. Playback links have not been supplied.</p>
+         <div className="mt-8 flex flex-col overflow-hidden rounded-2xl bg-[#1f2833] lg:mt-[38px] lg:flex-row">
+           <div className="flex shrink-0 flex-col gap-5 bg-[#161d27] px-7 pb-7 pt-8 lg:w-[300px]">
+             {playlist.coverUrl && (
+--- /dev/null
++++ b/src/components/event/RelatedEvents.tsx
+@@ -0,0 +1,13 @@
++import Link from "next/link";
++import { getEvents } from "@/lib/events-api";
++import EventCard from "@/components/events/EventCard";
++
++export default async function RelatedEvents({ eventId, eventType }: { eventId: string; eventType: string }) {
++  let events;
++  try { events = await getEvents(); } catch {
++    return <section className="mx-auto max-w-[1440px] px-4 py-12 sm:px-6 lg:px-16"><h2 className="font-display text-2xl font-bold">You may also like</h2><p className="mt-4 text-sm text-[#c5c6c7]">Related events are temporarily unavailable.</p><Link href="/events" className="mt-3 inline-block text-sm text-[#66fcf1]">Browse all events →</Link></section>;
++  }
++  const related = events.filter(e => e.id !== eventId && e.status === "PUBLISHED").sort((a, b) => Number(b.type === eventType) - Number(a.type === eventType)).slice(0, 3);
++  if (!related.length) return null;
++  return <section aria-labelledby="related-heading" className="mx-auto max-w-[1440px] px-4 py-12 sm:px-6 lg:px-16 lg:py-20"><p className="text-xs font-semibold text-[#66fcf1]">RELATED EVENTS</p><h2 id="related-heading" className="mt-4 font-display text-[26px] font-bold">You may also like</h2><ul className="mt-6 grid gap-7 sm:grid-cols-2 lg:max-w-[976px] lg:grid-cols-3">{related.map(event => <EventCard key={event.id} event={event} />)}</ul></section>;
++}
+--- /dev/null
++++ b/src/components/events/DemoNotice.tsx
+@@ -0,0 +1,4 @@
++export default function DemoNotice() {
++  if (process.env.API_URL || process.env.NEXT_PUBLIC_API_URL) return null;
++  return <p className="mb-6 rounded-lg border border-amber-300/20 bg-amber-300/5 px-4 py-3 text-xs leading-5 text-amber-200">Frontend preview: event details, prices, availability, and promotional claims are sample content, not live offers. No bookings or payments can be made.</p>;
++}
+--- a/src/components/events/EventsBrowser.tsx
++++ b/src/components/events/EventsBrowser.tsx
+@@ -42,15 +42,15 @@
+   );
+ }
+ 
+-export default function EventsBrowser({ events, initialQuery = "" }: { events: EventDetails[]; initialQuery?: string }) {
++export default function EventsBrowser({ events, initialQuery = "", initialLocation = "all", initialDate = "all", initialCategory = "all" }: { events: EventDetails[]; initialQuery?: string; initialLocation?: string; initialDate?: string; initialCategory?: string }) {
+   const [query, setQuery] = useState(initialQuery);
+-  const [location, setLocation] = useState("all");
+-  const [date, setDate] = useState<DateFilter>("all");
+-  const [category, setCategory] = useState("all");
++  const [location, setLocation] = useState(initialLocation);
++  const [date, setDate] = useState<string>(initialDate);
++  const [category, setCategory] = useState(initialCategory);
+   const [genre, setGenre] = useState("all");
+ 
+-  const locations = useMemo(() => uniqueSorted(events.map(eventLocation)), [events]);
+-  const categories = useMemo(() => uniqueSorted(events.map((e) => e.type)), [events]);
++  const locations = useMemo(() => uniqueSorted([...events.map(eventLocation), ...(initialLocation !== "all" ? [initialLocation] : [])]), [events, initialLocation]);
++  const categories = useMemo(() => uniqueSorted([...events.map((e) => e.type), ...(initialCategory !== "all" ? [initialCategory] : [])]), [events, initialCategory]);
+   const genres = useMemo(() => uniqueSorted(events.map((e) => e.genre)), [events]);
+ 
+   const groups = useMemo(() => {
+@@ -59,10 +59,11 @@
+     const filtered = events
+       .filter((e) => {
+         if (q && !`${e.name} ${e.performers.join(" ")}`.toLowerCase().includes(q)) return false;
+-        if (location !== "all" && eventLocation(e) !== location) return false;
++        if (location !== "all" && !`${eventLocation(e)} ${e.venue.address}`.toLowerCase().includes(location.toLowerCase())) return false;
+         if (category !== "all" && e.type !== category) return false;
+         if (genre !== "all" && e.genre !== genre) return false;
+-        return matchesDate(e.startsAt, date, now);
++        if (/^\d{4}-\d{2}-\d{2}$/.test(date)) return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila" }).format(new Date(e.startsAt)) === date;
++        return matchesDate(e.startsAt, date as DateFilter, now);
+       })
+       .sort((a, b) => +new Date(a.startsAt) - +new Date(b.startsAt));
+ 
+@@ -86,11 +87,12 @@
+ 
+   return (
+     <>
+-      <section aria-labelledby="filters-heading" className="bg-[#0b0c10]">
++      <section aria-labelledby="filters-heading" className="bg-[#151b23]">
+         <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-16">
+           <h2 id="filters-heading" className="font-display text-xl font-bold text-white">
+             Find your next event
+           </h2>
++          {filtersActive && <button type="button" onClick={clear} className="mt-3 text-sm text-[#66fcf1] underline">Clear all filters</button>}
+           <div className="mt-3.5 grid gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,430px)_repeat(4,minmax(0,1fr))] lg:gap-5">
+             <div className="relative sm:col-span-2 lg:col-span-1">
+               <label className="sr-only" htmlFor="event-search">
+@@ -112,7 +114,7 @@
+               onChange={setLocation}
+               options={[{ value: "all", label: "All Locations" }, ...locations.map((l) => ({ value: l, label: l }))]}
+             />
+-            <Select label="Date" value={date} onChange={(v) => setDate(v as DateFilter)} options={DATE_FILTERS} />
++            <Select label="Date" value={date} onChange={(v) => setDate(v as DateFilter)} options={/^\d{4}-\d{2}-\d{2}$/.test(initialDate) ? [...DATE_FILTERS, { value: initialDate, label: initialDate }] : DATE_FILTERS} />
+             <Select
+               label="Category"
+               value={category}
+--- a/src/components/layout/PageShell.tsx
++++ b/src/components/layout/PageShell.tsx
+@@ -5,7 +5,7 @@
+   return (
+     <div className="flex min-h-screen flex-col bg-[#0b0c10] font-sans text-white">
+       <Navbar />
+-      <main className="flex-1">{children}</main>
++      <main id="main-content" className="flex-1">{children}</main>
+       <Footer />
+     </div>
+   );
+--- /dev/null
++++ b/src/lib/auth/client.ts
+@@ -0,0 +1,42 @@
++/** Frontend adapter only. Moyamoy's session/API implementation is not supplied.
++ * Implement these methods using the agreed client; never store credentials or
++ * tokens in localStorage, assign roles, or infer authentication from UI state.
++ * The adapter must establish the server session before resolving login.
++ */
++export type AttendeeRegistration = {
++  firstName: string; lastName: string; email: string; phoneNumber: string;
++  password: string; termsAccepted: true;
++};
++export type AuthResult = { destination?: string; allowBookingReturn?: boolean };
++export type AuthErrorCode = "INVALID_CREDENTIALS" | "ACCOUNT_DISABLED" | "DUPLICATE_EMAIL" |
++  "INVALID_RECOVERY_LINK" | "EXPIRED_RECOVERY_LINK" | "USED_RECOVERY_LINK" | "RATE_LIMITED" | "UNAVAILABLE";
++export class AuthClientError extends Error {
++  constructor(public code: AuthErrorCode) { super(code); }
++}
++export interface PublicAuthClient {
++  rememberMeSupported: boolean;
++  passwordRules?: { description: string; validate: (password: string) => string | undefined };
++  login?: (data: { email: string; password: string; rememberMe?: boolean }) => Promise<AuthResult>;
++  registerAttendee?: (data: AttendeeRegistration) => Promise<void>;
++  requestPasswordReset?: (data: { email: string }) => Promise<void>;
++  // The agreed adapter extracts/verifies its own backend-issued link format.
++  verifyRecoveryLink?: (link: string) => Promise<void>;
++  resetPassword?: (data: { recoveryLink: string; password: string }) => Promise<void>;
++}
++
++export const publicAuthClient: PublicAuthClient = { rememberMeSupported: false };
++
++export function authErrorMessage(error: unknown): string {
++  if (!(error instanceof AuthClientError)) return "We couldn’t complete your request. Please try again.";
++  const messages: Record<AuthErrorCode, string> = {
++    INVALID_CREDENTIALS: "The email address or password is incorrect.",
++    ACCOUNT_DISABLED: "This account cannot sign in. Please contact support.",
++    DUPLICATE_EMAIL: "This email is already registered. Log in or reset your password.",
++    INVALID_RECOVERY_LINK: "This recovery link is invalid. Request a new link.",
++    EXPIRED_RECOVERY_LINK: "This recovery link has expired. Request a new link.",
++    USED_RECOVERY_LINK: "This recovery link has already been used. Request a new link.",
++    RATE_LIMITED: "Too many attempts. Please wait before trying again.",
++    UNAVAILABLE: "This service is not connected yet. Your details have not been submitted.",
++  };
++  return messages[error.code];
++}
+--- /dev/null
++++ b/src/lib/auth/destination.ts
+@@ -0,0 +1,16 @@
++/** Only public event/ticket destinations may be supplied by a visitor. */
++export function safeReturnTo(value?: string | null): string | undefined {
++  if (!value || !/^\/events\/[^/?#]+(?:\/tickets)?(?:\?category=[^&#]+)?$/.test(value)) return;
++  try {
++    const decoded = decodeURIComponent(value);
++    if (/[\\\x00-\x1f]/.test(decoded) || decoded.includes("..") || decoded.includes("//")) return;
++    const url = new URL(value, "https://aventix.invalid");
++    if (url.origin !== "https://aventix.invalid") return;
++    return url.pathname + url.search;
++  } catch { return; }
++}
++
++export function authHref(path: string, returnTo?: string): string {
++  const destination = safeReturnTo(returnTo);
++  return destination ? `${path}?returnTo=${encodeURIComponent(destination)}` : path;
++}
+--- /dev/null
++++ b/src/lib/auth/validation.ts
+@@ -0,0 +1,26 @@
++import type { AttendeeRegistration } from "./client";
++
++export const validEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
++/** Accept Philippine mobile numbers and international E.164-style numbers. */
++export function normalizePhone(value: string): string | undefined {
++  const n = value.replace(/[ ()-]/g, "");
++  if (/^09\d{9}$/.test(n)) return `+63${n.slice(1)}`;
++  if (/^639\d{9}$/.test(n)) return `+${n}`;
++  if (/^\+[1-9]\d{7,14}$/.test(n)) return n;
++}
++export function passwordError(value: string): string | undefined {
++  // Provisional UI minimum. Replace with the agreed server rules in the adapter.
++  if (value.length < 8) return "Use at least 8 characters.";
++  if (!value.trim()) return "Your password cannot contain only spaces.";
++}
++/** Explicit allowlist: confirmation and caller-supplied roles never leave the form. */
++export function attendeePayload(data: FormData): AttendeeRegistration {
++  return {
++    firstName: String(data.get("firstName") ?? "").trim(),
++    lastName: String(data.get("lastName") ?? "").trim(),
++    email: String(data.get("email") ?? "").trim(),
++    phoneNumber: normalizePhone(String(data.get("phoneNumber") ?? "")) ?? "",
++    password: String(data.get("password") ?? ""),
++    termsAccepted: true,
++  };
++}
+--- a/src/lib/event-booking.ts
++++ b/src/lib/event-booking.ts
+@@ -10,12 +10,14 @@
+ }
+ 
+ export function isCategoryBookable(event: EventDetails, c: TicketCategory): boolean {
+-  return event.status === "PUBLISHED" && c.status === "ACTIVE" && c.availability === "AVAILABLE";
++  return event.status === "PUBLISHED" && c.status === "ACTIVE" && c.availability === "AVAILABLE" && (c.remaining === undefined || c.remaining > 0);
+ }
+ 
+ export function categoryStateLabel(event: EventDetails, c: TicketCategory): string {
+   if (event.status === "CANCELLED") return "Cancelled";
+   if (event.status === "COMPLETED") return "Event ended";
++  if (event.status !== "PUBLISHED") return "Unavailable";
++  if (c.remaining === 0 && c.availability === "AVAILABLE") return "Sold out";
+   if (c.status === "DISABLED") return "Unavailable";
+   const map: Record<CategoryAvailability, string> = {
+     AVAILABLE: "Buy Tickets",
+@@ -33,11 +35,12 @@
+   if (event.status === "COMPLETED") {
+     return { canBook: false, label: "Completed", message: "This event has already taken place." };
+   }
++  if (event.status !== "PUBLISHED") return { canBook: false, label: "Unavailable", message: "This event is not available for booking." };
+   const active = event.categories.filter((c) => c.status === "ACTIVE");
+   if (active.length === 0) {
+     return { canBook: false, label: "Unavailable", message: "No ticket categories are open for this event." };
+   }
+-  if (active.some((c) => c.availability === "AVAILABLE")) {
++  if (active.some((c) => isCategoryBookable(event, c))) {
+     return { canBook: true, label: "On sale" };
+   }
+   if (active.every((c) => c.availability === "SOLD_OUT")) {
+--- /dev/null
++++ b/src/lib/event-payload.ts
+@@ -0,0 +1,27 @@
++import type { EventDetails } from "@/types/event";
++
++const record = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
++const text = (v: unknown): v is string => typeof v === "string";
++const date = (v: unknown) => text(v) && Number.isFinite(Date.parse(v));
++const optionalDate = (v: unknown) => v === undefined || date(v);
++const image = (v: unknown) => v === undefined || (text(v) && (/^\/(?!\/)/.test(v) || /^https?:\/\//.test(v)));
++
++/** Validate the existing frontend view model; this does not define a backend API. */
++export function isEventPayload(v: unknown): v is EventDetails {
++  if (!record(v) || !text(v.id) || !text(v.name) || !text(v.type) || !text(v.description)) return false;
++  if (!Array.isArray(v.performers) || !v.performers.every(text) || !date(v.startsAt) || !optionalDate(v.endsAt)) return false;
++  if (!optionalDate(v.salesStartAt) || !optionalDate(v.salesEndAt) || !image(v.bannerUrl) || !image(v.posterUrl)) return false;
++  if (v.gallery !== undefined && (!Array.isArray(v.gallery) || !v.gallery.every(x => text(x) && image(x)))) return false;
++  if (!record(v.venue) || !text(v.venue.name) || !text(v.venue.address) || (v.venue.city !== undefined && !text(v.venue.city))) return false;
++  if (v.venue.latitude !== undefined && (typeof v.venue.latitude !== "number" || !Number.isFinite(v.venue.latitude) || Math.abs(v.venue.latitude) > 90)) return false;
++  if (v.venue.longitude !== undefined && (typeof v.venue.longitude !== "number" || !Number.isFinite(v.venue.longitude) || Math.abs(v.venue.longitude) > 180)) return false;
++  if (!record(v.organizer) || !text(v.organizer.name) || (v.organizer.description !== undefined && !text(v.organizer.description))) return false;
++  if (!["PUBLISHED", "CANCELLED", "COMPLETED"].includes(String(v.status))) return false;
++  if (!Array.isArray(v.categories) || !v.categories.every(c => record(c) && text(c.id) && text(c.name) && (c.description === undefined || text(c.description)) && typeof c.price === "number" && Number.isFinite(c.price) && c.price >= 0 && ["ACTIVE", "DISABLED"].includes(String(c.status)) && ["AVAILABLE", "SOLD_OUT", "NOT_YET_OPEN", "SALE_ENDED"].includes(String(c.availability)) && (c.remaining === undefined || (typeof c.remaining === "number" && Number.isInteger(c.remaining) && c.remaining >= 0)) && optionalDate(c.salesStartAt) && optionalDate(c.salesEndAt))) return false;
++  if (v.playlist !== undefined) {
++    const p = v.playlist;
++    if (!record(p) || !text(p.label) || !text(p.title) || !image(p.coverUrl) || !Array.isArray(p.tracks)) return false;
++    if (!p.tracks.every(t => record(t) && text(t.id) && text(t.title) && text(t.artist) && image(t.thumbUrl) && [t.views, t.publishedAgo, t.duration].every(x => x === undefined || text(x)))) return false;
++  }
++  return v.genre === undefined || text(v.genre);
++}
+--- a/src/lib/events-api.ts
++++ b/src/lib/events-api.ts
+@@ -1,4 +1,5 @@
+ import type { EventDetails } from "@/types/event";
++import { isEventPayload } from "./event-payload";
+ import { MOCK_EVENTS } from "./mock-events";
+ 
+ export class EventRequestError extends Error {
+@@ -25,6 +26,7 @@
+     // Availability changes with every sale, so never serve a cached copy.
+     res = await fetch(`${API_URL.replace(/\/$/, "")}/events/${encodeURIComponent(id)}`, {
+       cache: "no-store",
++      signal: AbortSignal.timeout(15000),
+       headers: { Accept: "application/json" },
+     });
+   } catch {
+@@ -34,8 +36,11 @@
+   if (res.status === 404) return null;
+   if (!res.ok) throw new EventRequestError(`Events service responded with ${res.status}.`, res.status);
+ 
+-  const body = (await res.json()) as EventDetails | { data: EventDetails };
+-  return "data" in body ? body.data : body;
++  const body: unknown = await res.json();
++  const event = typeof body === "object" && body !== null && "data" in body ? body.data : body;
++  if (!isEventPayload(event)) throw new EventRequestError("The events service returned an unsupported event format.");
++  if (event.id !== id) throw new EventRequestError("The events service returned a different event.");
++  return event;
+ }
+ 
+ /** Fetch all public events (GET /events). Mock list while no API URL is configured. */
+@@ -44,12 +49,14 @@
+ 
+   let res: Response;
+   try {
+-    res = await fetch(`${API_URL.replace(/\/$/, "")}/events`, { cache: "no-store", headers: { Accept: "application/json" } });
++    res = await fetch(`${API_URL.replace(/\/$/, "")}/events`, { cache: "no-store", signal: AbortSignal.timeout(15000), headers: { Accept: "application/json" } });
+   } catch {
+     throw new EventRequestError("Could not reach the events service.");
+   }
+   if (!res.ok) throw new EventRequestError(`Events service responded with ${res.status}.`, res.status);
+ 
+-  const body = (await res.json()) as EventDetails[] | { data: EventDetails[] };
+-  return Array.isArray(body) ? body : body.data;
++  const body: unknown = await res.json();
++  const events = Array.isArray(body) ? body : typeof body === "object" && body !== null && "data" in body ? body.data : undefined;
++  if (!Array.isArray(events) || !events.every(isEventPayload)) throw new EventRequestError("The events service returned an unsupported event list.");
++  return events;
+ }
+--- /dev/null
++++ b/tests/public-frontend.test.mjs
+@@ -0,0 +1,98 @@
++/* Run with: node --test tests/public-frontend.test.mjs (no additional packages). */
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import fs from 'node:fs';
++import path from 'node:path';
++import { createRequire } from 'node:module';
++import { fileURLToPath } from 'node:url';
++import ts from 'typescript';
++const externalRequire = createRequire(import.meta.url);
++const __dirname = path.dirname(fileURLToPath(import.meta.url));
++const root = path.resolve(__dirname, '..');
++const cache = new Map();
++function load(file) {
++  file = path.resolve(root, file);
++  if (cache.has(file)) return cache.get(file).exports;
++  const loadedModule = { exports: {} }; cache.set(file, loadedModule);
++  const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText;
++  const localRequire = id => id.startsWith('@/') ? load('src/' + id.slice(2) + '.ts') : id.startsWith('.') ? load(path.resolve(path.dirname(file), id + '.ts')) : externalRequire(id);
++  new Function('require', 'module', 'exports', code)(localRequire, loadedModule, loadedModule.exports);
++  return loadedModule.exports;
++}
++const { safeReturnTo, authHref } = load('src/lib/auth/destination.ts');
++const { normalizePhone, attendeePayload, passwordError, validEmail } = load('src/lib/auth/validation.ts');
++const { getBookingState, bookingHref, isCategoryBookable } = load('src/lib/event-booking.ts');
++const { isEventPayload } = load('src/lib/event-payload.ts');
++const { MOCK_EVENTS } = load('src/lib/mock-events.ts');
++const { matchesDate } = load('src/lib/event-filters.ts');
++
++test('booking return survives auth links without admitting external or privileged destinations', () => {
++  const target = bookingHref('event 1', 'cat/2');
++  assert.equal(safeReturnTo(target), target);
++  assert.equal(new URL(authHref('/login', target), 'https://test.invalid').searchParams.get('returnTo'), target);
++  for (const input of ['https://evil.test', '//evil.test', '/admin', '/events/../admin', '/events/%2e%2e/tickets', '/events/%5cevil/tickets', '/events/foo#fragment', '/events/foo?category=x&role=admin', 'javascript:alert(1)', '/events/%0Afoo', '/events/%2f%2fevil']) assert.equal(safeReturnTo(input), undefined, input);
++});
++test('registration allowlists account fields and excludes confirmation and privileges', () => {
++  const data = new FormData();
++  for (const [k, v] of Object.entries({ firstName:' Ana ', lastName:' Cruz ', email:' ana@example.com ', phoneNumber:'0917 123 4567', password:'strong-pass', confirmPassword:'strong-pass', terms:'on', role:'ADMIN', isOrganizer:'true' })) data.set(k, v);
++  assert.deepEqual(attendeePayload(data), { firstName:'Ana', lastName:'Cruz', email:'ana@example.com', phoneNumber:'+639171234567', password:'strong-pass', termsAccepted:true });
++});
++test('contact and provisional password validation reject malformed input', () => {
++  assert.equal(normalizePhone('+63 (917) 123-4567'), '+639171234567');
++  assert.equal(normalizePhone('not-a-number'), undefined);
++  assert.equal(normalizePhone('12345'), undefined);
++  assert.equal(validEmail('bad@'), false);
++  assert.equal(validEmail('a@example.com'), true);
++  assert.ok(passwordError('short'));
++  assert.ok(passwordError('        '));
++  assert.equal(passwordError('long-password'), undefined);
++});
++test('non-bookable event and category states cannot proceed', () => {
++  const base = structuredClone(MOCK_EVENTS[0]);
++  assert.equal(getBookingState(base).canBook, true);
++  for (const status of ['CANCELLED','COMPLETED','UNAVAILABLE']) assert.equal(getBookingState({ ...base, status }).canBook, false);
++  for (const availability of ['SOLD_OUT','NOT_YET_OPEN','SALE_ENDED']) {
++    const event = { ...base, categories: base.categories.map(c => ({ ...c, availability })) };
++    assert.equal(getBookingState(event).canBook, false);
++    assert.equal(isCategoryBookable(event, event.categories[0]), false);
++  }
++  assert.equal(getBookingState({ ...base, categories: [] }).canBook, false);
++  assert.equal(getBookingState({ ...base, categories: base.categories.map(c => ({...c, status:'DISABLED'})) }).canBook, false);
++  assert.equal(isCategoryBookable(base, {...base.categories[0], remaining:0}), false);
++});
++test('event responses validate media, status, pricing and dates before rendering', () => {
++  assert.ok(MOCK_EVENTS.every(isEventPayload));
++  assert.equal(isEventPayload({}), false);
++  assert.equal(isEventPayload({...MOCK_EVENTS[0], startsAt:'bad'}), false);
++  assert.equal(isEventPayload({...MOCK_EVENTS[0], posterUrl:'javascript:alert(1)'}), false);
++  assert.equal(isEventPayload({...MOCK_EVENTS[0], categories:[{...MOCK_EVENTS[0].categories[0],price:-1}]}), false);
++});
++test('date filters use the Philippines calendar across UTC midnight', () => {
++  const now = new Date('2026-10-17T18:00:00Z'); // Sunday in Manila
++  assert.equal(matchesDate('2026-10-18T20:00:00+08:00','today',now), true);
++  assert.equal(matchesDate('2026-10-17T20:00:00+08:00','today',now), false);
++  assert.equal(matchesDate('2026-10-18T20:00:00+08:00','weekend',now), true);
++  assert.equal(matchesDate('2026-10-19T20:00:00+08:00','weekend',now), false);
++});
++
++test('existing events API handles detail 404, malformed lists and network failures without mock success', async (t) => {
++  const originalFetch = globalThis.fetch;
++  const originalUrl = process.env.API_URL;
++  process.env.API_URL = 'https://api.example.invalid';
++  cache.delete(path.resolve(root, 'src/lib/events-api.ts'));
++  const api = load('src/lib/events-api.ts');
++  t.after(() => { globalThis.fetch = originalFetch; if (originalUrl === undefined) delete process.env.API_URL; else process.env.API_URL = originalUrl; });
++  globalThis.fetch = async () => new Response('', {status:404});
++  assert.equal(await api.getEventById('missing'), null);
++  globalThis.fetch = async () => new Response(JSON.stringify(MOCK_EVENTS[0]), {status:200});
++  assert.equal((await api.getEventById(MOCK_EVENTS[0].id)).id, MOCK_EVENTS[0].id);
++  await assert.rejects(api.getEventById('different-id'), /different event/);
++  globalThis.fetch = async () => new Response(JSON.stringify({data:MOCK_EVENTS}), {status:200});
++  assert.equal((await api.getEvents()).length, MOCK_EVENTS.length);
++  globalThis.fetch = async () => new Response(JSON.stringify({data:[{id:'broken'}]}), {status:200});
++  await assert.rejects(api.getEvents(), /unsupported event list/);
++  globalThis.fetch = async () => new Response('', {status:503});
++  await assert.rejects(api.getEvents(), /503/);
++  globalThis.fetch = async () => { throw new TypeError('network'); };
++  await assert.rejects(api.getEvents(), /Could not reach/);
++});
+--- /dev/null
++++ b/FRONTEND-HANDOFF.md
+@@ -0,0 +1,226 @@
++# Aventix public frontend — review handoff
++
++Prepared for Abrigo. Scope: existing public pages, shared authentication UI, password recovery UI, and unauthenticated booking entry. This is a frontend review package, not a claim that live account creation, authentication, recovery, booking, or payments are operational.
++
++## 1. Implementation summary
++
++The supplied `frotend.zip` and `frotend(1).zip` are byte-for-byte identical. The implementation extends that project; it does not replace it with another app. The task document `ABRIGO-TASKS FOR THIS PROJECT(1).docx` was read, including the event details and shared login/recovery/registration requirements. Later booking/payment tasks remain outside this phase.
++
++The archive contains Next.js 16.3.8, React 19.2.8, Tailwind 3.4, TypeScript, and lucide-react. Existing App Router pages, page shell, design tokens, local images, event cards, filters, event detail sections, and event data helpers were reused. The installed Next.js routing/error-boundary documentation was checked. There was no `.git` history or backend source in the available frontend archive. The failed whole-project upload was not used.
++
++| Area | Delivered frontend behavior |
++| --- | --- |
++| Landing `/` | Existing sections retained; search sends query/location/date to Events; categories open filtered listings; event previews now use the same event data/card component as the listing; organizer CTA opens the preview route; fake auth/booking actions removed. |
++| Events `/events` | Search, native select filters, month grouping, URL-provided landing filters, empty results, clear actions, loading skeleton, existing failure boundary, and consistent clickable event cards. Search input identity/focus is retained during filtering. |
++| Event `/events/[id]` | Existing hero, media/gallery, description, schedule, venue/map when coordinates exist, organizer, selling period, prices and category states retained; related events added; event identity checked against response; ticket links preserve category. |
++| Ticket entry `/events/[id]/tickets` | Selected event/date/venue, current category prices, disabled quantity/selection controls, sign-in links, safe event/category return URL, unavailable-event/category messaging, and account-access dialog. No reservation, seat allocation, totals, checkout, or payment is created. |
++| About `/about` | Existing non-logged-in page retained and linked to the alternate Figma hero at `/about/experience`. |
++| Contact `/contact` | Existing layout retained; useful validation and FAQ disclosures; submit explicitly opens an email app, retains the draft, and never claims delivery. |
++| Login `/login` | Email/password validation, show/hide password, disabled unsupported Remember Me, forgot/register links, submitting guard, error messages, and adapter-authorized return handling. |
++| Registration `/register`, `/register/attendee` | Account-choice cards with hover/focus states; separate first/last name, email, phone, password/confirmation, terms validation and visibility controls. The outgoing payload explicitly excludes confirmation and roles. |
++| Organizer `/register/organizer` | Both Figma steps can be previewed. Fields and submission remain disabled; the modal states that no application was submitted. No organizer/admin role selection or privilege assignment. |
++| Recovery `/forgot-password`, `/reset-password` | Email request form; neutral confirmation only after a connected adapter succeeds; reset remains locked until an adapter verifies the backend-issued recovery link; matching-password validation and invalid/expired/used-link feedback; successful reset removes the used link from history and offers Login. |
++| Shared accessibility | Labels, field errors, focus outlines, skip link, mobile menu expanded state/Escape focus return, reduced-motion support, and native-dialog focus behavior. Full browser/accessibility review remains outstanding. |
++
++## 2. Exact files changed
++
++Paths below are relative to the frontend root, matching the supplied ZIP. No repository restructuring was performed.
++
++| Status | Exact path |
++| --- | --- |
++| Added | `src/app/about/experience/page.tsx` |
++| Modified | `src/app/about/page.tsx` |
++| Modified | `src/app/contact/page.tsx` |
++| Modified | `src/app/events/[id]/not-found.tsx` |
++| Modified | `src/app/events/[id]/page.tsx` |
++| Added | `src/app/events/[id]/tickets/page.tsx` |
++| Added | `src/app/events/loading.tsx` |
++| Modified | `src/app/events/page.tsx` |
++| Added | `src/app/forgot-password/page.tsx` |
++| Modified | `src/app/globals.css` |
++| Modified | `src/app/layout.tsx` |
++| Added | `src/app/legal/[policy]/page.tsx` |
++| Added | `src/app/login/page.tsx` |
++| Modified | `src/app/page.tsx` |
++| Added | `src/app/register/attendee/page.tsx` |
++| Added | `src/app/register/organizer/page.tsx` |
++| Added | `src/app/register/page.tsx` |
++| Added | `src/app/reset-password/page.tsx` |
++| Added | `src/components/AboutHero.tsx` |
++| Modified | `src/components/AuthModal.tsx` |
++| Modified | `src/components/BookingModal.tsx` |
++| Modified | `src/components/BrowseCategory.tsx` |
++| Modified | `src/components/Footer.tsx` |
++| Modified | `src/components/Hero.tsx` |
++| Modified | `src/components/HeroMockups.tsx` |
++| Modified | `src/components/HowItWorks.tsx` |
++| Modified | `src/components/Navbar.tsx` |
++| Modified | `src/components/OrganizerModal.tsx` |
++| Modified | `src/components/Testimonials.tsx` |
++| Modified | `src/components/TrendingEvents.tsx` |
++| Modified | `src/components/WhyChooseUs.tsx` |
++| Added | `src/components/auth/AccountChoice.tsx` |
++| Added | `src/components/auth/AuthForm.tsx` |
++| Added | `src/components/auth/AuthShell.tsx` |
++| Added | `src/components/auth/Dialog.tsx` |
++| Added | `src/components/auth/FormField.tsx` |
++| Added | `src/components/auth/OrganizerPreview.tsx` |
++| Modified | `src/components/contact/ContactForm.tsx` |
++| Added | `src/components/event/BookingLoginNotice.tsx` |
++| Modified | `src/components/event/Playlist.tsx` |
++| Added | `src/components/event/RelatedEvents.tsx` |
++| Added | `src/components/events/DemoNotice.tsx` |
++| Modified | `src/components/events/EventsBrowser.tsx` |
++| Modified | `src/components/layout/PageShell.tsx` |
++| Added | `src/lib/auth/client.ts` |
++| Added | `src/lib/auth/destination.ts` |
++| Added | `src/lib/auth/validation.ts` |
++| Modified | `src/lib/event-booking.ts` |
++| Added | `src/lib/event-payload.ts` |
++| Modified | `src/lib/events-api.ts` |
++| Added | `tests/public-frontend.test.mjs` |
++| Added | `FRONTEND-HANDOFF.md` |
++
++The ZIP also includes `review/frontend-changes.patch` as a review/apply aid. It is packaging documentation, not an application dependency.
++
++## 3. Figma fidelity and known differences
++
++All 17 requested frames were retrieved from the supplied Figma file, including their screenshots and layer/code context. The sparse Events frame was expanded into its child sections, filters, navigation, footer, and month groups before implementation decisions were made.
++
++**Exact visual fidelity has not been verified and is not complete.** Figma asset URLs returned HTML “Site Unavailable” responses rather than image bytes. A separate raw-image export attempt failed the same way. Invalid downloads were removed; no temporary Figma URLs or corrupt image files ship in the source. The existing local imagery remains unchanged. This is a material limitation, especially for the authentication concert background, landing collage, playlist artwork, event artwork not present in the ZIP, and ticket seat-plan image.
++
++| Node | Design | Implementation and differences |
++| --- | --- | --- |
++| 705:12863 | Landing | Existing sections, four-card preview, cyan/dark palette and typography refined. Existing decorative hero mockups and local images retained. Collage, exact icons, spacing and crops still need visual comparison with downloadable assets. |
++| 705:13468 | Login | Centered 480px card, 48px fields, cyan pill action and shared navigation. Concert background unavailable; a dark gradient is used. Added required visibility, Remember Me explanation, validation, and integration notice. |
++| 705:13472 | Choose account | 620px account-choice panel, two cards, matching hierarchy and colors. Organizer policy disclaimer is intentionally visible. |
++| 705:15692 | Attendee form | Same form language and card dimensions. Full Name is split into First Name/Last Name as required by the task; password hints/errors and service notice increase height. |
++| 705:24585 | About, not logged in | Existing layout reused, including story/value cards and cyan panel; linked alternate hero added. Extra organizer banner removed to follow this frame. |
++| 705:13981 | Events | Same hero/filter/month-grid pattern; actual available event data drives counts. The repeated Figma placeholder events are not duplicated to fabricate an inventory. |
++| 705:24443 | About hero | `/about/experience` implements heading, CTA pair and illustrative ticket card. Barcode/perforation/glow assets unavailable; no scannable or supposedly valid ticket is fabricated. |
++| 705:13478 | Attendee hover | Choice-card hover and keyboard-focus styling implemented. |
++| 705:15673 | Organizer hover | Choice-card hover and keyboard-focus styling implemented. |
++| 705:14000 | Event details | Existing hero, ticket rows, section navigation and playlist retained; required information/gallery and related events are available. Dynamic data controls ticket rows and artist lineup. Existing playlist imagery differs from the Figma crop. |
++| 705:18706 | Temporary role overlay | Role selector intentionally not implemented. A similarly styled account-access dialog leads to the shared Login page without granting roles. |
++| 705:14121 | Related events | Three-card section uses real items from the current event source, excludes the current event, and avoids repeating one event three times. |
++| 705:15728 | Organizer step 1 | Visual preview with disabled fields and explicit policy notice. Preview navigation only. |
++| 705:16349 | Tickets, not logged in | Event context, blue login banner, two-column layout, locked controls and login CTA. Actual categories drive rows. Missing verified seat-plan media is identified explicitly, not replaced with an unrelated image. |
++| 705:24622 | Contact, not logged in | Existing page layout retained; FAQs now expand. “Send Message” becomes “Open email app” because there is no direct submission endpoint. |
++| 705:15769 | Organizer step 2 | Visual preview, disabled credential fields, disabled application submission, navigation back. |
++| 705:18693 | Application popup | Modal styling reused with “Applications not open yet” and an explicit no-submission message. Figma’s success claim is not shown. |
++
++Responsive Tailwind layouts adapt cards, forms, navigation and columns for smaller screens. However, desktop/tablet/mobile pixel geometry, image crops, native-dialog behavior and horizontal overflow still need real-browser verification. The font setup from the original project remains intact; no fonts or dependencies were replaced.
++
++## 4. Interaction and integration status
++
++**Working locally:** public routes and links; event search/filter/empty/clear behavior; local preview data; event identity/category preservation; form validation and visibility; error/status rendering; disabled organizer previews; mobile menu state/Escape behavior; contact email composition; recovery and login UI states when exercised with test adapters.
++
++**Not connected to a live backend:** credentials, account persistence, session restoration/logout, duplicate-email lookup, recovery email delivery/token verification/reset, authorized role-area navigation, protected booking, seat maps, reservations, or payments. Test adapters are only in the verification harness; no fake account/session/payment implementation is shipped.
++
++`src/lib/auth/client.ts` is an explicit frontend interface boundary. Its shipped value has no network methods. Valid form submissions therefore report that the service is unavailable instead of claiming success. The empty boundary is intentional; no authentication endpoints have been invented.
++
++The existing event fetch paths (`GET /events` and `GET /events/:id`) and existing `API_URL` / `NEXT_PUBLIC_API_URL` lookup were retained. They were already present in the uploaded frontend and are not verified backend contracts. No new event endpoint was added. Responses must map to the existing `EventDetails` frontend model; `event-payload.ts` rejects malformed payloads, invalid dates/prices/media, and unknown states. The fetch layer adds a 15-second timeout and does not switch to sample success after a live request fails.
++
++When no API URL is configured, the original four `MOCK_EVENTS` are retained and prominently labeled as sample content. Their event dates/statuses/prices can be intentionally inconsistent for previewing UI states; they are not live offers. No extra concerts or categories were fabricated to fill the Figma grid. Existing marketing/testimonial claims are also sample presentation content and need the team's content approval before release.
++
++Contact uses the existing support email via `mailto:`. A requested email-app launch is not proof of sending or delivery. The draft stays on screen. Support addresses and advertised reply timing still need confirmation by the team.
++
++## 5. Backend dependencies for Moyamoy and team decisions
++
++| Related assigned work | Needed before the UI can be called operational |
++| --- | --- |
++| Public Event Search and Details APIs | Confirm base URL, public route paths, list/detail envelopes, DTO-to-view-model mapping, media URLs, category ACTIVE/DISABLED state, derived sale/availability state, canonical event IDs, and remaining inventory. Current filtering is over the returned list; confirm whether server-side pagination/filtering is required. |
++| Registration, Login, Logout and Sessions | Supply the agreed client/session implementation. `login` must establish the real server session before resolving. Supply invalid-credentials/disabled/rate-limit mappings and backend-authorized destinations. Do not infer role privileges from a login response flag alone. |
++| Remember Me/session policy | Decide cookie/session versus JWT behavior, persistence lifetimes, refresh/logout and revocation. Keep the checkbox disabled until the adapter actually supports the approved behavior. |
++| Attendee registration | Implement/map `registerAttendee` to the existing agreed API, enforce attendee-only public registration server-side, phone and explicit terms acceptance, duplicate-email handling, and agreed post-registration behavior. Current adapter contract returns to Login after real success; change it only once the team's contract is settled. |
++| Profile, Password Change and Recovery APIs | Supply recovery request, neutral response behavior, link format, server verification, reset, and invalid/expired/used-link mappings. The adapter owns parsing the complete recovery link; this frontend does not assume token parameter names or create OTPs/tokens. |
++| Password rules | Replace the provisional eight-character UI minimum with `passwordRules.description` and `passwordRules.validate` matching the agreed server policy. Backend validation remains authoritative. |
++| Terms/privacy documents | Supply approved policy contents/version and consent wording before enabling real attendee registration. Policy routes currently say that the documents are not published; they do not invent legal terms. |
++| Organizer onboarding | Agree on provisioning/application policy and backend authorization. Current public organizer pages are disabled visual previews only; enabling them needs an approved separate integration. |
++| Ticket/seat selection and authorization | Supply session reader/route policy, approved-attendee booking checks, verified seat-plan media and actual numbered-seat/inventory/reservation flow in the later booking phase. The current ticket route remains a public locked preview even after a future adapter login. |
++| Contact/support | Confirm support destinations, advertised response time and an agreed contact endpoint if direct delivery is desired. No direct-send API was assumed. |
++
++No actual GitHub issue numbers were supplied. These blockers use the corresponding assigned task titles; no new integration/planning issues, PRs, messages or role policies were created.
++
++### Connecting authentication later
++
++Implement the optional methods of `publicAuthClient` using the project's agreed frontend API/session client. Do not create server routes here. Map known backend failures to `AuthClientError`. Never return success before the server operation succeeds.
++
++- `registerAttendee` receives only firstName, lastName, email, normalized phoneNumber, password and termsAccepted; confirmation is never included. The backend must independently reject privileged roles and enforce consent.
++- `requestPasswordReset` resolves neutrally without exposing account existence.
++- `verifyRecoveryLink` authorizes the backend-issued link before password fields unlock; `resetPassword` receives the recovery link and new password only.
++- `login` may return an authorized same-origin destination. `allowBookingReturn` may be set by the trusted adapter only after the real session and backend role restrictions are checked. Visitor-provided return URLs are limited to event/ticket routes with an optional category; external URLs, traversal, control characters, and privileged-area paths are rejected.
++- Do not enable Remember Me by merely toggling the capability flag; connect it to the agreed persistence behavior first.
++
++## 6. Verification results
++
++| Check | Result and limits |
++| --- | --- |
++| `npm ci --ignore-scripts --no-audit --no-fund` | Passed using the supplied lockfile; no manifest/lockfile changes. |
++| `npm run build` | Passed, including TypeScript and production route generation. |
++| `npm run lint` | Passed with no warnings/errors after the old fake booking modal and unused imports were removed/replaced. |
++| `node --test tests/public-frontend.test.mjs` | 7 passing tests: safe return URLs; role/confirmation-free registration payload; phone/email/password checks; booking states; event payload validation; Manila dates; existing event API handling including mismatched event IDs, 404, malformed lists and service/network failures. No real backend calls in this suite. |
++| Production HTTP smoke checks | 16 requested public URLs returned 200 with headings, main-content targets and no `href="#"` placeholders. Missing-event route rendered its unavailable fallback. Because of Next streaming, that fallback response was HTTP 200 in the observed run; a literal 404 response was not claimed. |
++| DOM interaction checks | 12 passed in a temporary jsdom harness: invalid-login focus; stable password input identity/value; disconnected login; disabled Remember Me; pending-submit guard and allowed return; registration validation/payload; neutral recovery success; expired recovery disabled state; verified reset flow; event search focus and clear; mobile menu Escape/focus; contact validation; disabled organizer steps. Several related assertions are grouped in each check. These test adapters are not production services. |
++| Browser visual/responsive checks | Blocked. Playwright was present but Chromium was absent. Its attempted download returned invalid/empty archive content. No screenshots of the implementation, pixel-match result, mobile rendering pass, browser focus-trap pass or overflow pass is claimed. |
++| Figma imagery | Blocked downloads; original supplied assets retained and failed HTML responses discarded. Exact asset fidelity is incomplete. |
++| Live account/event/contact integrations | Not verified; the working backend/full-repository source was not available. |
++
++The dependency install emitted npm environment/version notices; they did not fail the install or build. A dev-server launch without an explicit hostname failed on the environment's network-interface lookup; binding to `127.0.0.1` worked. Production smoke verification ran the server and requests together in one process context. These environment constraints do not justify modifying the application's scripts or dependency versions.
++
++### Run locally
++
++From the extracted frontend root:
++
++```bash
++npm ci
++npm run lint
++node --test tests/public-frontend.test.mjs
++npm run build
++npm run dev
++```
++
++If the default development port is occupied, use `npm run dev -- --port 3001`. Review the public routes with the API URL unset to see labeled sample data. Do not insert secrets into client-exposed environment variables.
++
++Manual browser review still needed at approximately 1440px, 1280px, 1024px, 768px, 390px and 320px: public header/menu, event/filter grids, auth forms, organizer notice, ticket columns, modal keyboard behavior, focus rings and horizontal overflow. Then replace the missing assets and compare against Figma.
++
++## 7. Git impact and review/apply guidance
++
++There was no Git history, remote or agreed task/base branch in this archive, so no branch provenance or merge guarantee is claimed. Nothing was pushed, merged or submitted as a PR. Backend controllers, API routes, database schemas/migrations and teammates' authenticated areas were not present or edited.
++
++`package.json`, `package-lock.json`, Tailwind/PostCSS/TypeScript/ESLint configuration, `AGENTS.md`, `INSTRUCTIONS.md`, README and original images remain unchanged. The existing root layout keeps its font/metadata setup and adds only a skip link. Global CSS adds shared focus, dialog-backdrop, input scroll-margin and reduced-motion rules. No dependency was added to the project. Temporary verification packages/browser attempts remain outside the source package.
++
++The broadest shared-file overlap risks are:
++
++| Shared file | Exact intent of change |
++| --- | --- |
++| `src/app/layout.tsx` | Add skip-to-content link; preserve original fonts, body and metadata. |
++| `src/app/globals.css` | Append focus-visible, input scroll-margin, native-dialog backdrop and reduced-motion accessibility rules. |
++| `src/components/Navbar.tsx` | Keep public navigation/search; use mobile navigation until the full desktop header fits; add menu controls/Escape/focus return; close menu on search. |
++| `src/components/Footer.tsx` | Replace placeholder links with real public/policy/support destinations; mark unsupplied social/blog destinations unavailable; preserve existing footer design. Careers/press point to Contact. |
++| `src/components/layout/PageShell.tsx` | Add main-content target. |
++| `src/lib/events-api.ts` | Preserve existing endpoints, add timeout/view-model checks and event-ID consistency. |
++| `src/lib/event-booking.ts` | Refuse unknown/nonpublished/zero-remaining bookings and retain event/category URL construction. |
++| Landing components | Retain sections but connect navigation/data and unify card colors/typography. These may overlap Mary's landing work and should be reviewed carefully. |
++| Legacy modal components | Remove simulated account/application/payment success; keep compatible component entry props and route users into shared public flows. |
++
++Use the exact file manifest above to stage only Abrigo's work. Do not replace the team's entire repository with this standalone frontend directory. In a monorepo, map these relative paths to the actual frontend package root after inspecting the team's tree.
++
++The included patch was generated against the uploaded ZIP, not an identified Git commit. On the team's agreed feature branch, review the patch, run `git apply --check` from the frontend root (or use the appropriate `--directory` prefix from the repository root), and resolve overlapping changes before applying. Do not force-apply over teammates' edits. Original line endings in changed source files were already LF; unrelated configuration formatting and lockfiles were not regenerated.
++
++Suggested review groups: shared public navigation/landing; event/listing/ticket-entry UI; auth/recovery; organizer previews; verification/docs. Use real task IDs and the team's agreed base in branch/PR names, and request the assigned reviewer manually. Do not mark backend-dependent acceptance criteria or visual fidelity as completed until those items are verified.
++
++## 8. Remaining work
++
++1. Supply/download the actual missing Figma assets and perform browser screenshot comparisons. Exact Figma fidelity is not finished.
++2. Run real desktop/tablet/mobile, native-dialog keyboard and assistive-technology review. DOM tests do not prove rendered layout.
++3. Connect Moyamoy's agreed authentication/session/registration/recovery client and verify live failure/success states; publish approved terms/privacy text before enabling registration.
++4. Confirm and map the public event API's actual DTOs, paging/filtering and authoritative status/media data. Remove preview fixtures only when live integration is working.
++5. Approve organizer policy before enabling any application submission; keep organizer/admin permissions backend-controlled.
++6. Implement the authenticated booking/numbered-seat/payment flows later under their assigned tasks. This package intentionally does not create them.
++7. Confirm official support/social/company destinations and marketing/testimonial copy before release.
++8. Integrate the focused changes into the actual team repository, resolve any existing overlap and complete the PR review workflow.
++
++## Package contents
++
++The source ZIP preserves the original frontend-root structure and includes this report, source/tests and a review patch. It excludes `node_modules`, `.next`, `.git`, environment files/secrets, generated `next-env.d.ts`, TypeScript build caches, temporary verification tools, failed asset downloads and browser downloads. Dependency manifests/lockfile and all supplied image bytes are preserved.

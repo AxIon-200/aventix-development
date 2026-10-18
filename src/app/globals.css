@@ -2,9 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Design tokens taken from the Aventix Figma file (no Figma variables are
+   defined in the file, so these are the raw values used by the frames). */
 :root {
-  --background: #0b0f15;
-  --foreground: #f8fafc;
+  --background: #0b0c10;       /* page / nav / footer background */
+  --foreground: #ffffff;
+  --surface: #151b23;          /* cards, secondary nav */
+  --surface-alt: #161d27;      /* playlist sidebar */
+  --field: #1f2833;            /* search pill, playlist panel, social buttons */
+  --line: #1f2833;             /* nav / footer dividers */
+  --card-border: #242c36;      /* card borders */
+  --field-border: #2c3644;     /* input / pill borders */
+  --accent: #66fcf1;           /* primary cyan */
+  --accent-ink: #0b0c10;       /* text on accent */
+  --text-body: #c5c6c7;        /* body copy */
+  --text-muted: #8a8b8c;       /* meta text */
+  --text-soft: #8fa9a0;        /* card meta / dates */
 }
 
 html {
@@ -13,11 +26,10 @@ html {
 }
 
 body {
-  background-color: #0b0f15;
-  color: #f8fafc;
+  background-color: var(--background);
+  color: var(--foreground);
   min-height: 100vh;
   overflow-x: hidden;
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
 /* Custom scrollbar */
@@ -25,37 +37,42 @@ body {
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #0b0f15;
+  background: var(--background);
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e2a3a;
+  background: var(--card-border);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #00e5be;
+  background: var(--accent);
 }
 
 /* Glassmorphism utility */
 .glass-panel {
-  background: rgba(19, 27, 38, 0.75);
+  background: rgba(21, 27, 35, 0.75);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .glow-cyan {
-  box-shadow: 0 0 35px rgba(0, 229, 190, 0.35);
+  box-shadow: 0 0 35px rgba(102, 252, 241, 0.35);
 }
-
 .glow-cyan-sm {
-  box-shadow: 0 0 20px rgba(0, 229, 190, 0.25);
+  box-shadow: 0 0 20px rgba(102, 252, 241, 0.25);
 }
-
 .glow-cyan-lg {
-  box-shadow: 0 0 60px rgba(0, 229, 190, 0.3);
+  box-shadow: 0 0 60px rgba(102, 252, 241, 0.3);
+}
+.text-glow {
+  text-shadow: 0 0 20px rgba(102, 252, 241, 0.4);
 }
 
-/* Text glow */
-.text-glow {
-  text-shadow: 0 0 20px rgba(0, 229, 190, 0.4);
+/* Shared keyboard and motion accessibility; scoped visual styles remain in pages. */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+input, textarea, select { scroll-margin-top: 7rem; }
+dialog::backdrop { background: rgb(0 0 0 / .7); backdrop-filter: blur(4px); }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }

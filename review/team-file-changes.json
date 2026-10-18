@@ -1,0 +1,167 @@
+[
+  {
+    "path": "ABRIGO-HANDOFF.md",
+    "status": "Added",
+    "sha256": "b8f5ce681e23a3b66fdef8e780d85223808fe5600612e1e6a1c05a1b4d5f3866"
+  },
+  {
+    "path": "FIGMA-TRACEABILITY.md",
+    "status": "Added",
+    "sha256": "c5ba7bc0c0274dcdc532a81a8d3ef8412fbccbdd64572f8fc5d2cea7f4be65eb"
+  },
+  {
+    "path": "TEAM-INTEGRATION-REPORT.md",
+    "status": "Added",
+    "sha256": "6f80e2e96ea5a6ca1fa86fdc66d1833196af2f6ce97cc819da0eecc1d161c7e0"
+  },
+  {
+    "path": "src/app/bookings/[bookingId]/confirmation/page.tsx",
+    "status": "Added",
+    "sha256": "c6738638b92a6d4b97a2e8e9e9a4bd480f267714428d4bdcea535501b49150fb"
+  },
+  {
+    "path": "src/app/bookings/[bookingId]/payment/page.tsx",
+    "status": "Added",
+    "sha256": "201bb8da2af17c5c8ea2f5c31eaea87e0e40517fece198972b01323f3415a7e7"
+  },
+  {
+    "path": "src/app/bookings/[bookingId]/summary/page.tsx",
+    "status": "Added",
+    "sha256": "7322a5650c2d4b409810310669c3bccacb3a752a2afb7eb247b32fa27756d919"
+  },
+  {
+    "path": "src/app/events/[id]/page.tsx",
+    "status": "Modified",
+    "sha256": "92386276bf4cda291d60af37bba0eb517a121d9365e6f3335cbe2a6ef5e3e770"
+  },
+  {
+    "path": "src/app/events/[id]/seats/page.tsx",
+    "status": "Added",
+    "sha256": "71de4af9553e5fa40ef1c9e94d8d13215c10881681a4ee5b6dfc836496a490cd"
+  },
+  {
+    "path": "src/app/events/[id]/tickets/page.tsx",
+    "status": "Modified",
+    "sha256": "3e8d6ee2600ce82b7275ca10caba85a4ad1bdcf8fd947d292ebc0399e9a4b615"
+  },
+  {
+    "path": "src/app/events/page.tsx",
+    "status": "Modified",
+    "sha256": "4255ef2cbc9f4f2e9733ccf612e6e108de68afec220aaf46c81ee961f1172daa"
+  },
+  {
+    "path": "src/components/Navbar.tsx",
+    "status": "Modified",
+    "sha256": "ac68fd862518773ae3dd5e61e6a6f43bab2a9d07c32cc53f9c484759fdbbeb3e"
+  },
+  {
+    "path": "src/components/auth/AccountMenu.tsx",
+    "status": "Added",
+    "sha256": "a5a17e4166b7539eb84fe083d60c3a8c0ba30fd8e820ce064b0d73fe7b2e95ef"
+  },
+  {
+    "path": "src/components/auth/useAccountSession.ts",
+    "status": "Added",
+    "sha256": "236cd714800e9bd543502ad4c5e8fcaf7bbedc63813ca878937fd894ae28302a"
+  },
+  {
+    "path": "src/components/booking/BookingPrimitives.tsx",
+    "status": "Added",
+    "sha256": "993e5c64cbf5f8ed8f2c0238d27e05966c715306ebb09d6c0095eb36fe72e50e"
+  },
+  {
+    "path": "src/components/booking/BookingRecordView.tsx",
+    "status": "Added",
+    "sha256": "3452a7caa090997f0e72c067508a7fa32883669ffcbf4f542d5c2935dcadd960"
+  },
+  {
+    "path": "src/components/booking/SeatSelection.tsx",
+    "status": "Added",
+    "sha256": "266fb282a4a96b1aaa8fc60c82795a3c1ab0b66220f1ecf51bd1f93e1e9b9274"
+  },
+  {
+    "path": "src/components/booking/TicketSelection.tsx",
+    "status": "Added",
+    "sha256": "5a97d6298665b430a3c27c026f46377868ce29803f3643d3d8de23b88232bdcf"
+  },
+  {
+    "path": "src/components/events/EventSearchField.tsx",
+    "status": "Added",
+    "sha256": "3d3ffb8fb9c48ac6e34f3494bd1491b69da4463e30b01299c5e342a1d6979103"
+  },
+  {
+    "path": "src/components/events/EventsBrowser.tsx",
+    "status": "Modified",
+    "sha256": "bf596d22000148e44af4c55a59629acfd30b3d3e42e8caee16501a7a9341c010"
+  },
+  {
+    "path": "src/components/events/FilterSelect.tsx",
+    "status": "Added",
+    "sha256": "d95c94e70238ef803f1aff4ac7bc1b054be34df69fa78ff4ea3c63e61b766980"
+  },
+  {
+    "path": "src/components/layout/PageShell.tsx",
+    "status": "Modified",
+    "sha256": "32e6ac83baad239b1be0c787153a9a83a718c08254ad76402b4a4894b6495dbc"
+  },
+  {
+    "path": "src/lib/auth/client.ts",
+    "status": "Modified",
+    "sha256": "c80e4b18cae76c4f394c5498a4359a31402e914218b1e13f5544f68c3a6ab612"
+  },
+  {
+    "path": "src/lib/auth/destination.ts",
+    "status": "Modified",
+    "sha256": "472277a2af3f499d1033ee02426f5ea88361d8ab4b2d9a03f988b1235c7405af"
+  },
+  {
+    "path": "src/lib/booking/client.ts",
+    "status": "Added",
+    "sha256": "862113f4367cf08226482dc41828c398181e00ee51d6f97501a8104de43efebe"
+  },
+  {
+    "path": "src/lib/booking/draft.ts",
+    "status": "Added",
+    "sha256": "5e49e8e55224f168aa4a8133b1100469f02182f60944876c67bd91f26a261f0f"
+  },
+  {
+    "path": "src/lib/booking/format.ts",
+    "status": "Added",
+    "sha256": "bcd23c9a42209e4bbba413d6be2c8364d5013bbdd4284fe0cc74450ec73f5e9e"
+  },
+  {
+    "path": "src/lib/booking/rules.ts",
+    "status": "Added",
+    "sha256": "c78db3ab0ea4d6a6d46dc675c15c516596f0c88c0fc93c84c11bc0628761a889"
+  },
+  {
+    "path": "src/lib/booking/types.ts",
+    "status": "Added",
+    "sha256": "2b1191e9b6ae690d0f1fa48c137aa05e2838cbb3bd96053f9bd378bd5f67cde1"
+  },
+  {
+    "path": "src/lib/booking/validate.ts",
+    "status": "Added",
+    "sha256": "ab4a0d30c350466b2f41747a482194b3f66a8f648863d062c302655092937bc0"
+  },
+  {
+    "path": "src/lib/format.ts",
+    "status": "Modified",
+    "sha256": "9d39d2cf058d377ba0f730161841780223a94b28ed7338ee15c549f44981cd5c"
+  },
+  {
+    "path": "tests/booking-frontend.test.mjs",
+    "status": "Added",
+    "sha256": "364f18fb7013170fb045994eb1463ea0432a30f6835c2fef55f076af84819136"
+  },
+  {
+    "path": "tests/load-typescript.mjs",
+    "status": "Added",
+    "sha256": "afdc66ee79e719fbbe9d588f2af677a07e11c7b3be29ec6045881c1e68adb968"
+  },
+  {
+    "path": "tests/public-frontend.test.mjs",
+    "status": "Modified",
+    "sha256": "7387ed457ac70552ad4a5879e7d1a94b94608f9d88e2b360edd73f0bd7f42c8d"
+  }
+]
