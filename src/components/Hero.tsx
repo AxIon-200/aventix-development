@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Search, MapPin, Calendar, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import HeroMockups from "./HeroMockups";
+import styles from "./Hero.module.css";
 
 interface HeroProps {
   onSearchSubmit?: (filters: { query: string; location: string; date: string }) => void;
@@ -31,15 +32,15 @@ export default function Hero({ onSearchSubmit, onExploreClick }: HeroProps) {
   };
 
   return (
-    <section id="hero-section" className="relative overflow-hidden pt-8 pb-16 md:pt-14 md:pb-24 scroll-mt-24 snap-section">
+    <section id="hero-section" className={`${styles.hero} scroll-mt-24 snap-section`}>
       {/* Background ambient lighting */}
       <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[#66fcf1]/10 rounded-full blur-[140px] pointer-events-none -z-10" />
       <div className="absolute top-1/3 right-1/4 w-[450px] h-[450px] bg-[#0099ff]/10 rounded-full blur-[130px] pointer-events-none -z-10" />
 
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-16">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+      <div className={styles.container}>
+        <div className={styles.grid}>
           {/* Left Column: Headline, Description, Search Widget & CTA */}
-          <div className="lg:col-span-7 space-y-7 z-10">
+          <div className={styles.copy}>
             {/* Top Pill Badge */}
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#121b27]/90 border border-[#213143] shadow-inner backdrop-blur-md hover:border-[#66fcf1]/50 hover:shadow-[0_0_15px_rgba(102,252,241,0.25)] transition-all duration-300 group cursor-default">
               <span className="w-2 h-2 rounded-full bg-[#66fcf1] shadow-[0_0_8px_#66fcf1] group-hover:scale-125 transition-transform" />
@@ -49,22 +50,22 @@ export default function Hero({ onSearchSubmit, onExploreClick }: HeroProps) {
             </div>
 
             {/* Main Headline */}
-            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl xl:text-[60px] font-bold tracking-tight text-white leading-[1.08]">
+            <h1 className={`${styles.title} font-display text-white`}>
               Discover &amp; Book{" "}
               <span className="text-[#66fcf1] drop-shadow-[0_0_25px_rgba(102,252,241,0.35)]">
                 Live
               </span>
-              <br />
+              <br className="hidden sm:block" />{" "}
               <span className="text-[#66fcf1] drop-shadow-[0_0_25px_rgba(102,252,241,0.35)]">
                 Music
               </span>{" "}
               Across the
-              <br />
+              <br className="hidden sm:block" />{" "}
               Philippines
             </h1>
 
             {/* Subtitle */}
-            <p className="text-slate-400 text-base sm:text-lg max-w-xl font-normal leading-relaxed">
+            <p className={styles.description}>
               From sold-out arena concerts to underground gigs and festivals — find your
               next unforgettable night out and secure your ticket in seconds.
             </p>
@@ -72,7 +73,7 @@ export default function Hero({ onSearchSubmit, onExploreClick }: HeroProps) {
             {/* Search Bar Widget Container */}
             <form
               onSubmit={handleSearch}
-              className="bg-[#121a25]/90 border border-[#223347] hover:border-[#66fcf1]/40 hover:shadow-[0_0_35px_rgba(102,252,241,0.15)] transition-all duration-300 backdrop-blur-xl p-2 sm:p-2.5 rounded-2xl shadow-2xl flex flex-col md:flex-row items-stretch md:items-center gap-2 max-w-2xl"
+              className={`${styles.search} bg-[#121a25]/90 border border-[#223347] hover:border-[#66fcf1]/40 hover:shadow-[0_0_35px_rgba(102,252,241,0.15)] transition-all duration-300 backdrop-blur-xl p-2 rounded-2xl shadow-2xl`}
             >
               {/* Field 1: Search artist or event */}
               <div className="min-w-0 flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#1f2833] focus-within:bg-[#1f2833] transition-colors">
@@ -133,7 +134,7 @@ export default function Hero({ onSearchSubmit, onExploreClick }: HeroProps) {
               <Link
                 href="/events"
                 onClick={onExploreClick}
-                className="group inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full bg-[#66fcf1] hover:bg-[#8afff6] text-[#0b0c10] font-extrabold text-base transition-all duration-300 shadow-[0_0_35px_rgba(102,252,241,0.5)] hover:shadow-[0_0_45px_rgba(102,252,241,0.7)] hover:scale-105 active:scale-95"
+                className="group inline-flex items-center gap-2.5 px-6 py-3 rounded-full bg-[#66fcf1] hover:bg-[#8afff6] text-[#0b0c10] font-bold text-sm transition-all duration-300 shadow-[0_0_35px_rgba(102,252,241,0.5)] hover:shadow-[0_0_45px_rgba(102,252,241,0.7)] hover:scale-105 active:scale-95"
               >
                 <span>Explore Events</span>
                 <ArrowRight className="w-5 h-5 stroke-[2.5] transition-transform duration-300 group-hover:translate-x-1.5" />
@@ -142,7 +143,7 @@ export default function Hero({ onSearchSubmit, onExploreClick }: HeroProps) {
           </div>
 
           {/* Right Column: Hero Perspective Mockup Showcase */}
-          <div className="lg:col-span-5 relative hidden lg:block">
+          <div className={styles.showcase}>
             <HeroMockups />
           </div>
         </div>

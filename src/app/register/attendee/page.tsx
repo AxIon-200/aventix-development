@@ -7,5 +7,5 @@ export const metadata: Metadata = { title: "Attendee registration | Aventix", ro
 export default async function Page({ searchParams }: { searchParams: Promise<{ returnTo?: string | string[] }> }) {
   const params = await searchParams;
   const returnTo = safeReturnTo(typeof params.returnTo === "string" ? params.returnTo : undefined);
-  return <AuthShell><AuthForm mode="attendee" returnTo={returnTo} /></AuthShell>;
+  return <AuthShell wide><AuthForm mode="attendee" returnTo={returnTo} /></AuthShell>;
 }

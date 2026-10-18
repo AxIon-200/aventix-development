@@ -66,7 +66,7 @@ export default function Navbar({ onOpenAuth, onSearch, searchEvents }: NavbarPro
       ticking = true;
 
       window.requestAnimationFrame(() => {
-        const navbarHeight = 85;
+        const navbarHeight = window.innerWidth >= 1280 ? 72 : 64;
         const scrollY = window.scrollY;
 
         if (scrollY < 180) {
@@ -130,7 +130,7 @@ export default function Navbar({ onOpenAuth, onSearch, searchEvents }: NavbarPro
       const el = document.getElementById(sectionId);
       if (el) {
         e.preventDefault();
-        const navbarHeight = 80;
+        const navbarHeight = window.innerWidth >= 1280 ? 72 : 64;
         const bodyRect = document.body.getBoundingClientRect().top;
         const elementRect = el.getBoundingClientRect().top;
         const elementPosition = elementRect - bodyRect;
@@ -182,16 +182,16 @@ export default function Navbar({ onOpenAuth, onSearch, searchEvents }: NavbarPro
       }}
       className="sticky top-0 z-50 w-full border-b border-[#1f2833] bg-[#0b0c10]/95 backdrop-blur-md transition-colors duration-200"
     >
-      <div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-16">
+      <div className="mx-auto flex h-16 xl:h-[72px] max-w-[1360px] items-center justify-between gap-2 sm:gap-4 px-4 sm:px-6 lg:px-10">
         {/* Logo */}
         <Link href="/" aria-label="Aventix home" className="flex shrink-0 items-center">
-          <AventixLogo size="md" />
+          <AventixLogo size="md" className="max-h-8 max-w-[112px] sm:max-w-[136px] object-contain" />
         </Link>
 
         {/* Dynamic Section Navigation Links */}
         <nav
           aria-label="Primary"
-          className="hidden items-center gap-9 text-sm font-medium xl:flex"
+          className="hidden items-center gap-6 text-sm font-medium xl:flex"
         >
           {NAV_LINKS.map((l) => {
             const active = isLinkActive(l.href);
@@ -263,7 +263,7 @@ export default function Navbar({ onOpenAuth, onSearch, searchEvents }: NavbarPro
         <nav
           id="mobile-navigation"
           aria-label="Mobile navigation"
-          className="space-y-4 border-t border-[#1f2833] bg-[#0b0c10] px-4 pb-6 pt-4 xl:hidden animate-in slide-in-from-top-2 duration-200"
+          className="max-h-[calc(100svh-64px)] overflow-y-auto space-y-4 border-t border-[#1f2833] bg-[#0b0c10] px-4 pb-6 pt-4 xl:hidden animate-in slide-in-from-top-2 duration-200"
         >
           <EventSearchField
             events={searchEvents}

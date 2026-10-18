@@ -1,10 +1,11 @@
 "use client";
+import styles from "./AuthShell.module.css";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import FormField, { submitClass } from "./FormField";
-import { AuthClientError, authErrorMessage, publicAuthClient, type PublicAuthClient } from "@/lib/auth/client";
+import { AuthClientError, authErrorMessage, publicAuthClient, type PublicAuthClient, type AuthResult } from "@/lib/auth/client";
 import { attendeePayload, normalizePhone, passwordError, validEmail } from "@/lib/auth/validation";
 import { authHref, safeReturnTo } from "@/lib/auth/destination";
 
@@ -26,7 +27,27 @@ export default function AuthForm({ mode, returnTo, client = publicAuthClient }: 
   const [recovery, setRecovery] = useState<"checking" | "valid" | "invalid" | "unavailable">("checking");
   const recoveryLink = useRef("");
   const destination = safeReturnTo(returnTo);
-  const connected = mode === "login" ? !!client.login : mode === "attendee" ? !!client.registerAttendee : mode === "forgot" ? !!client.requestPasswordReset : !!client.resetPassword && !!client.verifyRecoveryLink;
+  const configured = mode === "login" ? !!client.login : mode === "attendee" ? !!client.registerAttendee : mode === "forgot" ? !!client.requestPasswordReset : !!client.resetPassword && !!client.verifyRecoveryLink;
+
+  const [connection, setConnection] = useState<boolean | null>(null);
+  const [connectionAttempt, setConnectionAttempt] = useState(0);
+  const checkingConnection = configured && Boolean(client.checkConnection) && connection === null;
+  const connected = configured && (!client.checkConnection || connection === true);
+  useEffect(() => {
+    let active = true;
+    if (configured && client.checkConnection) {
+      void client.checkConnection().then(value => { if (active) setConnection(value); }).catch(() => { if (active) setConnection(false); });
+    }
+    return () => { active = false; };
+  }, [client, configured, connectionAttempt]);
+
+  function navigate(result: AuthResult) {
+    const target = result.allowBookingReturn && destination ? destination : result.destination ?? "/events";
+    const parsed = new URL(target, window.location.origin);
+    if (!target.startsWith("/") || target.startsWith("//") || /[\\\x00-\x1f]/.test(decodeURIComponent(target)) || parsed.origin !== window.location.origin) throw new Error("Invalid destination");
+    router.replace(parsed.pathname + parsed.search);
+    router.refresh();
+  }
 
   useEffect(() => {
     if (mode !== "reset") return;
@@ -68,25 +89,22 @@ export default function AuthForm({ mode, returnTo, client = publicAuthClient }: 
     }
     setErrors(next);
     if (Object.keys(next).length) {
-      const first = form.elements.namedItem(Object.keys(next)[0]);
+      const first = form.querySelector<HTMLElement>(Object.keys(next).map(name => `[name="${name}"]`).join(","));
       if (first instanceof HTMLElement) first.focus();
       return;
     }
     submitting.current = true;
     setBusy(true);
     try {
+      if (configured && !connected) throw new AuthClientError("UNAVAILABLE");
       if (mode === "login") {
         if (!client.login) throw new AuthClientError("UNAVAILABLE");
         const result = await client.login({ email: get("email").trim(), password: get("password"), ...(client.rememberMeSupported ? { rememberMe: get("rememberMe") === "on" } : {}) });
-        // Only the session adapter may authorize a booking return or role area.
-        const target = result.allowBookingReturn && destination ? destination : result.destination ?? "/events";
-        const parsed = new URL(target, window.location.origin);
-        if (!target.startsWith("/") || target.startsWith("//") || /[\\\x00-\x1f]/.test(decodeURIComponent(target)) || parsed.origin !== window.location.origin) throw new Error("Invalid destination");
-        router.replace(parsed.pathname + parsed.search);
-        router.refresh();
+        navigate(result);
       } else if (mode === "attendee") {
         if (!client.registerAttendee) throw new AuthClientError("UNAVAILABLE");
-        await client.registerAttendee(attendeePayload(data));
+        const result = await client.registerAttendee(attendeePayload(data));
+        if (result) { navigate(result); return; }
         form.reset();
         setSuccess(true);
         setMessage("Your attendee account has been created. You can now log in.");
@@ -114,12 +132,16 @@ export default function AuthForm({ mode, returnTo, client = publicAuthClient }: 
 
   return <>
     {mode === "attendee" && <Link className="mb-4 inline-block text-xs text-[#66fcf1]" href={authHref("/register", destination)}>← Back</Link>}
-    <h1 className={`text-center font-semibold leading-tight ${mode === "login" ? "text-[30px]" : "text-[26px]"}`}>{titles[mode][0]}</h1>
+    <h1 className={`text-center font-semibold leading-tight ${mode === "login" ? "text-[26px]" : "text-2xl"}`}>{titles[mode][0]}</h1>
     <p className="mt-2 text-center text-sm text-[#9fa3a8]">{titles[mode][1]}</p>
     {destination && <p className="mt-4 rounded-lg bg-[#66fcf1]/10 p-3 text-xs text-[#66fcf1]">Your event is saved in this link. Sign in to continue when booking is available.</p>}
-    {!connected && <p className="mt-5 rounded-lg border border-amber-400/25 bg-amber-400/5 p-3 text-xs leading-5 text-amber-200">{mode === "reset" ? "We can’t verify recovery links yet. Password reset is unavailable until the account service is connected." : "Account service is not connected yet. You can review this form, but no details will be submitted."}</p>}
-    {success ? <div className="mt-8 space-y-6"><p role="status" className="text-sm leading-6 text-[#66fcf1]">{message}</p><Link href={authHref("/login", destination)} className={submitClass}>Return to Login</Link></div> : <form onSubmit={submit} noValidate aria-busy={busy} className="mt-7 space-y-5">
-      {mode === "attendee" && <div className="grid gap-4 sm:grid-cols-2">
+    {!connected && <div className={`${styles.notice} rounded-lg border border-amber-400/25 bg-amber-400/5 text-xs leading-5 text-amber-200`}>
+      <p role="status">{checkingConnection ? "Connecting to the account service…" : configured ? "The account service is unavailable. Start the backend and check its authentication setup." : mode === "reset" ? "Password recovery is unavailable until the backend recovery service is connected." : "This account service is not available yet. No details will be submitted."}</p>
+      {configured && !checkingConnection && <button type="button" className="mt-2 rounded px-2 py-1 font-semibold text-[#66fcf1] underline" onClick={() => { setConnection(null); setConnectionAttempt(n => n + 1); }}>Retry connection</button>}
+    </div>}
+    {process.env.NODE_ENV === "development" && <p className="mt-3 text-center text-xs text-[#9fa3a8]"><Link href="/preview/booking" className="text-[#66fcf1] underline">Preview booking screens with sample data</Link></p>}
+    {success ? <div className="mt-8 space-y-6"><p role="status" className="text-sm leading-6 text-[#66fcf1]">{message}</p><Link href={authHref("/login", destination)} className={submitClass}>Return to Login</Link></div> : <form onSubmit={submit} noValidate aria-busy={busy} className={`${styles.form} ${mode === "attendee" ? styles.registration : ""}`}>
+      {mode === "attendee" && <div className="grid gap-4 sm:col-span-2 sm:grid-cols-2">
         <FormField name="firstName" label="First Name" autoComplete="given-name" placeholder="Enter first name" maxLength={100} error={errors.firstName} required />
         <FormField name="lastName" label="Last Name" autoComplete="family-name" placeholder="Enter last name" maxLength={100} error={errors.lastName} required />
       </div>}
@@ -129,14 +151,14 @@ export default function AuthForm({ mode, returnTo, client = publicAuthClient }: 
       {mode !== "forgot" && <FormField name="password" label={mode === "reset" ? "New Password" : "Password"} type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} placeholder={mode === "login" ? "Enter your password" : "Create a password"} error={errors.password} disabled={mode === "reset" && recovery !== "valid"} hint={mode === "login" ? undefined : client.passwordRules?.description ?? "Use at least 8 characters. Final password requirements await the account service."} required />}
       {(mode === "attendee" || mode === "reset") && <FormField name="confirmPassword" label="Confirm Password" type="password" autoComplete="new-password" placeholder="Re-enter your password" error={errors.confirmPassword} disabled={mode === "reset" && recovery !== "valid"} required />}
       {mode === "login" && <div className="space-y-2"><div className="flex flex-wrap items-center justify-between gap-3 text-xs">
-        <label className="flex items-center gap-2 text-[#c5c6c7]"><input name="rememberMe" type="checkbox" disabled={!client.rememberMeSupported} aria-describedby={!client.rememberMeSupported ? "remember-note" : undefined} className="h-4 w-4 accent-[#66fcf1]" />Remember Me</label>
+        <label className="flex items-center gap-2 text-[#c5c6c7]"><input name="rememberMe" type="checkbox" disabled={!client.rememberMeSupported || !connected} aria-describedby={!client.rememberMeSupported ? "remember-note" : undefined} className="h-4 w-4 accent-[#66fcf1]" />Remember Me</label>
         <Link className="text-[#66fcf1]" href={authHref("/forgot-password", destination)}>Forgot password?</Link>
-      </div>{!client.rememberMeSupported && <p id="remember-note" className="text-xs text-[#9fa3a8]">Remember Me is unavailable until session persistence is supported.</p>}</div>}
-      {mode === "attendee" && <div><label className="flex items-start gap-2 text-xs leading-5 text-[#c5c6c7]"><input name="terms" type="checkbox" required aria-invalid={!!errors.terms} aria-describedby={errors.terms ? "terms-error" : undefined} className="mt-1 h-4 w-4 shrink-0 accent-[#66fcf1]" /><span>I agree to the <Link href="/legal/terms" className="text-[#66fcf1] underline" target="_blank">Terms & Conditions</Link> and <Link href="/legal/privacy" className="text-[#66fcf1] underline" target="_blank">Privacy Policy</Link>.</span></label>{errors.terms && <p id="terms-error" className="mt-2 text-xs text-red-300">{errors.terms}</p>}</div>}
-      {message && <p role="alert" className="rounded-lg border border-red-400/30 bg-red-400/5 p-3 text-sm text-red-200">{message}</p>}
-      <button type="submit" disabled={busy || (mode === "reset" && recovery !== "valid")} className={submitClass}>{busy ? "Please wait…" : mode === "login" ? "Login" : mode === "attendee" ? "Register" : mode === "forgot" ? "Request recovery link" : "Reset password"}</button>
+      </div>{!client.rememberMeSupported && <p id="remember-note" className="text-xs text-[#9fa3a8]">Remember Me needs account-service support.</p>}</div>}
+      {mode === "attendee" && <div className="sm:col-span-2"><label className="flex items-start gap-2 text-xs leading-5 text-[#c5c6c7]"><input name="terms" type="checkbox" required aria-invalid={!!errors.terms} aria-describedby={errors.terms ? "terms-error" : undefined} className="mt-1 h-4 w-4 shrink-0 accent-[#66fcf1]" /><span>I agree to the <Link href="/legal/terms" className="text-[#66fcf1] underline" target="_blank">Terms & Conditions</Link> and <Link href="/legal/privacy" className="text-[#66fcf1] underline" target="_blank">Privacy Policy</Link>.</span></label>{errors.terms && <p id="terms-error" className="mt-2 text-xs text-red-300">{errors.terms}</p>}</div>}
+      {message && <p role="alert" className={`${mode === "attendee" ? "sm:col-span-2" : ""} rounded-lg border border-red-400/30 bg-red-400/5 p-3 text-sm text-red-200`}>{message}</p>}
+      <button type="submit" disabled={busy || checkingConnection || (configured && !connected) || (mode === "reset" && recovery !== "valid")} className={`${submitClass} ${mode === "attendee" ? "sm:col-span-2" : ""}`}>{checkingConnection ? "Connecting…" : busy ? "Please wait…" : mode === "login" ? "Login" : mode === "attendee" ? "Register" : mode === "forgot" ? "Request recovery link" : "Reset password"}</button>
       {mode === "reset" && <Link className="block text-center text-sm text-[#66fcf1]" href="/forgot-password">Request a new recovery link</Link>}
     </form>}
-    {!success && <p className="mt-8 text-center text-[13px] text-[#9fa3a8]">{mode === "login" ? <>New to Aventix? <Link className="hover:text-[#66fcf1]" href={authHref("/register", destination)}>Create an account</Link></> : <>{mode === "attendee" ? "Already have an account? " : "Back to "}<Link className="hover:text-[#66fcf1]" href={authHref("/login", destination)}>Log in</Link></>}</p>}
+    {!success && <p className={`${styles.footer} text-center text-[13px] text-[#9fa3a8]`}>{mode === "login" ? <>New to Aventix? <Link className="hover:text-[#66fcf1]" href={authHref("/register", destination)}>Create an account</Link></> : <>{mode === "attendee" ? "Already have an account? " : "Back to "}<Link className="hover:text-[#66fcf1]" href={authHref("/login", destination)}>Log in</Link></>}</p>}
   </>;
 }
