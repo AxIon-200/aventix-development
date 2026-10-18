@@ -1,0 +1,137 @@
+[
+  {
+    "path": "ABRIGO-UPDATED-DEVELOP-REPORT.md",
+    "status": "Added",
+    "sha256": "ee77730051af8e243f156ae4d27e4aaa38efc929ea8a2fb048be2298f24061d1"
+  },
+  {
+    "path": "MOYAMOY-AUTH-HANDOFF.md",
+    "status": "Added",
+    "sha256": "8ed49d17646441651f9d872280ae22aba2a6749bdc6f452dd7dae6b374ced1ad"
+  },
+  {
+    "path": "next.config.ts",
+    "status": "Modified",
+    "sha256": "e4565b4c41269e1cefd5dabf4dfc086195812e27eea8779263c8733f2516e310"
+  },
+  {
+    "path": "src/app/admin/components/layout/AdminSidebar.tsx",
+    "status": "Modified",
+    "sha256": "2f6eebeaec3dcc2ee8dbc0caf1456cd90eb0d0113288ef995e2b4564555604e4"
+  },
+  {
+    "path": "src/app/preview/booking/page.tsx",
+    "status": "Added",
+    "sha256": "29227cf30432077b6f1bf3022645812586dfae0f75481afa3f287d4296070ebf"
+  },
+  {
+    "path": "src/app/register/attendee/page.tsx",
+    "status": "Modified",
+    "sha256": "f892f8f2f0fe84f18333ca226f8659a31bd14d7a2de374387037834cf5a06f65"
+  },
+  {
+    "path": "src/components/Hero.module.css",
+    "status": "Added",
+    "sha256": "cdcb0c68d6559be0c932ca09cbe86b2e0b81cdda1743892fe9e57ff069fd1fc6"
+  },
+  {
+    "path": "src/components/Hero.tsx",
+    "status": "Modified",
+    "sha256": "b7695b62888f083835b5c9d5046772b09646388e988a61d92ecacf5a736feb29"
+  },
+  {
+    "path": "src/components/HeroMockups.tsx",
+    "status": "Modified",
+    "sha256": "360bc501ee37b404d26fac56bc4ccda0e3ea14bfbea1943170ffdd24460bbba4"
+  },
+  {
+    "path": "src/components/Navbar.tsx",
+    "status": "Modified",
+    "sha256": "3182c1069d57458e97c29a394e165f6650ed4a130f608e72e340313720e6210d"
+  },
+  {
+    "path": "src/components/auth/AccountChoice.tsx",
+    "status": "Modified",
+    "sha256": "f5083da02c21a26e509e9d6cdf9295eeb7dcadc51ca2c5b15c2c4b75c767f05b"
+  },
+  {
+    "path": "src/components/auth/AuthForm.tsx",
+    "status": "Modified",
+    "sha256": "eaa465f5f90e12199e66191c8d9e1f47f751e396817f1a18b6878d4f51f7f7ff"
+  },
+  {
+    "path": "src/components/auth/AuthShell.module.css",
+    "status": "Added",
+    "sha256": "f66a5ed519d912fbde0e667179cc618a8efaeed107714e09b3933469f7226ba6"
+  },
+  {
+    "path": "src/components/auth/AuthShell.tsx",
+    "status": "Modified",
+    "sha256": "0beeef5ebd3c18e4f21ddff62f1da5eb3f91307e92ca3ba7a6aa395be7c5a73c"
+  },
+  {
+    "path": "src/components/auth/FormField.tsx",
+    "status": "Modified",
+    "sha256": "4b2dda386800b50ed0c217fc03970b34777a43379d10d074ad2977e87ba384ea"
+  },
+  {
+    "path": "src/components/auth/SignOutButton.tsx",
+    "status": "Added",
+    "sha256": "ccc7295846443f34360582da09c26fa40d0774d85b1535efb94c03d37a2bdb86"
+  },
+  {
+    "path": "src/components/auth/useAccountSession.ts",
+    "status": "Modified",
+    "sha256": "49a3b2ccd84838fb450b17769159de7b956a0facf740f0aac5a001ea8003b6ed"
+  },
+  {
+    "path": "src/components/booking/SeatSelection.tsx",
+    "status": "Modified",
+    "sha256": "02422253e1ef39cb235decf2e714457d2959d5b26d58405126e135b6f4116577"
+  },
+  {
+    "path": "src/components/booking/TicketSelection.tsx",
+    "status": "Modified",
+    "sha256": "a3600e984d76914d52aad4a52d3c1d2bd5187d93a4c074fc85c98c601e8af209"
+  },
+  {
+    "path": "src/components/booking/preview/BookingPreview.tsx",
+    "status": "Added",
+    "sha256": "629a3545a4973c99e335dd43628431ebec7bf91b19fc5859a9e47dcb75c68a34"
+  },
+  {
+    "path": "src/components/dashboard/DashboardSidebar.tsx",
+    "status": "Modified",
+    "sha256": "87a5796313eda941ea96d8c9dc7a06618d33f9063566878c0fdebbecaa3f8552"
+  },
+  {
+    "path": "src/components/event/EventSectionNav.tsx",
+    "status": "Modified",
+    "sha256": "11f8a581355b667a05a42f7dffe2c23db5760fbcf13360565154c9374fe838ee"
+  },
+  {
+    "path": "src/components/organizer/OrganizerSidebar.tsx",
+    "status": "Modified",
+    "sha256": "4d6d3fbb702b8d8807316f515a75b430ce1148224cb2bf1bf53082a38a14fb23"
+  },
+  {
+    "path": "src/lib/auth/better-auth.ts",
+    "status": "Added",
+    "sha256": "56a6b4854a286b61cde62e09843fb25fa9180a4a6d3c7a8d34ebdc84ce66b793"
+  },
+  {
+    "path": "src/lib/auth/client.ts",
+    "status": "Modified",
+    "sha256": "b78f6c17a8b2c03e01fc852f5524422c1c0402b9fe585458e7c94d694db0d9af"
+  },
+  {
+    "path": "src/lib/auth/errors.ts",
+    "status": "Added",
+    "sha256": "ac9791fc1a67e3640f6d591413be64e6253d588e331f61c3a7fabca315480849"
+  },
+  {
+    "path": "tests/auth-integration.test.mjs",
+    "status": "Added",
+    "sha256": "b0792839837767f8497a5a033e4fb33082970d26dbf8e5a7522845ec34729045"
+  }
+]
