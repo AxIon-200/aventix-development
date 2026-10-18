@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { Search, MapPin, Calendar, ArrowRight } from "lucide-react";
+import { useRouter } from "next/navigation";
 import HeroMockups from "./HeroMockups";
 
 interface HeroProps {
@@ -10,6 +12,7 @@ interface HeroProps {
 }
 
 export default function Hero({ onSearchSubmit, onExploreClick }: HeroProps) {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [location, setLocation] = useState("");
   const [date, setDate] = useState("");
@@ -18,6 +21,12 @@ export default function Hero({ onSearchSubmit, onExploreClick }: HeroProps) {
     e.preventDefault();
     if (onSearchSubmit) {
       onSearchSubmit({ query: searchQuery, location, date });
+    } else {
+      const params = new URLSearchParams();
+      if (searchQuery.trim()) params.set("q", searchQuery.trim());
+      if (location.trim()) params.set("location", location.trim());
+      if (date) params.set("date", date);
+      router.push(`/events?${params.toString()}`);
     }
   };
 
@@ -27,7 +36,7 @@ export default function Hero({ onSearchSubmit, onExploreClick }: HeroProps) {
       <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[#66fcf1]/10 rounded-full blur-[140px] pointer-events-none -z-10" />
       <div className="absolute top-1/3 right-1/4 w-[450px] h-[450px] bg-[#0099ff]/10 rounded-full blur-[130px] pointer-events-none -z-10" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-16">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
           {/* Left Column: Headline, Description, Search Widget & CTA */}
           <div className="lg:col-span-7 space-y-7 z-10">
@@ -40,7 +49,7 @@ export default function Hero({ onSearchSubmit, onExploreClick }: HeroProps) {
             </div>
 
             {/* Main Headline */}
-            <h1 className="text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-extrabold tracking-tight text-white leading-[1.08]">
+            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl xl:text-[60px] font-bold tracking-tight text-white leading-[1.08]">
               Discover &amp; Book{" "}
               <span className="text-[#66fcf1] drop-shadow-[0_0_25px_rgba(102,252,241,0.35)]">
                 Live
@@ -66,12 +75,13 @@ export default function Hero({ onSearchSubmit, onExploreClick }: HeroProps) {
               className="bg-[#121a25]/90 border border-[#223347] backdrop-blur-xl p-2 sm:p-2.5 rounded-2xl shadow-2xl flex flex-col md:flex-row items-stretch md:items-center gap-2 max-w-2xl"
             >
               {/* Field 1: Search artist or event */}
-              <div className="flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#1f2833] transition-colors">
+              <div className="min-w-0 flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#1f2833] transition-colors">
                 <Search className="w-4 h-4 text-[#66fcf1] shrink-0" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  aria-label="Search artist or event"
                   placeholder="Search artist or event"
                   className="w-full bg-transparent text-sm text-white placeholder-slate-400 focus:outline-none"
                 />
@@ -81,12 +91,13 @@ export default function Hero({ onSearchSubmit, onExploreClick }: HeroProps) {
               <div className="hidden md:block w-px h-8 bg-[#223347]" />
 
               {/* Field 2: Location */}
-              <div className="flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#1f2833] transition-colors">
+              <div className="min-w-0 flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#1f2833] transition-colors">
                 <MapPin className="w-4 h-4 text-[#66fcf1] shrink-0" />
                 <input
                   type="text"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
+                  aria-label="Event location"
                   placeholder="Location e.g. Manila"
                   className="w-full bg-transparent text-sm text-white placeholder-slate-400 focus:outline-none"
                 />
@@ -96,10 +107,11 @@ export default function Hero({ onSearchSubmit, onExploreClick }: HeroProps) {
               <div className="hidden md:block w-px h-8 bg-[#223347]" />
 
               {/* Field 3: Date */}
-              <div className="flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#1f2833] transition-colors">
+              <div className="min-w-0 flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#1f2833] transition-colors">
                 <Calendar className="w-4 h-4 text-[#66fcf1] shrink-0" />
                 <input
-                  type="text"
+                  type="date"
+                  aria-label="Event date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   placeholder="Select date"
@@ -118,14 +130,14 @@ export default function Hero({ onSearchSubmit, onExploreClick }: HeroProps) {
 
             {/* Explore Events CTA */}
             <div className="pt-2">
-              <a
-                href="#trending-events"
+              <Link
+                href="/events"
                 onClick={onExploreClick}
                 className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full bg-[#66fcf1] hover:bg-[#8afff6] text-[#0b0c10] font-extrabold text-base transition-all duration-300 shadow-[0_0_35px_rgba(102,252,241,0.5)] hover:shadow-[0_0_45px_rgba(102,252,241,0.7)] hover:scale-105 active:scale-95"
               >
                 <span>Explore Events</span>
                 <ArrowRight className="w-5 h-5 stroke-[2.5]" />
-              </a>
+              </Link>
             </div>
           </div>
 

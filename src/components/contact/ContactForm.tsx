@@ -27,13 +27,13 @@ export default function ContactForm() {
     if (!values.subject.trim()) next.subject = "Please add a subject.";
     if (values.message.trim().length < 10) next.message = "Please write at least 10 characters.";
     setErrors(next);
-    if (Object.keys(next).length) return;
+    if (Object.keys(next).length) { document.getElementById(Object.keys(next)[0])?.focus(); return; }
 
     // No contact endpoint exists yet: hand the message to the user's email app.
     const body = `${values.message}\n\n— ${values.name} (${values.email})`;
     window.location.href = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(values.subject)}&body=${encodeURIComponent(body)}`;
     setSent(true);
-    setValues(EMPTY);
+    // Keep the draft: opening an email app is not proof of delivery.
   };
 
   const err = (k: keyof Values) =>
@@ -46,6 +46,7 @@ export default function ContactForm() {
 
   return (
     <form onSubmit={onSubmit} noValidate className="rounded-3xl border border-[#2c3644] bg-[#1f2833] p-6 sm:p-8">
+      <p className="mb-4 text-xs leading-5 text-[#c5c6c7]">This form prepares an email in your email app. It does not send messages directly.</p>
       <h3 className="font-display text-2xl font-bold leading-8 text-white">Send us a message</h3>
 
       <div className="mt-4">
@@ -73,11 +74,11 @@ export default function ContactForm() {
         type="submit"
         className="mt-4 h-[50px] w-full rounded-full bg-[#66fcf1] text-sm font-bold text-[#0b0c10] transition hover:bg-[#8afff6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
       >
-        Send Message
+        Open email app
       </button>
       {sent && (
         <p role="status" className="mt-3 text-sm text-[#66fcf1]">
-          Opening your email app to send this to {SUPPORT_EMAIL}.
+          Your email app was requested. Review and send your message there; Aventix has not delivered it. If no app opened, email {SUPPORT_EMAIL} directly.
         </p>
       )}
     </form>

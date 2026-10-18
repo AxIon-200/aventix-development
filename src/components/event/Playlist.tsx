@@ -11,6 +11,7 @@ export default function Playlist({ playlist }: { playlist: EventPlaylist }) {
           Listen before the show
         </h2>
 
+        <p className="mt-3 text-xs text-[#9fa3a8]">Track information preview. Playback links have not been supplied.</p>
         <div className="mt-8 flex flex-col overflow-hidden rounded-2xl bg-[#1f2833] lg:mt-[38px] lg:flex-row">
           <div className="flex shrink-0 flex-col gap-5 bg-[#161d27] px-7 pb-7 pt-8 lg:w-[300px]">
             {playlist.coverUrl && (

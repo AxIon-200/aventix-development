@@ -32,14 +32,14 @@ export default function WhyChooseUs() {
   ];
 
   return (
-    <section className="py-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-16 lg:py-24">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-16">
         {/* Section Header */}
         <div className="text-center mb-14">
           <span className="text-[#66fcf1] text-xs font-bold tracking-[0.2em] uppercase block mb-1">
             TRUSTED PLATFORM
           </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+          <h2 className="font-display text-3xl sm:text-4xl font-bold text-white tracking-tight">
             Why Choose Aventix
           </h2>
         </div>
@@ -51,7 +51,7 @@ export default function WhyChooseUs() {
             return (
               <div
                 key={idx}
-                className="bg-[#121a25] border border-[#1e2a39] rounded-2xl p-7 text-center flex flex-col items-center hover:border-[#66fcf1]/40 hover:bg-[#16212f] transition-all duration-300 group shadow-lg"
+                className="bg-[#1f2833] border border-[#2c3644] rounded-2xl p-7 text-center flex flex-col items-center hover:border-[#66fcf1]/40 hover:bg-[#16212f] transition-all duration-300 group shadow-lg"
               >
                 {/* Solid Cyan Icon Badge */}
                 <div className="w-14 h-14 rounded-2xl bg-[#66fcf1] text-[#0b0c10] flex items-center justify-center mb-5 shadow-[0_0_20px_rgba(102,252,241,0.3)] group-hover:scale-110 group-hover:shadow-[0_0_30px_rgba(102,252,241,0.5)] transition-all">

@@ -36,14 +36,14 @@ export default function Testimonials() {
   ];
 
   return (
-    <section className="py-20 bg-[#0d1219]/60">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-16 lg:py-24 bg-[#1f2833]/40">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-16">
         {/* Section Header */}
         <div className="text-center mb-14">
           <span className="text-[#66fcf1] text-xs font-bold tracking-[0.2em] uppercase block mb-1">
             ATTENDEE STORIES
           </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+          <h2 className="font-display text-3xl sm:text-4xl font-bold text-white tracking-tight">
             What Our Users Say
           </h2>
         </div>
@@ -53,7 +53,7 @@ export default function Testimonials() {
           {testimonials.map((t) => (
             <div
               key={t.id}
-              className="bg-[#121a25] border border-[#1e2a39] rounded-2xl p-7 flex flex-col justify-between hover:border-[#66fcf1]/40 transition-all duration-300 shadow-lg"
+              className="bg-[#1f2833] border border-[#2c3644] rounded-2xl p-7 flex flex-col justify-between hover:border-[#66fcf1]/40 transition-all duration-300 shadow-lg"
             >
               <div>
                 {/* 5 Cyan Stars */}

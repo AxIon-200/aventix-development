@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import PageShell from "@/components/layout/PageShell";
-import OrganizerBanner from "@/components/OrganizerBanner";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "About | Aventix",
@@ -37,6 +37,7 @@ export default function AboutPage() {
             <p className="mt-[18px] max-w-[560px] text-lg leading-7 text-[#c5c6c7]">
               Aventix is a concert, gig, and live music ticketing platform built to make discovering events, securing tickets, and experiencing the moment simpler.
             </p>
+            <Link href="/about/experience" className="mt-6 inline-block text-sm text-[#66fcf1]">Explore the Aventix experience →</Link>
           </div>
           <div
             aria-hidden
@@ -85,7 +86,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <OrganizerBanner href="/register" />
+
     </PageShell>
   );
 }

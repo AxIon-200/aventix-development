@@ -10,12 +10,14 @@ export interface BookingState {
 }
 
 export function isCategoryBookable(event: EventDetails, c: TicketCategory): boolean {
-  return event.status === "PUBLISHED" && c.status === "ACTIVE" && c.availability === "AVAILABLE";
+  return event.status === "PUBLISHED" && c.status === "ACTIVE" && c.availability === "AVAILABLE" && (c.remaining === undefined || c.remaining > 0);
 }
 
 export function categoryStateLabel(event: EventDetails, c: TicketCategory): string {
   if (event.status === "CANCELLED") return "Cancelled";
   if (event.status === "COMPLETED") return "Event ended";
+  if (event.status !== "PUBLISHED") return "Unavailable";
+  if (c.remaining === 0 && c.availability === "AVAILABLE") return "Sold out";
   if (c.status === "DISABLED") return "Unavailable";
   const map: Record<CategoryAvailability, string> = {
     AVAILABLE: "Buy Tickets",
@@ -33,11 +35,12 @@ export function getBookingState(event: EventDetails): BookingState {
   if (event.status === "COMPLETED") {
     return { canBook: false, label: "Completed", message: "This event has already taken place." };
   }
+  if (event.status !== "PUBLISHED") return { canBook: false, label: "Unavailable", message: "This event is not available for booking." };
   const active = event.categories.filter((c) => c.status === "ACTIVE");
   if (active.length === 0) {
     return { canBook: false, label: "Unavailable", message: "No ticket categories are open for this event." };
   }
-  if (active.some((c) => c.availability === "AVAILABLE")) {
+  if (active.some((c) => isCategoryBookable(event, c))) {
     return { canBook: true, label: "On sale" };
   }
   if (active.every((c) => c.availability === "SOLD_OUT")) {

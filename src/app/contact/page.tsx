@@ -93,7 +93,7 @@ export default function ContactPage() {
           <ul className="mt-4 flex flex-col gap-4">
             {FAQ.map((q) => (
               <li key={q} className="rounded-[14px] border border-[#2c3644] bg-[#1f2833] px-[22px] py-[18px] text-sm font-semibold text-white">
-                {q}
+                <details><summary className="cursor-pointer">{q}</summary><p className="mt-3 text-sm font-normal leading-6 text-[#c5c6c7]">{q.startsWith("Need") ? "Include the event name and your booking reference when contacting support. Never send passwords or payment card details." : q.startsWith("Want") ? "Organizer onboarding is awaiting the team’s agreed policy. The public organizer form is currently a preview." : "Approved refund and policy documents have not been published in this preview. Contact support for event-specific guidance."}</p></details>
               </li>
             ))}
           </ul>

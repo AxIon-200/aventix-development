@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Music,
   PartyPopper,
@@ -31,22 +32,27 @@ interface BrowseCategoryProps {
 }
 
 export default function BrowseCategory({ onSelectCategory }: BrowseCategoryProps) {
-  const [activeCategory, setActiveCategory] = useState<string>("concerts");
+  const router = useRouter();
+  const [activeCategory, setActiveCategory] = useState<string>("");
 
   const handleClick = (cat: CategoryItem) => {
     setActiveCategory(cat.id);
     if (onSelectCategory) onSelectCategory(cat);
+    else {
+      const types: Record<string, string> = { concerts: "Concert", festivals: "Festival", gigs: "Gig", theater: "Theater", sports: "Sports", comedy: "Comedy" };
+      router.push(`/events?category=${encodeURIComponent(types[cat.id])}`);
+    }
   };
 
   return (
     <section className="py-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-16">
         {/* Section Header */}
         <div className="text-center mb-10">
           <span className="text-[#66fcf1] text-xs font-bold tracking-[0.2em] uppercase block mb-1">
             EXPLORE
           </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+          <h2 className="font-display text-3xl sm:text-4xl font-bold text-white tracking-tight">
             Browse by Category
           </h2>
         </div>
@@ -60,11 +66,12 @@ export default function BrowseCategory({ onSelectCategory }: BrowseCategoryProps
             return (
               <button
                 key={cat.id}
+                type="button"
                 onClick={() => handleClick(cat)}
                 className={`flex flex-col items-center justify-center p-6 rounded-2xl border transition-all duration-300 group text-center ${
                   isSelected
                     ? "bg-[#1f2833] border-[#66fcf1] shadow-[0_0_25px_rgba(102,252,241,0.25)]"
-                    : "bg-[#121a25] border-[#1e2a39] hover:border-[#66fcf1]/50 hover:bg-[#16212f]"
+                    : "bg-[#1f2833] border-[#2c3644] hover:border-[#66fcf1]/50 hover:bg-[#16212f]"
                 }`}
               >
                 {/* Icon box with glowing teal background */}

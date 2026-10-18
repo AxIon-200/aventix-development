@@ -67,3 +67,12 @@ body {
 .text-glow {
   text-shadow: 0 0 20px rgba(102, 252, 241, 0.4);
 }
+
+/* Shared keyboard and motion accessibility; scoped visual styles remain in pages. */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+input, textarea, select { scroll-margin-top: 7rem; }
+dialog::backdrop { background: rgb(0 0 0 / .7); backdrop-filter: blur(4px); }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}

@@ -4,17 +4,12 @@ import React from "react";
 import {
   MapPin,
   Calendar,
-  TrendingUp,
-  Ticket,
-  Users,
-  DollarSign,
-  ChevronRight,
   Music,
 } from "lucide-react";
 
 export default function HeroMockups() {
   return (
-    <div className="relative w-full h-[620px] lg:h-[680px] pointer-events-none select-none overflow-hidden">
+    <div aria-hidden="true" inert className="relative w-full h-[620px] lg:h-[680px] pointer-events-none select-none overflow-hidden">
       {/* Ambient background glows */}
       <div className="absolute top-10 right-10 w-96 h-96 bg-[#66fcf1]/15 rounded-full blur-[120px]" />
       <div className="absolute bottom-10 left-10 w-80 h-80 bg-[#0084ff]/10 rounded-full blur-[100px]" />

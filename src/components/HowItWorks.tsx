@@ -29,14 +29,14 @@ export default function HowItWorks() {
   ];
 
   return (
-    <section id="how-it-works" className="py-20 bg-[#0d1219]/60 scroll-mt-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="how-it-works" className="py-16 lg:py-24 bg-[#1f2833]/40 scroll-mt-20">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-16">
         {/* Section Header */}
         <div className="text-center mb-16">
           <span className="text-[#66fcf1] text-xs font-bold tracking-[0.2em] uppercase block mb-1">
             SIMPLE PROCESS
           </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+          <h2 className="font-display text-3xl sm:text-4xl font-bold text-white tracking-tight">
             How It Works
           </h2>
         </div>
