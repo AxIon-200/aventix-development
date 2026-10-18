@@ -38,12 +38,14 @@ export default function TicketSelection({
   eventId,
   initialCategory,
   fallback,
+  onContinue,
   client = publicBookingClient,
   auth = publicAuthClient,
 }: {
   eventId: string;
   initialCategory?: string;
   fallback: React.ReactNode;
+  onContinue?: () => void;
   client?: PublicBookingClient;
   auth?: PublicAuthClient;
 }) {
@@ -147,6 +149,7 @@ export default function TicketSelection({
               >
                 Refresh ticket options
               </button>
+              {process.env.NODE_ENV === "development" && <Link href="/preview/booking" className="mt-5 block text-sm text-[#66fcf1] underline">Preview booking screens with sample data</Link>}
             </>
           )}
         </div>
@@ -174,6 +177,7 @@ export default function TicketSelection({
       );
       return;
     }
+    if (onContinue) { onContinue(); return; }
     router.push(`/events/${encodeURIComponent(eventId)}/seats${section ? `#${encodeURIComponent(`section-${encodeURIComponent(section)}`)}` : ""}`);
   }
   return (

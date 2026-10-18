@@ -1,4 +1,5 @@
 "use client";
+import SignOutButton from "@/components/auth/SignOutButton";
 
 import { useSyncExternalStore } from "react";
 import Image from "next/image";
@@ -205,16 +206,15 @@ const collapsed = useSyncExternalStore(
         <NavSection title="Settings" links={settingsLinks} pathname={pathname} collapsed={collapsed} />
       </div>
 
-      <button
+      <SignOutButton
         title={collapsed ? "Sign Out" : undefined}
-        aria-label="Sign Out"
         className={`flex items-center rounded-lg py-2 text-sm text-slate-400 hover:bg-white/5 hover:text-slate-200 ${
           collapsed ? "justify-center px-0" : "gap-3 px-3"
         }`}
       >
         <LogOut className="h-4 w-4 shrink-0" />
         {!collapsed && <span className="whitespace-nowrap">Sign Out</span>}
-      </button>
+      </SignOutButton>
     </aside>
   );
 }

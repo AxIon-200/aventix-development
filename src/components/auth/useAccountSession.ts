@@ -18,7 +18,9 @@ export function useAccountSession(client: PublicAuthClient = publicAuthClient) {
   });
   useEffect(() => {
     let active = true;
+    let request = 0;
     async function load() {
+      const current = ++request;
       try {
         const session = client.getSession ? await client.getSession() : null;
         if (
@@ -37,20 +39,28 @@ export function useAccountSession(client: PublicAuthClient = publicAuthClient) {
             ))
         )
           throw new Error("Unsupported account navigation");
-        if (active)
+        if (active && current === request)
           setState({
             loading: false,
             session,
             unavailable: !client.getSession,
           });
       } catch {
-        if (active)
+        if (active && current === request)
           setState({ loading: false, session: null, unavailable: true });
       }
     }
-    void load();
+    const reload = () => { void load(); };
+    const onVisible = () => { if (document.visibilityState === "visible") reload(); };
+    reload();
+    window.addEventListener("aventix:session-updated", reload);
+    window.addEventListener("focus", reload);
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       active = false;
+      window.removeEventListener("aventix:session-updated", reload);
+      window.removeEventListener("focus", reload);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [client]);
   return {
