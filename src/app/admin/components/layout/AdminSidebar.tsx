@@ -74,15 +74,32 @@ const settingsLinks = [
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
+const allNavLinks = [...mainLinks, ...managementLinks, ...settingsLinks];
+
+function getActiveNavHref(pathname: string, links: typeof allNavLinks): string | null {
+  if (pathname === "/admin") return "/admin/dashboard";
+
+  const matching = links.filter((item) => {
+    if (pathname === item.href) return true;
+    return pathname.startsWith(`${item.href}/`);
+  });
+
+  if (matching.length === 0) return null;
+
+  // Most specific matching path takes precedence
+  matching.sort((a, b) => b.href.length - a.href.length);
+  return matching[0].href;
+}
+
 function NavSection({
   title,
   links,
-  pathname,
+  activeHref,
   collapsed,
 }: {
   title: string;
   links: typeof mainLinks;
-  pathname: string;
+  activeHref: string | null;
   collapsed: boolean;
 }) {
   return (
@@ -96,7 +113,7 @@ function NavSection({
       )}
       <nav className="mt-2 space-y-1">
         {links.map(({ href, label, icon: Icon }) => {
-          const active = pathname.startsWith(href);
+          const active = href === activeHref;
           return (
             <Link
               key={href}
@@ -122,30 +139,31 @@ function NavSection({
 }
 
 export function AdminSidebar() {
-  const pathname = usePathname();
+  const pathname = usePathname() || "";
+  const activeHref = getActiveNavHref(pathname, allNavLinks);
 
-const collapsed = useSyncExternalStore(
-  subscribeToSidebar,
-  getSidebarSnapshot,
-  getServerSidebarSnapshot
-);
-
- function toggle() {
-  const next = !collapsed;
-
-  try {
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      next ? "1" : "0"
-    );
-  } catch {
-    // Ignore storage errors.
-  }
-
-  window.dispatchEvent(
-    new Event(SIDEBAR_CHANGE_EVENT)
+  const collapsed = useSyncExternalStore(
+    subscribeToSidebar,
+    getSidebarSnapshot,
+    getServerSidebarSnapshot
   );
-}
+
+  function toggle() {
+    const next = !collapsed;
+
+    try {
+      window.localStorage.setItem(
+        STORAGE_KEY,
+        next ? "1" : "0"
+      );
+    } catch {
+      // Ignore storage errors.
+    }
+
+    window.dispatchEvent(
+      new Event(SIDEBAR_CHANGE_EVENT)
+    );
+  }
 
   return (
     <aside
@@ -200,9 +218,9 @@ const collapsed = useSyncExternalStore(
           </button>
         </div>
 
-        <NavSection title="Main" links={mainLinks} pathname={pathname} collapsed={collapsed} />
-        <NavSection title="Management" links={managementLinks} pathname={pathname} collapsed={collapsed} />
-        <NavSection title="Settings" links={settingsLinks} pathname={pathname} collapsed={collapsed} />
+        <NavSection title="Main" links={mainLinks} activeHref={activeHref} collapsed={collapsed} />
+        <NavSection title="Management" links={managementLinks} activeHref={activeHref} collapsed={collapsed} />
+        <NavSection title="Settings" links={settingsLinks} activeHref={activeHref} collapsed={collapsed} />
       </div>
 
       <button

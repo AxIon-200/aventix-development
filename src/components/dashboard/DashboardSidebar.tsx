@@ -68,15 +68,30 @@ const accountLinks: NavItem[] = [
   { href: "/events", label: "Browse Events", icon: Compass },
 ];
 
+const allNavLinks = [...mainLinks, ...ticketLinks, ...accountLinks];
+
+function getActiveNavHref(pathname: string, links: NavItem[]): string | null {
+  const matching = links.filter((item) => {
+    if (pathname === item.href) return true;
+    return pathname.startsWith(`${item.href}/`);
+  });
+
+  if (matching.length === 0) return null;
+
+  // Most specific matching path takes precedence
+  matching.sort((a, b) => b.href.length - a.href.length);
+  return matching[0].href;
+}
+
 function NavSection({
   title,
   links,
-  pathname,
+  activeHref,
   collapsed,
 }: {
   title: string;
   links: NavItem[];
-  pathname: string;
+  activeHref: string | null;
   collapsed: boolean;
 }) {
   return (
@@ -90,10 +105,7 @@ function NavSection({
       )}
       <nav className="mt-2 space-y-1">
         {links.map(({ href, label, icon: Icon }) => {
-          const active =
-            href === "/dashboard"
-              ? pathname === "/dashboard"
-              : pathname.startsWith(href);
+          const active = href === activeHref;
 
           return (
             <Link
@@ -121,6 +133,7 @@ function NavSection({
 
 export default function DashboardSidebar() {
   const pathname = usePathname() || "";
+  const activeHref = getActiveNavHref(pathname, allNavLinks);
 
   const collapsed = useSyncExternalStore(
     subscribeToSidebar,
@@ -190,9 +203,9 @@ export default function DashboardSidebar() {
           </button>
         </div>
 
-        <NavSection title="Main" links={mainLinks} pathname={pathname} collapsed={collapsed} />
-        <NavSection title="Tickets & Orders" links={ticketLinks} pathname={pathname} collapsed={collapsed} />
-        <NavSection title="Account" links={accountLinks} pathname={pathname} collapsed={collapsed} />
+        <NavSection title="Main" links={mainLinks} activeHref={activeHref} collapsed={collapsed} />
+        <NavSection title="Tickets & Orders" links={ticketLinks} activeHref={activeHref} collapsed={collapsed} />
+        <NavSection title="Account" links={accountLinks} activeHref={activeHref} collapsed={collapsed} />
       </div>
 
       <button
