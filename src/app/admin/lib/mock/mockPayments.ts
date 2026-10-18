@@ -7,7 +7,7 @@ import { Payment, TransactionStatus } from "@/app/admin/types/payments";
 //   failRequests: true  = every request fails (preview the error states)
 // ─────────────────────────────────────────────────────────────
 export const DEMO = {
-  seedPayments: true,
+  seedPayments: false,
   failRequests: false,
 };
 

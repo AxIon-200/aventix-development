@@ -7,7 +7,7 @@ import { AdminBooking, BookingStatus, PaymentStatus } from "@/app/admin/types/bo
 //   failRequests: true  = every request fails (preview the error states)
 // ─────────────────────────────────────────────────────────────
 export const DEMO = {
-  seedBookings: true,
+  seedBookings: false,
   failRequests: false,
 };
 
