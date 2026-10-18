@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useSyncExternalStore, useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -14,6 +14,7 @@ import {
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
+  X,
   type LucideIcon,
 } from "lucide-react";
 
@@ -92,16 +93,18 @@ function NavSection({
   links,
   activeHref,
   collapsed,
+  onNavigate,
 }: {
   title: string;
   links: NavItem[];
   activeHref: string | null;
   collapsed: boolean;
+  onNavigate?: () => void;
 }) {
   return (
     <div>
       {collapsed ? (
-        <div className="mx-3 h-px bg-white/10" aria-hidden="true" />
+        <div className="mx-3 h-px bg-white/10 hidden lg:block" aria-hidden="true" />
       ) : (
         <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
           {title}
@@ -115,18 +118,19 @@ function NavSection({
             <Link
               key={href}
               href={href}
+              onClick={onNavigate}
               title={collapsed ? label : undefined}
               aria-label={label}
-              className={`flex items-center rounded-lg py-2 text-sm transition-colors ${
-                collapsed ? "justify-center px-0" : "gap-3 px-3"
+              className={`flex items-center rounded-lg py-2.5 lg:py-2 text-sm transition-colors ${
+                collapsed ? "lg:justify-center lg:px-0 gap-3 px-3" : "gap-3 px-3"
               } ${
                 active
-                  ? "bg-teal-500 text-slate-950 font-medium"
+                  ? "bg-teal-500 text-slate-950 font-semibold"
                   : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
               }`}
             >
               <Icon className="h-4 w-4 shrink-0" />
-              {!collapsed && <span className="whitespace-nowrap">{label}</span>}
+              <span className={`whitespace-nowrap ${collapsed ? "lg:hidden" : ""}`}>{label}</span>
             </Link>
           );
         })}
@@ -138,6 +142,25 @@ function NavSection({
 export default function OrganizerSidebar() {
   const pathname = usePathname() || "";
   const activeHref = getActiveNavHref(pathname, allNavLinks);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Sync mobile drawer state across custom events & route changes
+  useEffect(() => {
+    const handleToggle = () => setMobileOpen((prev) => !prev);
+    const handleClose = () => setMobileOpen(false);
+
+    window.addEventListener("aventix-toggle-sidebar", handleToggle);
+    window.addEventListener("aventix-close-sidebar", handleClose);
+
+    return () => {
+      window.removeEventListener("aventix-toggle-sidebar", handleToggle);
+      window.removeEventListener("aventix-close-sidebar", handleClose);
+    };
+  }, []);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   const collapsed = useSyncExternalStore(
     subscribeToSidebar,
@@ -156,72 +179,129 @@ export default function OrganizerSidebar() {
   }
 
   return (
-    <aside
-      className={`sticky top-0 flex h-screen shrink-0 flex-col justify-between overflow-y-auto overflow-x-hidden border-r border-white/10 bg-[#0B0F19] py-5 transition-[width] duration-200 ${
-        collapsed ? "w-[72px] px-2" : "w-60 px-3"
-      }`}
-    >
-      <div className="space-y-6">
+    <>
+      {/* Mobile Backdrop Overlay */}
+      {mobileOpen && (
         <div
-          className={`flex ${
-            collapsed ? "flex-col items-center gap-3" : "items-center justify-between px-2"
-          }`}
-        >
-          <Link
-            href="/organizer/dashboard"
-            aria-label="Aventix organizer dashboard"
-            className="flex items-center"
-          >
-            {collapsed ? (
-              <Image
-                src="/images/aventix-icon.png"
-                alt="Aventix"
-                width={34}
-                height={24}
-                priority
-                className="h-6 w-auto"
-              />
-            ) : (
-              <Image
-                src="/images/aventix-logo.png"
-                alt="Aventix"
-                width={104}
-                height={24}
-                priority
-                className="h-6 w-auto"
-              />
-            )}
-          </Link>
-          <button
-            onClick={toggle}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            aria-expanded={!collapsed}
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-white/5 hover:text-slate-200"
-          >
-            {collapsed ? (
-              <PanelLeftOpen className="h-4 w-4" />
-            ) : (
-              <PanelLeftClose className="h-4 w-4" />
-            )}
-          </button>
-        </div>
+          onClick={() => setMobileOpen(false)}
+          className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden animate-in fade-in duration-200"
+          aria-hidden="true"
+        />
+      )}
 
-        <NavSection title="Main" links={mainLinks} activeHref={activeHref} collapsed={collapsed} />
-        <NavSection title="Events & Sales" links={managementLinks} activeHref={activeHref} collapsed={collapsed} />
-        <NavSection title="Settings" links={settingsLinks} activeHref={activeHref} collapsed={collapsed} />
-      </div>
-
-      <button
-        title={collapsed ? "Sign Out" : undefined}
-        aria-label="Sign Out"
-        className={`flex items-center rounded-lg py-2 text-sm text-slate-400 hover:bg-white/5 hover:text-slate-200 ${
-          collapsed ? "justify-center px-0" : "gap-3 px-3"
+      {/* Responsive Sidebar: Drawer on mobile/tablet, docked sticky bar on desktop */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex h-full flex-col justify-between overflow-y-auto overflow-x-hidden border-r border-white/10 bg-[#0B0F19] py-5 transition-all duration-300 lg:sticky lg:top-0 lg:z-30 lg:h-screen ${
+          mobileOpen
+            ? "translate-x-0 shadow-2xl w-72 px-4"
+            : "-translate-x-full lg:translate-x-0"
+        } ${
+          collapsed ? "lg:w-[72px] lg:px-2" : "lg:w-60 lg:px-3"
         }`}
       >
-        <LogOut className="h-4 w-4 shrink-0" />
-        {!collapsed && <span className="whitespace-nowrap">Sign Out</span>}
-      </button>
-    </aside>
+        <div className="space-y-6">
+          <div
+            className={`flex items-center justify-between ${
+              collapsed ? "lg:flex-col lg:items-center lg:gap-3 px-2" : "px-2"
+            }`}
+          >
+            <Link
+              href="/organizer/dashboard"
+              onClick={() => setMobileOpen(false)}
+              aria-label="Aventix organizer dashboard"
+              className="flex items-center"
+            >
+              {collapsed ? (
+                <>
+                  <Image
+                    src="/images/aventix-icon.png"
+                    alt="Aventix"
+                    width={34}
+                    height={24}
+                    priority
+                    className="h-6 w-auto hidden lg:block"
+                  />
+                  <Image
+                    src="/images/aventix-logo.png"
+                    alt="Aventix"
+                    width={104}
+                    height={24}
+                    priority
+                    className="h-6 w-auto lg:hidden"
+                  />
+                </>
+              ) : (
+                <Image
+                  src="/images/aventix-logo.png"
+                  alt="Aventix"
+                  width={104}
+                  height={24}
+                  priority
+                  className="h-6 w-auto"
+                />
+              )}
+            </Link>
+
+            {/* Desktop Collapse Toggle */}
+            <button
+              onClick={toggle}
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-expanded={!collapsed}
+              title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              className="hidden lg:flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-white/5 hover:text-slate-200"
+            >
+              {collapsed ? (
+                <PanelLeftOpen className="h-4 w-4" />
+              ) : (
+                <PanelLeftClose className="h-4 w-4" />
+              )}
+            </button>
+
+            {/* Mobile Close Button */}
+            <button
+              onClick={() => setMobileOpen(false)}
+              aria-label="Close sidebar menu"
+              className="lg:hidden flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-white/5 hover:text-white"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <NavSection
+            title="Main"
+            links={mainLinks}
+            activeHref={activeHref}
+            collapsed={collapsed}
+            onNavigate={() => setMobileOpen(false)}
+          />
+          <NavSection
+            title="Events & Sales"
+            links={managementLinks}
+            activeHref={activeHref}
+            collapsed={collapsed}
+            onNavigate={() => setMobileOpen(false)}
+          />
+          <NavSection
+            title="Settings"
+            links={settingsLinks}
+            activeHref={activeHref}
+            collapsed={collapsed}
+            onNavigate={() => setMobileOpen(false)}
+          />
+        </div>
+
+        <button
+          onClick={() => setMobileOpen(false)}
+          title={collapsed ? "Sign Out" : undefined}
+          aria-label="Sign Out"
+          className={`flex items-center rounded-lg py-2.5 lg:py-2 text-sm text-slate-400 hover:bg-white/5 hover:text-slate-200 ${
+            collapsed ? "lg:justify-center lg:px-0 gap-3 px-3" : "gap-3 px-3"
+          }`}
+        >
+          <LogOut className="h-4 w-4 shrink-0" />
+          <span className={`whitespace-nowrap ${collapsed ? "lg:hidden" : ""}`}>Sign Out</span>
+        </button>
+      </aside>
+    </>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import Link from "next/link";
+import React, { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Globe,
@@ -19,6 +18,7 @@ export type DemoRole = "GUEST" | "ATTENDEE" | "ORGANIZER" | "ADMINISTRATOR";
 interface RoleOption {
   role: DemoRole;
   label: string;
+  shortLabel: string;
   badge: string;
   path: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -29,6 +29,7 @@ const ROLES: RoleOption[] = [
   {
     role: "GUEST",
     label: "Guest",
+    shortLabel: "Guest",
     badge: "Public",
     path: "/",
     icon: Globe,
@@ -37,6 +38,7 @@ const ROLES: RoleOption[] = [
   {
     role: "ATTENDEE",
     label: "Attendee",
+    shortLabel: "User",
     badge: "User",
     path: "/dashboard",
     icon: Ticket,
@@ -45,6 +47,7 @@ const ROLES: RoleOption[] = [
   {
     role: "ORGANIZER",
     label: "Organizer",
+    shortLabel: "Org",
     badge: "Host",
     path: "/organizer/dashboard",
     icon: CalendarPlus,
@@ -53,6 +56,7 @@ const ROLES: RoleOption[] = [
   {
     role: "ADMINISTRATOR",
     label: "Admin",
+    shortLabel: "Admin",
     badge: "Operator",
     path: "/admin/dashboard",
     icon: ShieldCheck,
@@ -86,7 +90,7 @@ export default function DemoRoleSwitcher() {
         onClick={() => setHidden(false)}
         title="Open Role Demo Switcher"
         aria-label="Open Role Demo Switcher"
-        className="fixed bottom-4 right-4 z-[999] flex h-10 w-10 items-center justify-center rounded-full border border-teal-400/40 bg-[#0B0F19]/90 text-teal-300 shadow-lg shadow-teal-950/40 backdrop-blur-md transition-all hover:scale-110 hover:border-teal-300"
+        className="fixed bottom-4 right-4 z-[999] flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full border border-teal-400/40 bg-[#0B0F19]/90 text-teal-300 shadow-lg shadow-teal-950/40 backdrop-blur-md transition-all hover:scale-110 hover:border-teal-300"
       >
         <Sparkles className="h-4 w-4" />
       </button>
@@ -96,11 +100,11 @@ export default function DemoRoleSwitcher() {
   return (
     <aside
       aria-label="Frontend Demo Role Selector"
-      className="fixed bottom-4 left-1/2 z-[999] -translate-x-1/2 transition-all duration-300"
+      className="fixed bottom-3 sm:bottom-4 left-1/2 z-[999] -translate-x-1/2 transition-all duration-300 max-w-[calc(100vw-1rem)]"
     >
-      <div className="flex items-center gap-2 rounded-full border border-teal-500/30 bg-[#0B0F19]/95 px-3 py-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.65)] backdrop-blur-xl">
+      <div className="flex items-center gap-1.5 sm:gap-2 rounded-full border border-teal-500/30 bg-[#0B0F19]/95 px-2.5 sm:px-3 py-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.65)] backdrop-blur-xl max-w-full overflow-x-auto">
         {/* Demo Tag */}
-        <div className="flex items-center gap-1.5 border-r border-white/10 pr-2.5">
+        <div className="flex items-center gap-1.5 border-r border-white/10 pr-2 shrink-0">
           <span className="flex h-2 w-2 relative">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-400 opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-teal-400" />
@@ -128,7 +132,7 @@ export default function DemoRoleSwitcher() {
         ) : (
           /* Expanded Role Pills */
           <div className="flex items-center gap-1">
-            {ROLES.map(({ role, label, path, icon: Icon }) => {
+            {ROLES.map(({ role, label, shortLabel, path, icon: Icon }) => {
               const isActive = role === currentRole;
               return (
                 <button
@@ -138,20 +142,21 @@ export default function DemoRoleSwitcher() {
                       router.push(path);
                     }
                   }}
-                  className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-all duration-200 ${
+                  className={`flex items-center gap-1 sm:gap-1.5 rounded-full px-2 sm:px-2.5 py-1 text-[11px] sm:text-xs font-medium transition-all duration-200 shrink-0 ${
                     isActive
                       ? "bg-teal-500 text-slate-950 font-semibold shadow-sm shadow-teal-500/30 scale-105"
                       : "text-slate-400 hover:bg-white/10 hover:text-white"
                   }`}
                 >
                   <Icon className="h-3.5 w-3.5 shrink-0" />
-                  <span className="whitespace-nowrap">{label}</span>
+                  <span className="whitespace-nowrap hidden sm:inline">{label}</span>
+                  <span className="whitespace-nowrap sm:hidden">{shortLabel}</span>
                 </button>
               );
             })}
 
             {/* Collapse / Close Controls */}
-            <div className="flex items-center pl-1 border-l border-white/10 ml-1">
+            <div className="flex items-center pl-1 border-l border-white/10 ml-0.5 sm:ml-1 shrink-0">
               <button
                 onClick={() => setMinimized(true)}
                 title="Minimize toolbar"

@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Search, X } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { Search, X, Menu } from "lucide-react";
 import { NotificationBell } from "@/app/admin/components/ui/NotificationBell";
 import { getProfile } from "@/app/admin/services/profileService";
 import RoleDropdownSwitcher from "@/components/shared/RoleDropdownSwitcher";
@@ -62,20 +64,15 @@ export function AdminTopbar({
     let mounted = true;
     let receivedProfileUpdate = false;
 
-    // Receive changes from the User Profile page.
     function handleProfileUpdate(event: Event) {
       const customEvent = event as CustomEvent<{
         fullName: string;
-        roleLabel?: string;
+        roleLabel: string;
       }>;
 
       receivedProfileUpdate = true;
-
       setDisplayName(customEvent.detail.fullName);
-
-      if (customEvent.detail.roleLabel) {
-        setDisplayRole(customEvent.detail.roleLabel);
-      }
+      setDisplayRole(customEvent.detail.roleLabel);
     }
 
     window.addEventListener("admin-profile-updated", handleProfileUpdate);
@@ -130,74 +127,102 @@ export function AdminTopbar({
   }
 
   return (
-    <header className="relative z-40 flex h-16 items-center justify-end gap-3 border-b border-white/10 px-4 sm:px-8">
-      {/* Demo Role Switcher */}
-      <RoleDropdownSwitcher />
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/10 bg-[#0B0F19]/95 backdrop-blur-md px-3 sm:px-6 lg:px-8">
+      {/* Mobile Drawer Toggle & Logo */}
+      <div className="flex items-center gap-2.5">
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent("aventix-toggle-sidebar"))}
+          aria-label="Open sidebar menu"
+          className="lg:hidden flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 text-slate-300 hover:border-teal-400/40 hover:bg-white/5 hover:text-white transition-colors"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
 
-      {/* Expandable Search */}
-      <div
-        className={`flex items-center transition-all duration-200 ${
-          searchOpen ? "w-56 sm:w-80" : "w-9"
-        }`}
-      >
-        {searchOpen ? (
-          <div className="flex h-9 w-full items-center gap-2 rounded-lg border border-teal-400/30 bg-[#111b24] px-3 shadow-lg shadow-black/10">
-            <Search className="h-4 w-4 shrink-0 text-teal-300" />
-
-            <input
-              ref={searchInputRef}
-              type="search"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search users, events, bookings..."
-              aria-label="Search users, events, and bookings"
-              className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
-            />
-
-            <button
-              type="button"
-              onClick={closeSearch}
-              aria-label="Close search"
-              className="shrink-0 rounded p-0.5 text-slate-500 transition hover:text-white"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setSearchOpen(true)}
-            aria-label="Open search"
-            aria-expanded={searchOpen}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 text-slate-400 transition hover:border-teal-400/30 hover:bg-white/5 hover:text-teal-300"
-          >
-            <Search className="h-4 w-4" />
-          </button>
-        )}
+        <Link href="/admin/dashboard" className="flex items-center gap-2 lg:hidden">
+          <Image
+            src="/images/aventix-icon.png"
+            alt="Aventix"
+            width={24}
+            height={24}
+            className="h-5 w-auto"
+          />
+          <span className="text-xs font-bold text-white tracking-wide">ADMIN</span>
+        </Link>
       </div>
 
-      {/* Notifications */}
-      <NotificationBell />
+      {/* Right Controls */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Demo Role Switcher */}
+        <RoleDropdownSwitcher compact />
 
-      {/* Administrator profile and photo */}
-      <div className="flex shrink-0 items-center gap-2 pl-1 sm:pl-2">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-teal-400/30 bg-teal-500 text-xs font-semibold text-slate-950">
-          {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={avatarUrl}
-              alt={`${adminName}'s profile`}
-              className="h-full w-full object-cover"
-            />
+        {/* Expandable Search */}
+        <div
+          className={`flex items-center transition-all duration-200 ${
+            searchOpen ? "w-44 sm:w-64 md:w-80" : "w-9"
+          }`}
+        >
+          {searchOpen ? (
+            <div className="flex h-9 w-full items-center gap-2 rounded-lg border border-teal-400/30 bg-[#111b24] px-2.5 shadow-lg shadow-black/10">
+              <Search className="h-4 w-4 shrink-0 text-teal-300" />
+
+              <input
+                ref={searchInputRef}
+                type="search"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search users, events..."
+                aria-label="Search users, events, and bookings"
+                className="min-w-0 flex-1 bg-transparent text-xs sm:text-sm text-white outline-none placeholder:text-slate-500"
+              />
+
+              <button
+                type="button"
+                onClick={closeSearch}
+                aria-label="Close search"
+                className="shrink-0 rounded p-0.5 text-slate-500 transition hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           ) : (
-            displayName.slice(0, 2).toUpperCase()
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              aria-label="Open search"
+              aria-expanded={searchOpen}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 text-slate-400 transition hover:border-teal-400/30 hover:bg-white/5 hover:text-teal-300"
+            >
+              <Search className="h-4 w-4" />
+            </button>
           )}
         </div>
 
-        <div className="hidden leading-tight sm:block">
-          <p className="text-sm font-medium text-white">{displayName}</p>
+        {/* Notifications */}
+        <NotificationBell />
 
-          <p className="text-xs text-slate-500">{displayRole}</p>
+        {/* Administrator Profile Info */}
+        <div className="flex shrink-0 items-center gap-2 pl-0.5 sm:pl-1">
+          {avatarUrl ? (
+            <div className="relative h-8 w-8 overflow-hidden rounded-full border border-teal-400/30">
+              <Image
+                src={avatarUrl}
+                alt={`${displayName}'s profile photo`}
+                fill
+                sizes="32px"
+                className="object-cover"
+              />
+            </div>
+          ) : (
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-teal-400/30 bg-teal-500 text-xs font-semibold text-slate-950">
+              {displayName.slice(0, 2).toUpperCase()}
+            </div>
+          )}
+
+          <div className="hidden leading-tight md:block">
+            <p className="text-sm font-medium text-white">{displayName}</p>
+            <p className="text-xs text-slate-500">{displayRole}</p>
+          </div>
         </div>
       </div>
     </header>

@@ -22,7 +22,7 @@ export default function OrganizerBanner({ onBecomeOrganizer, href = "/register" 
   return (
     <section id="organizer-cta" aria-labelledby="organizer-cta-title" className="bg-[#0b0c10] scroll-mt-24 snap-section">
       <div className="mx-auto max-w-[1440px] px-4 py-12 sm:px-6 lg:p-16">
-        <div className="relative flex flex-col items-start justify-between gap-8 overflow-hidden rounded-3xl bg-gradient-to-r from-[#45a29e] to-[#66fcf1] p-8 sm:p-12 lg:flex-row lg:items-center lg:p-16 shadow-2xl hover:shadow-[0_0_60px_rgba(102,252,241,0.35)] transition-shadow duration-500">
+        <div className="relative flex flex-col items-start justify-between gap-8 overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#45a29e] to-[#66fcf1] p-6 sm:p-12 lg:flex-row lg:items-center lg:p-16 shadow-2xl hover:shadow-[0_0_60px_rgba(102,252,241,0.35)] transition-shadow duration-500">
           <div aria-hidden className="pointer-events-none absolute right-0 top-0 h-80 w-80 rounded-full bg-white/10 blur-[50px]" />
           <div aria-hidden className="pointer-events-none absolute bottom-0 left-10 h-60 w-60 rounded-full bg-[#0b0c10]/20 blur-[50px]" />
 

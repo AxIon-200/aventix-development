@@ -164,13 +164,14 @@ export default function SectionScrollNavigator() {
     }
 
     function handleTouchEnd(e: TouchEvent) {
+      if (window.innerWidth < 1024) return;
       const now = Date.now();
       if (isScrollingRef.current || now - lastScrollTimeRef.current < 850) return;
 
       const touchEndY = e.changedTouches[0].clientY;
       const deltaY = touchStartY - touchEndY;
 
-      if (Math.abs(deltaY) > 55) {
+      if (Math.abs(deltaY) > 80) {
         if (deltaY > 0) {
           scrollToNext();
         } else {
