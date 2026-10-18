@@ -72,7 +72,309 @@ body {
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 input, textarea, select { scroll-margin-top: 7rem; }
 dialog::backdrop { background: rgb(0 0 0 / .7); backdrop-filter: blur(4px); }
+
+/* ==========================================================================
+   Smooth Page Transitions & Route Navigation (All Webpages & Roles)
+   ========================================================================== */
+
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root) {
+  animation: 0.18s cubic-bezier(0.4, 0, 1, 1) both aventix-fade-out;
+}
+
+::view-transition-new(root) {
+  animation: 0.24s cubic-bezier(0, 0, 0.2, 1) both aventix-fade-in;
+}
+
+@keyframes aventix-fade-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-4px); }
+}
+
+@keyframes aventix-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Page content entry transition for all page shells and dashboard views */
+main > * {
+  animation: aventix-page-enter 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+@keyframes aventix-page-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==========================================================================
+   Smooth Global Button Click Transitions (Across All Webpages & User Roles)
+   ========================================================================== */
+
+/* Base transition for all interactive buttons, role="button", and button-like elements */
+button,
+[role="button"],
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+a[role="button"],
+a[class*="rounded"][class*="bg-"],
+a[class*="rounded-"][class*="bg-"],
+a[class*="rounded"][class*="border"],
+a[class*="rounded-"][class*="border"],
+a[class*="btn"],
+.btn {
+  /* Ultra-smooth resting/hover/release transition with natural physical spring */
+  transition-property: transform, filter, background-color, border-color, box-shadow, color, opacity;
+  transition-duration: 0.18s;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:hover:not(:disabled),
+[role="button"]:hover:not([aria-disabled="true"]),
+input[type="button"]:hover:not(:disabled),
+input[type="submit"]:hover:not(:disabled),
+a[role="button"]:hover,
+a[class*="rounded"][class*="bg-"]:hover,
+a[class*="rounded-"][class*="bg-"]:hover,
+a[class*="rounded"][class*="border"]:hover,
+a[class*="rounded-"][class*="border"]:hover,
+a[class*="btn"]:hover,
+.btn:hover {
+  cursor: pointer;
+}
+
+/* Tactile Micro-Press: Triggered when button is clicked or held down */
+button:active:not(:disabled),
+[role="button"]:active:not([aria-disabled="true"]),
+input[type="button"]:active:not(:disabled),
+input[type="submit"]:active:not(:disabled),
+input[type="reset"]:active:not(:disabled),
+a[role="button"]:active,
+a[class*="rounded"][class*="bg-"]:active,
+a[class*="rounded-"][class*="bg-"]:active,
+a[class*="rounded"][class*="border"]:active,
+a[class*="rounded-"][class*="border"]:active,
+a[class*="btn"]:active,
+.btn:active {
+  transform: scale(0.965) translateY(1px);
+  filter: brightness(0.92) contrast(1.04);
+  transition-duration: 0.08s;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Disabled buttons */
+button:disabled,
+[role="button"][aria-disabled="true"],
+input[type="button"]:disabled,
+input[type="submit"]:disabled,
+input[type="reset"]:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+  transform: none !important;
+  filter: none !important;
+}
+
+/* Click Ripple Wave */
+.aventix-click-ripple {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(102, 252, 241, 0.38) 0%, rgba(255, 255, 255, 0.2) 40%, transparent 70%);
+  transform: scale(0);
+  animation: aventix-ripple-expand 0.55s cubic-bezier(0.2, 0, 0, 1) forwards;
+  z-index: 10;
+}
+
+@keyframes aventix-ripple-expand {
+  0% {
+    transform: scale(0);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(0.85);
+    opacity: 0.45;
+  }
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+/* ==========================================================================
+   Smooth Interactive Cards, Surfaces & Panels
+   ========================================================================== */
+
+/* Universal card transition */
+.card,
+[class*="rounded-xl"][class*="border"],
+[class*="rounded-2xl"][class*="border"],
+[class*="rounded-3xl"][class*="border"],
+article {
+  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.24s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.24s cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Subtle hover elevation for interactive cards and clickable card links */
+a[class*="rounded-xl"][class*="border"]:hover,
+a[class*="rounded-2xl"][class*="border"]:hover,
+li a.group:hover,
+a[class*="rounded-2xl"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.5), 0 0 18px rgba(102, 252, 241, 0.08);
+}
+
+/* ==========================================================================
+   Smooth Form Controls, Textareas & Select Transitions
+   ========================================================================== */
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+textarea,
+select {
+  transition: border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.15s ease;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]):not([type="reset"]):focus,
+textarea:focus,
+select:focus {
+  border-color: rgba(102, 252, 241, 0.5) !important;
+  box-shadow: 0 0 0 3px rgba(102, 252, 241, 0.15) !important;
+}
+
+/* Checkboxes and Radios */
+input[type="checkbox"],
+input[type="radio"] {
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
+              background-color 0.18s ease,
+              border-color 0.18s ease;
+  cursor: pointer;
+}
+
+input[type="checkbox"]:active,
+input[type="radio"]:active {
+  transform: scale(0.88);
+}
+
+/* ==========================================================================
+   Smooth Table Rows & Navigation Links
+   ========================================================================== */
+
+table tbody tr {
+  transition: background-color 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.15s ease;
+}
+
+a {
+  transition: color 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Sidebar navigation item transitions */
+aside nav a {
+  transition: background-color 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* ==========================================================================
+   Smooth Modals, Dialogs & Floating Panels
+   ========================================================================== */
+
+dialog[open],
+[role="dialog"] {
+  animation: aventix-dialog-enter 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+dialog::backdrop {
+  animation: aventix-backdrop-enter 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes aventix-dialog-enter {
+  0% {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes aventix-backdrop-enter {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Dropdown menus, notification bells, popovers */
+#admin-notifications-panel,
+[role="menu"],
+[role="listbox"] {
+  animation: aventix-dropdown-enter 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: top right;
+  will-change: transform, opacity;
+}
+
+@keyframes aventix-dropdown-enter {
+  0% {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ==========================================================================
+   Smooth Image Zooms & Status Pills
+   ========================================================================== */
+
+img,
+svg {
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.25s ease,
+              opacity 0.2s ease;
+}
+
+[role="tab"],
+.badge,
+span[class*="rounded-full"][class*="bg-"] {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+  main > * { animation: none !important; }
+  dialog, [role="dialog"], #admin-notifications-panel, [role="menu"] { animation: none !important; }
+  .aventix-click-ripple { display: none !important; }
 }

@@ -35,6 +35,8 @@ export const metadata: Metadata = {
   ],
 };
 
+import ButtonClickEffect from "@/components/shared/ButtonClickEffect";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -43,6 +45,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable} ${geist.variable}`}>
       <body className="font-sans bg-[#0b0c10] text-slate-100 antialiased selection:bg-[#66fcf1] selection:text-[#0b0c10]">
+        <ButtonClickEffect />
         <a href="#main-content" className="sr-only z-[100] rounded bg-[#66fcf1] p-3 text-[#0b0c10] focus:not-sr-only focus:fixed focus:left-4 focus:top-4">Skip to content</a>
         {children}
       </body>
