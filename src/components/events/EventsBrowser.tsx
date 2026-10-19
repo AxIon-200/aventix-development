@@ -4,6 +4,7 @@ import React, { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import type { EventDetails } from "@/types/event";
 import FilterSelect from "./FilterSelect";
+import EventDateFilter from "./EventDateFilter";
 import EventCard from "./EventCard";
 import { DATE_FILTERS, eventLocation, matchesDate, monthKey, uniqueSorted, type DateFilter } from "@/lib/event-filters";
 
@@ -82,7 +83,7 @@ export default function EventsBrowser({ events, initialQuery = "", initialLocati
               onChange={setLocation}
               options={[{ value: "all", label: "All Locations" }, ...locations.map((l) => ({ value: l, label: l }))]}
             />
-            <FilterSelect label="Date" value={date} onChange={(v) => setDate(v as DateFilter)} options={/^\d{4}-\d{2}-\d{2}$/.test(initialDate) ? [...DATE_FILTERS, { value: initialDate, label: initialDate }] : DATE_FILTERS} />
+            <EventDateFilter value={date} onChange={setDate} />
             <FilterSelect
               label="Category"
               value={category}

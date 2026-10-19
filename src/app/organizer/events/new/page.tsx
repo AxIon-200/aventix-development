@@ -1,4 +1,11 @@
+"use client";
+
+import { useState } from "react";
+import { DateTimePicker } from "@/components/shared/date-picker";
+
 export default function CreateEventPage() {
+  const [eventDateTime, setEventDateTime] = useState("2026-11-20T19:00");
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
@@ -10,20 +17,20 @@ export default function CreateEventPage() {
       </div>
 
       <div className="rounded-xl border border-white/10 bg-[#111622] p-6 shadow-sm">
-        <form className="space-y-6">
+        <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
           <div className="grid gap-6 sm:grid-cols-2">
             <div className="space-y-2">
               <label className="text-xs font-medium text-slate-300">Event Title</label>
               <input
                 type="text"
                 placeholder="e.g. Electric Pulse Rave 2026"
-                className="w-full rounded-lg border border-white/10 bg-[#0f141f] px-3.5 py-2 text-sm text-white placeholder-slate-500 focus:border-teal-500 focus:outline-none"
+                className="w-full rounded-lg border border-white/10 bg-[#0f141f] px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:border-teal-500 focus:outline-none"
               />
             </div>
 
             <div className="space-y-2">
               <label className="text-xs font-medium text-slate-300">Category</label>
-              <select className="w-full rounded-lg border border-white/10 bg-[#0f141f] px-3.5 py-2 text-sm text-white focus:border-teal-500 focus:outline-none">
+              <select className="w-full rounded-lg border border-white/10 bg-[#0f141f] px-3.5 py-2.5 text-sm text-white focus:border-teal-500 focus:outline-none">
                 <option value="Concert">Concert</option>
                 <option value="Conference">Conference</option>
                 <option value="Festival">Festival</option>
@@ -36,9 +43,10 @@ export default function CreateEventPage() {
           <div className="grid gap-6 sm:grid-cols-2">
             <div className="space-y-2">
               <label className="text-xs font-medium text-slate-300">Event Date & Time</label>
-              <input
-                type="datetime-local"
-                className="w-full rounded-lg border border-white/10 bg-[#0f141f] px-3.5 py-2 text-sm text-white placeholder-slate-500 focus:border-teal-500 focus:outline-none"
+              <DateTimePicker
+                value={eventDateTime}
+                onChange={setEventDateTime}
+                placeholder="Select date & start time"
               />
             </div>
 
@@ -47,7 +55,7 @@ export default function CreateEventPage() {
               <input
                 type="text"
                 placeholder="e.g. Mall of Asia Arena, Pasay City"
-                className="w-full rounded-lg border border-white/10 bg-[#0f141f] px-3.5 py-2 text-sm text-white placeholder-slate-500 focus:border-teal-500 focus:outline-none"
+                className="w-full rounded-lg border border-white/10 bg-[#0f141f] px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:border-teal-500 focus:outline-none"
               />
             </div>
           </div>
@@ -57,7 +65,7 @@ export default function CreateEventPage() {
             <textarea
               rows={4}
               placeholder="Provide a detailed description of the event, line-up, guidelines, and dress code..."
-              className="w-full rounded-lg border border-white/10 bg-[#0f141f] px-3.5 py-2 text-sm text-white placeholder-slate-500 focus:border-teal-500 focus:outline-none"
+              className="w-full rounded-lg border border-white/10 bg-[#0f141f] px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:border-teal-500 focus:outline-none"
             />
           </div>
 
