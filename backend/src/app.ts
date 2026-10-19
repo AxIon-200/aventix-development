@@ -6,6 +6,7 @@ import { fromNodeHeaders, toNodeHandler } from "better-auth/node";
 import { createAuth } from "./lib/auth.js";
 import { sendVerificationEmail } from "./lib/verification-email.js";
 import type { SendVerificationEmail } from "./lib/verification-email.js";
+import type { SendAuthEmail } from "./lib/auth-email.js";
 import apiRouter from "./routes/index.js";
 import { env } from "./config/env.js";
 import { loadCurrentTerms } from "./config/terms.js";
@@ -15,6 +16,7 @@ import { claimAuthIp, positiveLimit } from "./lib/auth-rate-limit.js";
 export interface AppOptions {
   terms?: CurrentTerms;
   sendVerificationEmail?: SendVerificationEmail;
+  sendPasswordResetEmail?: SendAuthEmail;
   now?: () => Date;
   registrationLimit?: number;
   verificationLimit?: number;
@@ -23,6 +25,8 @@ export interface AppOptions {
   loginLimit?: number;
   logoutLimit?: number;
   termsAcceptanceLimit?: number;
+  recoveryLimit?: number;
+  resetLimit?: number;
 }
 
 export function createApp(options: AppOptions = {}) {
@@ -33,6 +37,8 @@ export function createApp(options: AppOptions = {}) {
   const registrationLimit = positiveLimit(options.registrationLimit ?? process.env.AUTH_REGISTRATION_IP_LIMIT, 5);
   const aggregateLimit = positiveLimit(options.aggregateLimit ?? process.env.AUTH_AGGREGATE_IP_LIMIT, 100);
   const mutationLimits: Record<string, number> = {
+    "/api/auth/request-password-reset": positiveLimit(options.recoveryLimit ?? process.env.AUTH_RECOVERY_IP_LIMIT, 10),
+    "/api/auth/reset-password": positiveLimit(options.resetLimit ?? process.env.AUTH_RESET_IP_LIMIT, 10),
     "/api/auth/register": registrationLimit,
     "/api/auth/verify-email": positiveLimit(options.verificationLimit ?? process.env.AUTH_VERIFICATION_IP_LIMIT, 10),
     "/api/auth/resend-verification": positiveLimit(options.verificationResendLimit ?? process.env.AUTH_VERIFICATION_RESEND_IP_LIMIT, 10),
@@ -41,6 +47,7 @@ export function createApp(options: AppOptions = {}) {
     "/api/auth/accept-terms": positiveLimit(options.termsAcceptanceLimit ?? process.env.AUTH_TERMS_ACCEPTANCE_IP_LIMIT, 10),
   };
   const auth = createAuth({ ...(terms ? { terms } : {}),
+    ...(options.sendPasswordResetEmail ? { sendPasswordResetEmail: options.sendPasswordResetEmail } : {}),
     sendVerificationEmail: options.sendVerificationEmail ?? sendVerificationEmail,
     now,
   });
@@ -55,13 +62,15 @@ export function createApp(options: AppOptions = {}) {
   app.use("/api/auth", async (req, res, next) => {
     res.set("Cache-Control", "no-store");
     const path = req.originalUrl.split("?")[0];
-    if (path === "/api/auth/verification") {
+    if (path === "/api/auth/verification" || path === "/api/auth/password-reset") {
       if (req.method !== "GET") {
         res.set("Allow", "GET").status(405).json({ error: { code: "METHOD_NOT_ALLOWED", message: "Method is not allowed" } });
         return;
       }
       res.set("Referrer-Policy", "no-referrer").type("text/plain").send(
-        "Submit the token from this link's fragment and your currentPassword as JSON to POST /api/auth/verify-email. Verification never signs you in.");
+        path === "/api/auth/verification"
+          ? "Submit the token from this link's fragment and your currentPassword as JSON to POST /api/auth/verify-email. Verification never signs you in."
+          : "Submit the token from this link's fragment and your newPassword as JSON to POST /api/auth/reset-password. Reset never signs you in.");
       return;
     }
     if (!path || !Object.hasOwn(mutationLimits, path)) {

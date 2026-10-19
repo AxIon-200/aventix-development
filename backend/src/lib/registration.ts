@@ -4,6 +4,7 @@ import { getCurrentAdapter, runWithTransaction } from "@better-auth/core/context
 import type { BetterAuthPlugin } from "better-auth";
 import { z } from "zod";
 import type { SendVerificationEmail } from "./verification-email.js";
+import type { SendAuthEmail } from "./auth-email.js";
 import { env } from "../config/env.js";
 import { Prisma } from "../generated/prisma/client.js";
 import type { CurrentTerms } from "../config/terms.js";
@@ -14,10 +15,12 @@ import { sessionEndpoints } from "./account-sessions.js";
 import { termsAcceptanceEndpoints } from "./terms-acceptance.js";
 import { profileEndpoints } from "./account-profile.js";
 import { profileName, profilePhone } from "./profile-input.js";
+import { recoveryEndpoints } from "./password-recovery.js";
 
 export interface RegistrationOptions {
   terms?: CurrentTerms;
   sendVerificationEmail: SendVerificationEmail;
+  sendPasswordResetEmail?: SendAuthEmail;
   now: () => Date;
 }
 
@@ -37,7 +40,7 @@ export function registrationPlugin(options: RegistrationOptions) {
     async onRequest(request) {
       const path = new URL(request.url).pathname;
       // Defense in depth when the Better Auth handler is used without Express.
-      if (!["/api/auth/register", "/api/auth/verify-email", "/api/auth/resend-verification", "/api/auth/login", "/api/auth/logout", "/api/auth/accept-terms"].includes(path)) return { response: errorResponse(404, "NOT_FOUND", "Route not found") };
+      if (!["/api/auth/register", "/api/auth/verify-email", "/api/auth/resend-verification", "/api/auth/login", "/api/auth/logout", "/api/auth/accept-terms", "/api/auth/request-password-reset", "/api/auth/reset-password"].includes(path)) return { response: errorResponse(404, "NOT_FOUND", "Route not found") };
       if (request.method !== "POST") return { response: Response.json({ error: {
         code: "METHOD_NOT_ALLOWED", message: "Method is not allowed",
       } }, { status: 405, headers: { Allow: "POST" } }) };
@@ -71,6 +74,11 @@ export function registrationPlugin(options: RegistrationOptions) {
       return { request: new Request(request, { body, headers }) };
     },
     schema: {
+      activityLog: { fields: {
+        userId: { type: "string", required: true, references: { model: "user", field: "id" } },
+        action: { type: "string", required: true }, entityType: { type: "string", required: true },
+        entityId: { type: "string", required: true }, createdAt: { type: "date", required: true },
+      } },
       authLink: { fields: {
         userId: { type: "string", required: true, references: { model: "user", field: "id" } },
         purpose: { type: "string", required: true }, digest: { type: "string", required: true, unique: true },
@@ -83,6 +91,7 @@ export function registrationPlugin(options: RegistrationOptions) {
       } },
     },
     endpoints: {
+      ...recoveryEndpoints(options),
       ...verificationEndpoints(options),
       ...sessionEndpoints(options),
       ...termsAcceptanceEndpoints(options),
