@@ -27,6 +27,7 @@ export interface AppOptions {
   termsAcceptanceLimit?: number;
   recoveryLimit?: number;
   resetLimit?: number;
+  passwordChangeLimit?: number;
 }
 
 export function createApp(options: AppOptions = {}) {
@@ -37,6 +38,7 @@ export function createApp(options: AppOptions = {}) {
   const registrationLimit = positiveLimit(options.registrationLimit ?? process.env.AUTH_REGISTRATION_IP_LIMIT, 5);
   const aggregateLimit = positiveLimit(options.aggregateLimit ?? process.env.AUTH_AGGREGATE_IP_LIMIT, 100);
   const mutationLimits: Record<string, number> = {
+    "/api/auth/change-password": positiveLimit(options.passwordChangeLimit ?? process.env.AUTH_PASSWORD_CHANGE_IP_LIMIT, 10),
     "/api/auth/request-password-reset": positiveLimit(options.recoveryLimit ?? process.env.AUTH_RECOVERY_IP_LIMIT, 10),
     "/api/auth/reset-password": positiveLimit(options.resetLimit ?? process.env.AUTH_RESET_IP_LIMIT, 10),
     "/api/auth/register": registrationLimit,
