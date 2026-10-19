@@ -1,4 +1,6 @@
-/** Frontend adapter only. Moyamoy's session/API implementation is not supplied.
+import { createBetterAuthClient } from "./better-auth";
+import { AuthClientError, type AuthErrorCode } from "./errors";
+/** Frontend adapter for the supplied Better Auth configuration.
  * Implement these methods using the agreed client; never store credentials or
  * tokens in localStorage, assign roles, or infer authentication from UI state.
  * The adapter must establish the server session before resolving login.
@@ -11,29 +13,28 @@ export type AuthResult = { destination?: string; allowBookingReturn?: boolean };
 export interface AccountSession {
   userId: string;
   displayName: string;
+  email?: string;
   /** Effective booking eligibility from the shared backend/session client. */
   canBook: boolean;
   navigation?: { label: string; href: string }[];
 }
-export type AuthErrorCode = "INVALID_CREDENTIALS" | "ACCOUNT_DISABLED" | "DUPLICATE_EMAIL" |
-  "INVALID_RECOVERY_LINK" | "EXPIRED_RECOVERY_LINK" | "USED_RECOVERY_LINK" | "RATE_LIMITED" | "UNAVAILABLE";
-export class AuthClientError extends Error {
-  constructor(public code: AuthErrorCode) { super(code); }
-}
+export { AuthClientError } from "./errors";
+export type { AuthErrorCode } from "./errors";
 export interface PublicAuthClient {
   rememberMeSupported: boolean;
+  checkConnection?: () => Promise<boolean>;
   getSession?: () => Promise<AccountSession | null>;
   logout?: () => Promise<void>;
   passwordRules?: { description: string; validate: (password: string) => string | undefined };
   login?: (data: { email: string; password: string; rememberMe?: boolean }) => Promise<AuthResult>;
-  registerAttendee?: (data: AttendeeRegistration) => Promise<void>;
+  registerAttendee?: (data: AttendeeRegistration) => Promise<void | AuthResult>;
   requestPasswordReset?: (data: { email: string }) => Promise<void>;
   // The agreed adapter extracts/verifies its own backend-issued link format.
   verifyRecoveryLink?: (link: string) => Promise<void>;
   resetPassword?: (data: { recoveryLink: string; password: string }) => Promise<void>;
 }
 
-export const publicAuthClient: PublicAuthClient = { rememberMeSupported: false };
+export const publicAuthClient: PublicAuthClient = createBetterAuthClient();
 
 export function authErrorMessage(error: unknown): string {
   if (!(error instanceof AuthClientError)) return "We couldn’t complete your request. Please try again.";
@@ -45,7 +46,10 @@ export function authErrorMessage(error: unknown): string {
     EXPIRED_RECOVERY_LINK: "This recovery link has expired. Request a new link.",
     USED_RECOVERY_LINK: "This recovery link has already been used. Request a new link.",
     RATE_LIMITED: "Too many attempts. Please wait before trying again.",
-    UNAVAILABLE: "This service is not connected yet. Your details have not been submitted.",
+    UNAVAILABLE: "The account service is unavailable. Check the backend connection and try again.",
+    EMAIL_NOT_VERIFIED: "Verify your email address before logging in.",
+    REQUEST_UNCERTAIN: "We could not confirm the request. It may have reached the server. Try logging in before registering again.",
+    INVALID_RESPONSE: "The account service returned an unsupported response or no verified session. Please try logging in again.",
   };
   return messages[error.code];
 }

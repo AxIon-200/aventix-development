@@ -41,10 +41,13 @@ import {
 
 export default function SeatSelection({
   eventId,
+  reviewSelection,
   client = publicBookingClient,
   auth = publicAuthClient,
 }: {
   eventId: string;
+  /** UI-only review callback; never creates or confirms a server reservation. */
+  reviewSelection?: (draft: BookingDraft) => void;
   client?: PublicBookingClient;
   auth?: PublicAuthClient;
 }) {
@@ -110,6 +113,7 @@ export default function SeatSelection({
       setError(problems.join(" "));
       return;
     }
+    if (reviewSelection) { reviewSelection(draft); return; }
     busyRef.current = true;
     setBusy(true);
     setError("");
@@ -372,7 +376,7 @@ export default function SeatSelection({
                 onClick={reserve}
                 className={`${primary} w-full`}
               >
-                {busy ? "Requesting reservation…" : "Confirm seats & review"}
+                {busy ? "Requesting reservation…" : reviewSelection ? "Review sample selection" : "Confirm seats & review"}
               </button>
               <button
                 type="button"

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import styles from "./Hero.module.css";
 import {
   MapPin,
   Calendar,
@@ -9,13 +10,13 @@ import {
 
 export default function HeroMockups() {
   return (
-    <div className="relative w-full h-[620px] lg:h-[680px] select-none overflow-hidden">
+    <div aria-hidden="true" inert className={styles.mockups}>
       {/* Ambient background glows */}
       <div className="absolute top-10 right-10 w-96 h-96 bg-[#66fcf1]/15 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-10 left-10 w-80 h-80 bg-[#0084ff]/10 rounded-full blur-[100px] pointer-events-none" />
 
       {/* Floating Mockup 1: "03. Event Details Page" (Top Right Layer) */}
-      <div className="absolute top-2 right-0 w-[94%] sm:w-[420px] xl:w-[480px] max-w-full rounded-xl bg-[#0e1622]/95 border border-[#1e2d40] hover:border-[#66fcf1]/40 shadow-2xl backdrop-blur-xl p-4 transform rotate-1 hover:rotate-0 hover:-translate-y-1 transition-all duration-500 z-20">
+      <div className={`${styles.mockup} rounded-xl bg-[#0e1622]/95 border border-[#1e2d40] shadow-2xl p-4 z-20`}>
         <div className="flex items-center justify-between border-b border-[#1c293a] pb-2 mb-3 text-[11px] text-slate-400">
           <div className="flex items-center gap-1.5 font-medium text-slate-300">
             <span className="w-2 h-2 rounded-full bg-[#66fcf1] inline-block animate-pulse" />
@@ -120,7 +121,7 @@ export default function HeroMockups() {
       </div>
 
       {/* Floating Mockup 2: Organizer Dashboard (Bottom Layer) */}
-      <div className="absolute bottom-2 right-2 sm:right-4 w-[94%] sm:w-[480px] xl:w-[540px] max-w-full rounded-xl bg-[#0c131c]/95 border border-[#1b2839] shadow-2xl backdrop-blur-xl p-4 transform -rotate-1 z-10 opacity-90 hover:opacity-100 transition-opacity">
+      <div className={`${styles.secondary} rounded-xl bg-[#0c131c]/95 border border-[#1b2839] shadow-2xl p-4 opacity-90`}>
         <div className="flex items-center justify-between border-b border-[#1c293a] pb-2 mb-3">
           <div>
             <div className="flex items-center gap-2">

@@ -1,0 +1,175 @@
+--- a/src/components/Navbar.tsx
++++ b/src/components/Navbar.tsx
+@@ -1,6 +1,6 @@
+ "use client";
+ 
+-import React, { useState, useRef, useEffect, useCallback } from "react";
++import { useState, useRef } from "react";
+ import Link from "next/link";
+ import { usePathname } from "next/navigation";
+ import EventSearchField from "./events/EventSearchField";
+@@ -22,14 +22,13 @@
+ interface NavLinkItem {
+   label: string;
+   href: string;
+-  sectionId?: string;
+ }
+ 
+ const NAV_LINKS: NavLinkItem[] = [
+-  { label: "Home", href: "/", sectionId: "hero-section" },
+-  { label: "Events", href: "/events", sectionId: "trending-events" },
+-  { label: "About", href: "/about", sectionId: "how-it-works" },
+-  { label: "Contact", href: "/contact", sectionId: "organizer-cta" },
++  { label: "Home", href: "/" },
++  { label: "Events", href: "/events" },
++  { label: "About", href: "/about" },
++  { label: "Contact", href: "/contact" },
+ ];
+ 
+ const pillButton =
+@@ -38,116 +37,11 @@
+ export default function Navbar({ onOpenAuth, onSearch, searchEvents }: NavbarProps) {
+   const { session, clearSession } = useAccountSession();
+   const pathname = usePathname() || "";
+-  const [activeSectionHref, setActiveSectionHref] = useState<string>("/");
+   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+   const menuButton = useRef<HTMLButtonElement>(null);
+ 
+-  // Active section detection when user is on the landing page ("/")
+-  useEffect(() => {
+-    if (pathname !== "/") {
+-      return;
+-    }
+-
+-    const sectionElements = [
+-      { id: "hero-section", linkHref: "/" },
+-      { id: "trending-events", linkHref: "/events" },
+-      { id: "browse-categories", linkHref: "/events" },
+-      { id: "how-it-works", linkHref: "/about" },
+-      { id: "why-choose-us", linkHref: "/about" },
+-      { id: "testimonials", linkHref: "/about" },
+-      { id: "organizer-cta", linkHref: "/contact" },
+-      { id: "footer", linkHref: "/contact" },
+-    ];
+-
+-    let ticking = false;
+-
+-    function handleScroll() {
+-      if (ticking) return;
+-      ticking = true;
+-
+-      window.requestAnimationFrame(() => {
+-        const navbarHeight = window.innerWidth >= 1280 ? 72 : 64;
+-        const scrollY = window.scrollY;
+-
+-        if (scrollY < 180) {
+-          setActiveSectionHref("/");
+-          ticking = false;
+-          return;
+-        }
+-
+-        // Check if near bottom of page
+-        if (
+-          window.innerHeight + window.scrollY >=
+-          document.documentElement.scrollHeight - 100
+-        ) {
+-          setActiveSectionHref("/contact");
+-          ticking = false;
+-          return;
+-        }
+-
+-        // Check sections from bottom up to find the currently active view
+-        for (let i = sectionElements.length - 1; i >= 0; i--) {
+-          const { id, linkHref } = sectionElements[i];
+-          const el = document.getElementById(id);
+-          if (el) {
+-            const rect = el.getBoundingClientRect();
+-            // Trigger when top of section passes above 45% of viewport height
+-            if (rect.top <= window.innerHeight * 0.45 && rect.bottom >= navbarHeight) {
+-              setActiveSectionHref(linkHref);
+-              break;
+-            }
+-          }
+-        }
+-
+-        ticking = false;
+-      });
+-    }
+-
+-    window.addEventListener("scroll", handleScroll, { passive: true });
+-    handleScroll();
+-
+-    return () => window.removeEventListener("scroll", handleScroll);
+-  }, [pathname]);
+-
+-  // Determine if a nav link is active
+-  const isLinkActive = useCallback(
+-    (href: string) => {
+-      if (pathname === "/") {
+-        return activeSectionHref === href;
+-      }
+-      return pathname === href || pathname.startsWith(`${href}/`);
+-    },
+-    [pathname, activeSectionHref]
+-  );
+-
+-  // Smooth scroll handler for landing page section links
+-  const handleNavClick = (
+-    e: React.MouseEvent<HTMLAnchorElement>,
+-    href: string,
+-    sectionId?: string
+-  ) => {
+-    if (pathname === "/" && sectionId) {
+-      const el = document.getElementById(sectionId);
+-      if (el) {
+-        e.preventDefault();
+-        const navbarHeight = window.innerWidth >= 1280 ? 72 : 64;
+-        const bodyRect = document.body.getBoundingClientRect().top;
+-        const elementRect = el.getBoundingClientRect().top;
+-        const elementPosition = elementRect - bodyRect;
+-        const offsetPosition = Math.max(
+-          0,
+-          elementPosition - (sectionId === "hero-section" ? 0 : navbarHeight)
+-        );
+-
+-        window.scrollTo({
+-          top: offsetPosition,
+-          behavior: "smooth",
+-        });
+-        setActiveSectionHref(href);
+-        setMobileMenuOpen(false);
+-      }
+-    }
+-  };
++  const isLinkActive = (href: string) =>
++    pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
+ 
+   const authControl = (
+     mode: "login" | "register",
+@@ -188,7 +82,7 @@
+           <AventixLogo size="md" className="max-h-8 max-w-[112px] sm:max-w-[136px] object-contain" />
+         </Link>
+ 
+-        {/* Dynamic Section Navigation Links */}
++        {/* Page Navigation Links */}
+         <nav
+           aria-label="Primary"
+           className="hidden items-center gap-6 text-sm font-medium xl:flex"
+@@ -200,7 +94,7 @@
+               <Link
+                 key={l.label}
+                 href={l.href}
+-                onClick={(e) => handleNavClick(e, l.href, l.sectionId)}
++                onClick={() => setMobileMenuOpen(false)}
+                 aria-current={active ? "page" : undefined}
+                 className={`group relative py-2 transition-colors duration-200 focus-visible:text-[#66fcf1] focus-visible:outline-none ${
+                   active ? "text-[#66fcf1] font-semibold" : "text-[#c5c6c7] hover:text-white"
+@@ -278,7 +172,7 @@
+                 <Link
+                   key={l.label}
+                   href={l.href}
+-                  onClick={(e) => handleNavClick(e, l.href, l.sectionId)}
++                  onClick={() => setMobileMenuOpen(false)}
+                   aria-current={active ? "page" : undefined}
+                   className={`flex items-center justify-between rounded-md px-3 py-2.5 transition-colors ${
+                     active
