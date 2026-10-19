@@ -33,7 +33,7 @@ export default function Hero({ onSearchSubmit, onExploreClick }: HeroProps) {
   };
 
   return (
-    <section id="hero-section" className={`${styles.hero} scroll-mt-24 snap-section`}>
+    //<section id="hero-section" className={`${styles.hero} scroll-mt-24 snap-section`}>
     <section id="hero-section" className="relative overflow-visible pt-8 pb-16 md:pt-14 md:pb-24 scroll-mt-24 snap-section">
       {/* Background ambient lighting */}
       <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[#66fcf1]/10 rounded-full blur-[140px] pointer-events-none -z-10" />
@@ -76,7 +76,7 @@ export default function Hero({ onSearchSubmit, onExploreClick }: HeroProps) {
             <form
               onSubmit={handleSearch}
               className={`${styles.search} bg-[#121a25]/90 border border-[#223347] hover:border-[#66fcf1]/40 hover:shadow-[0_0_35px_rgba(102,252,241,0.15)] transition-all duration-300 backdrop-blur-xl p-2 rounded-2xl shadow-2xl`}
-              className="bg-[#121a25]/90 border border-[#223347] hover:border-[#66fcf1]/40 hover:shadow-[0_0_35px_rgba(102,252,241,0.15)] transition-all duration-300 backdrop-blur-xl p-2 sm:p-2.5 rounded-2xl shadow-2xl flex flex-col md:flex-row items-stretch md:items-center gap-2 max-w-2xl relative z-20"
+            //className="bg-[#121a25]/90 border border-[#223347] hover:border-[#66fcf1]/40 hover:shadow-[0_0_35px_rgba(102,252,241,0.15)] transition-all duration-300 backdrop-blur-xl p-2 sm:p-2.5 rounded-2xl shadow-2xl flex flex-col md:flex-row items-stretch md:items-center gap-2 max-w-2xl relative z-20"
             >
               {/* Field 1: Search artist or event */}
               <div className="min-w-0 flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#1f2833] focus-within:bg-[#1f2833] transition-colors">
