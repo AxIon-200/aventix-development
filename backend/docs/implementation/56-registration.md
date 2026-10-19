@@ -16,8 +16,8 @@ Registration writes the user, Better Auth credential, verification-token digest,
 and initial delivery cooldown in one Better Auth/Prisma transaction. Email is
 sent after commit. An email failure retains these records, sends no session,
 and tells the caller to request a resend. The resend and password-gated
-verification operations belong to the next ticket; their native equivalents
-remain unavailable. The read-only verification landing resource carries no
+verification operations are implemented in [issue #57](57-email-verification.md);
+their native equivalents remain unavailable. The read-only verification landing resource carries no
 token in its request URL and makes no account changes.
 
 Real delivery uses the [Resend send-email API](https://resend.com/docs/api-reference/emails/send-email)

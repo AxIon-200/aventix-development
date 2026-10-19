@@ -22,7 +22,7 @@ function networkKey(ip: string) {
   return `${parts.slice(0, 4).map(part => part.padStart(4, "0")).join(":")}::/64`;
 }
 
-export async function claimRegistrationIp(ip: string, now: Date, registrationLimit: number, aggregateLimit: number) {
+export async function claimAuthIp(ip: string, now: Date, operation: string, operationLimit: number, aggregateLimit: number) {
   const windowMs = 900_000;
   const window = Math.floor(now.getTime() / windowMs);
   const expiresAt = new Date((window + 1) * windowMs);
@@ -34,12 +34,12 @@ export async function claimRegistrationIp(ip: string, now: Date, registrationLim
       where: { id: `all:${key}:${window}` }, create: { id: `all:${key}:${window}`, count: 1, expiresAt },
       update: { count: { increment: 1 } },
     });
-    const registration = await tx.authRateLimit.upsert({
-      where: { id: `register:${key}:${window}` }, create: { id: `register:${key}:${window}`, count: 1, expiresAt },
+    const specific = await tx.authRateLimit.upsert({
+      where: { id: `${operation}:${key}:${window}` }, create: { id: `${operation}:${key}:${window}`, count: 1, expiresAt },
       update: { count: { increment: 1 } },
     });
-    return { aggregate: aggregate.count, registration: registration.count };
+    return { aggregate: aggregate.count, specific: specific.count };
   });
-  return counts.aggregate > aggregateLimit || counts.registration > registrationLimit
+  return counts.aggregate > aggregateLimit || counts.specific > operationLimit
     ? Math.max(1, Math.ceil((expiresAt.getTime() - now.getTime()) / 1000)) : null;
 }

@@ -1,4 +1,4 @@
-import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { createAuthEndpoint } from "better-auth/api";
 import { getCurrentAdapter, runWithTransaction } from "@better-auth/core/context";
 import type { BetterAuthPlugin } from "better-auth";
@@ -7,6 +7,9 @@ import type { SendVerificationEmail } from "./verification-email.js";
 import { env } from "../config/env.js";
 import { Prisma } from "../generated/prisma/client.js";
 import type { CurrentTerms } from "../config/terms.js";
+import { errorResponse } from "./auth-response.js";
+import { verificationEndpoints } from "./email-verification.js";
+import { issueVerificationLink, verificationUrl } from "./verification-link.js";
 
 export interface RegistrationOptions {
   terms?: CurrentTerms;
@@ -24,9 +27,6 @@ const input = z.object({
   termsAccepted: z.literal(true), termsVersion: z.string(),
 }).strict();
 
-export const errorResponse = (status: number, code: string, message: string) =>
-  Response.json({ error: { code, message } }, { status });
-
 class DuplicateEmail extends Error {}
 
 export function registrationPlugin(options: RegistrationOptions) {
@@ -35,7 +35,7 @@ export function registrationPlugin(options: RegistrationOptions) {
     async onRequest(request) {
       const path = new URL(request.url).pathname;
       // Defense in depth when the Better Auth handler is used without Express.
-      if (path !== "/api/auth/register") return { response: errorResponse(404, "NOT_FOUND", "Route not found") };
+      if (!["/api/auth/register", "/api/auth/verify-email", "/api/auth/resend-verification"].includes(path)) return { response: errorResponse(404, "NOT_FOUND", "Route not found") };
       if (request.method !== "POST") return { response: Response.json({ error: {
         code: "METHOD_NOT_ALLOWED", message: "Method is not allowed",
       } }, { status: 405, headers: { Allow: "POST" } }) };
@@ -78,6 +78,7 @@ export function registrationPlugin(options: RegistrationOptions) {
       } },
     },
     endpoints: {
+      ...verificationEndpoints(options),
       registerAttendee: createAuthEndpoint("/register", { method: "POST", body: z.unknown() }, async ctx => {
         const parsed = input.safeParse(ctx.body);
         if (!parsed.success) return errorResponse(400, "VALIDATION_ERROR", "Invalid registration input");
@@ -86,14 +87,14 @@ export function registrationPlugin(options: RegistrationOptions) {
         if (body.termsVersion !== options.terms.version) {
           return errorResponse(409, "TERMS_VERSION_OUTDATED", "Current terms version is required");
         }
-        const token = randomBytes(32).toString("base64url");
+        let token: string;
         try {
           // Hash before opening the database transaction. The database uniqueness
           // constraint resolves concurrent registrations; a precheck alone cannot.
           const existing = await ctx.context.internalAdapter.findUserByEmail(body.email);
           if (existing) throw new DuplicateEmail();
           const password = await ctx.context.password.hash(body.password);
-          await runWithTransaction(ctx.context.adapter, async () => {
+          token = await runWithTransaction(ctx.context.adapter, async () => {
             const adapter = await getCurrentAdapter(ctx.context.adapter);
             const now = options.now();
             const user = await ctx.context.internalAdapter.createUser({
@@ -107,14 +108,11 @@ export function registrationPlugin(options: RegistrationOptions) {
               userId: user.id, providerId: "credential", accountId: user.id, password,
             });
             // A new user row is already exclusively locked by this transaction.
-            await adapter.create({ model: "authLink", forceAllowId: true, data: {
-              id: randomUUID(), userId: user.id, purpose: "EMAIL_VERIFICATION",
-              digest: createHash("sha256").update(token).digest("hex"),
-              createdAt: now, expiresAt: new Date(now.getTime() + 86_400_000),
-            } });
+            const token = await issueVerificationLink(adapter, user.id, now);
             await adapter.create({ model: "emailCooldown", forceAllowId: true, data: {
               id: randomUUID(), email: body.email, purpose: "EMAIL_VERIFICATION", attemptedAt: now,
             } });
+            return token;
           });
         } catch (error) {
           if (error instanceof DuplicateEmail || (error instanceof Prisma.PrismaClientKnownRequestError
@@ -125,10 +123,8 @@ export function registrationPlugin(options: RegistrationOptions) {
           console.error("Registration persistence failed", { correlationId: randomUUID() });
           return errorResponse(500, "INTERNAL_ERROR", "Request could not be completed");
         }
-        const url = new URL("/api/auth/verification", ctx.context.options.baseURL as string);
-        url.hash = new URLSearchParams({ token }).toString();
         try {
-          await options.sendVerificationEmail({ to: body.email, url: url.href });
+          await options.sendVerificationEmail({ to: body.email, url: verificationUrl(ctx.context.options.baseURL as string, token) });
         } catch {
           console.error("Verification email delivery failed", { correlationId: randomUUID() });
           return errorResponse(503, "ACCOUNT_CREATED_EMAIL_FAILED",

@@ -5,7 +5,7 @@ import { prisma } from "./prisma.js";
 import { env } from "../config/env.js";
 import { registrationPlugin } from "./registration.js";
 import type { RegistrationOptions } from "./registration.js";
-import { hashExactPassword, verifyExactPassword } from "./exact-password.js";
+import { hashExactPassword, verifyCurrentPassword } from "./exact-password.js";
 
 export function createAuth(options: RegistrationOptions) {
   return betterAuth({
@@ -24,7 +24,7 @@ export function createAuth(options: RegistrationOptions) {
       disableSignUp: true,
       autoSignIn: false,
       requireEmailVerification: true,
-      password: { hash: hashExactPassword, verify: verifyExactPassword },
+      password: { hash: hashExactPassword, verify: verifyCurrentPassword },
     },
     plugins: [registrationPlugin(options)],
     logger: { disabled: true },

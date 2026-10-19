@@ -6,11 +6,13 @@ import app from "../src/app.js";
 // replaces these operations; later tickets add the remaining Aventix endpoints.
 describe("Authentication HTTP boundary", () => {
   it.each([
-    "/sign-up/email", "/sign-in/email", "/verify-email", "/send-verification-email",
+    "/sign-up/email", "/sign-in/email", "/login", "/send-verification-email",
     "/request-password-reset", "/reset-password", "/reset-password/arbitrary",
     "/change-password", "/update-user", "/change-email", "/delete-user",
     "/set-password", "/link-social", "/revoke-sessions", "/sign-out", "/get-session",
     "/callback/provider", "/register/", "/REGISTER", "/%72egister", "//register",
+    "/verify-email/", "/VERIFY-EMAIL", "/%76erify-email", "//verify-email",
+    "/resend-verification/", "/RESEND-VERIFICATION", "/%72esend-verification", "//resend-verification",
   ])("denies native or alternate route %s", async path => {
     const response = await request(app).post(`/api/auth${path}`)
       .set("Origin", process.env.FRONTEND_URL!).send({});
@@ -19,10 +21,18 @@ describe("Authentication HTTP boundary", () => {
     expect(response.headers["set-cookie"]).toBeUndefined();
   });
 
-  it.each(["/get-session", "/verify-email?token=fixture", "/sign-up/email"])("denies native GET %s", async path => {
+  it.each(["/get-session", "/sign-up/email"])("denies native GET %s", async path => {
     const response = await request(app).get(`/api/auth${path}`);
     expect(response.status).toBe(404);
     expect(response.body.error.code).toBe("NOT_FOUND");
+  });
+
+  it.each(["/verify-email?token=fixture", "/resend-verification"])("rejects GET on mutation %s", async path => {
+    const response = await request(app).get(`/api/auth${path}`);
+    expect(response.status).toBe(405);
+    expect(response.headers.allow).toBe("POST");
+    expect(response.body.error.code).toBe("METHOD_NOT_ALLOWED");
+    expect(response.headers["set-cookie"]).toBeUndefined();
   });
 
   it("returns the allowed method for the registration route", async () => {

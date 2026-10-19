@@ -9,13 +9,15 @@ import apiRouter from "./routes/index.js";
 import { env } from "./config/env.js";
 import { loadCurrentTerms } from "./config/terms.js";
 import type { CurrentTerms } from "./config/terms.js";
-import { claimRegistrationIp, positiveLimit } from "./lib/auth-rate-limit.js";
+import { claimAuthIp, positiveLimit } from "./lib/auth-rate-limit.js";
 
 export interface AppOptions {
   terms?: CurrentTerms;
   sendVerificationEmail?: SendVerificationEmail;
   now?: () => Date;
   registrationLimit?: number;
+  verificationLimit?: number;
+  verificationResendLimit?: number;
   aggregateLimit?: number;
 }
 
@@ -26,6 +28,11 @@ export function createApp(options: AppOptions = {}) {
   const now = options.now ?? (() => new Date());
   const registrationLimit = positiveLimit(options.registrationLimit ?? process.env.AUTH_REGISTRATION_IP_LIMIT, 5);
   const aggregateLimit = positiveLimit(options.aggregateLimit ?? process.env.AUTH_AGGREGATE_IP_LIMIT, 100);
+  const mutationLimits: Record<string, number> = {
+    "/api/auth/register": registrationLimit,
+    "/api/auth/verify-email": positiveLimit(options.verificationLimit ?? process.env.AUTH_VERIFICATION_IP_LIMIT, 10),
+    "/api/auth/resend-verification": positiveLimit(options.verificationResendLimit ?? process.env.AUTH_VERIFICATION_RESEND_IP_LIMIT, 10),
+  };
   const auth = createAuth({ ...(terms ? { terms } : {}),
     sendVerificationEmail: options.sendVerificationEmail ?? sendVerificationEmail,
     now,
@@ -50,7 +57,7 @@ export function createApp(options: AppOptions = {}) {
         "Submit the token from this link's fragment and your currentPassword as JSON to POST /api/auth/verify-email. Verification never signs you in.");
       return;
     }
-    if (path !== "/api/auth/register") {
+    if (!path || !Object.hasOwn(mutationLimits, path)) {
       res.status(404).json({ error: { code: "NOT_FOUND", message: "Route not found" } });
       return;
     }
@@ -59,7 +66,7 @@ export function createApp(options: AppOptions = {}) {
       return;
     }
     try {
-      const retryAfter = await claimRegistrationIp(req.ip ?? req.socket.remoteAddress ?? "unknown", now(), registrationLimit, aggregateLimit);
+      const retryAfter = await claimAuthIp(req.ip ?? req.socket.remoteAddress ?? "unknown", now(), path.slice("/api/auth/".length), mutationLimits[path]!, aggregateLimit);
       if (retryAfter !== null) {
         res.set("Retry-After", String(retryAfter)).status(429).json({ error: { code: "RATE_LIMITED", message: "Too many requests" } });
         return;
