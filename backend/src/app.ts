@@ -1,6 +1,6 @@
 import cors from "cors";
 import express from "express";
-import { toNodeHandler } from "better-auth/node";
+import { fromNodeHeaders, toNodeHandler } from "better-auth/node";
 
 import { createAuth } from "./lib/auth.js";
 import { sendVerificationEmail } from "./lib/verification-email.js";
@@ -19,6 +19,8 @@ export interface AppOptions {
   verificationLimit?: number;
   verificationResendLimit?: number;
   aggregateLimit?: number;
+  loginLimit?: number;
+  logoutLimit?: number;
 }
 
 export function createApp(options: AppOptions = {}) {
@@ -32,6 +34,8 @@ export function createApp(options: AppOptions = {}) {
     "/api/auth/register": registrationLimit,
     "/api/auth/verify-email": positiveLimit(options.verificationLimit ?? process.env.AUTH_VERIFICATION_IP_LIMIT, 10),
     "/api/auth/resend-verification": positiveLimit(options.verificationResendLimit ?? process.env.AUTH_VERIFICATION_RESEND_IP_LIMIT, 10),
+    "/api/auth/login": positiveLimit(options.loginLimit ?? process.env.AUTH_LOGIN_IP_LIMIT, 20),
+    "/api/auth/logout": positiveLimit(options.logoutLimit ?? process.env.AUTH_LOGOUT_IP_LIMIT, 60),
   };
   const auth = createAuth({ ...(terms ? { terms } : {}),
     sendVerificationEmail: options.sendVerificationEmail ?? sendVerificationEmail,
@@ -79,15 +83,36 @@ export function createApp(options: AppOptions = {}) {
       res.status(403).json({ error: { code: "ORIGIN_NOT_ALLOWED", message: "Request origin is not allowed" } });
       return;
     }
-    if (!req.is("application/json")) {
+    const bodylessLogout = path === "/api/auth/logout" && !req.headers["transfer-encoding"]
+      && (!req.headers["content-length"] || req.headers["content-length"] === "0");
+    if (!bodylessLogout && !req.is("application/json")) {
       res.status(415).json({ error: { code: "UNSUPPORTED_MEDIA_TYPE", message: "JSON content type is required" } });
       return;
     }
+    req.headers["x-aventix-client-ip"] = req.ip ?? req.socket.remoteAddress ?? "";
     next();
   });
 
   // Keep Better Auth before the application JSON parser.
   app.all("/api/auth/*splat", toNodeHandler(auth));
+
+  app.use("/api/v1/me", async (req, res) => {
+    res.set("Cache-Control", "no-store");
+    if (req.originalUrl.split("?")[0] !== "/api/v1/me") {
+      res.status(404).json({ error: { code: "NOT_FOUND", message: "Route not found" } });
+      return;
+    }
+    if (req.method !== "GET") {
+      res.set("Allow", "GET").status(405).json({ error: { code: "METHOD_NOT_ALLOWED", message: "Method is not allowed" } });
+      return;
+    }
+    try {
+      const response = await auth.api.readOwnProfile({ headers: fromNodeHeaders(req.headers), asResponse: true });
+      res.status(response.status).json(await response.json());
+    } catch {
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Request could not be completed" } });
+    }
+  });
 
   app.all("/api/v1/terms", (req, res) => {
     res.set("Cache-Control", "no-store");

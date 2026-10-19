@@ -8,6 +8,9 @@ import type { RegistrationOptions } from "./registration.js";
 import { hashExactPassword, verifyCurrentPassword } from "./exact-password.js";
 
 export function createAuth(options: RegistrationOptions) {
+  if (env.NODE_ENV === "production" && [env.BETTER_AUTH_URL, env.FRONTEND_URL].some(url => new URL(url).protocol !== "https:")) {
+    throw new Error("Production authentication requires HTTPS frontend and API origins");
+  }
   return betterAuth({
     database: prismaAdapter(prisma, {
       provider: "postgresql",
@@ -32,6 +35,10 @@ export function createAuth(options: RegistrationOptions) {
     session: { expiresIn: 604800, disableSessionRefresh: true, cookieCache: { enabled: false } },
 
     advanced: {
+      useSecureCookies: env.NODE_ENV === "production" || new URL(env.BETTER_AUTH_URL).protocol === "https:",
+      defaultCookieAttributes: { httpOnly: true, sameSite: "lax", path: "/" },
+      // Only the Express boundary may set this header from its direct peer.
+      ipAddress: { ipAddressHeaders: ["x-aventix-client-ip"] },
       database: {
         generateId: "uuid",
       },

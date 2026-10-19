@@ -10,6 +10,7 @@ import type { CurrentTerms } from "../config/terms.js";
 import { errorResponse } from "./auth-response.js";
 import { verificationEndpoints } from "./email-verification.js";
 import { issueVerificationLink, verificationUrl } from "./verification-link.js";
+import { sessionEndpoints } from "./account-sessions.js";
 
 export interface RegistrationOptions {
   terms?: CurrentTerms;
@@ -35,14 +36,15 @@ export function registrationPlugin(options: RegistrationOptions) {
     async onRequest(request) {
       const path = new URL(request.url).pathname;
       // Defense in depth when the Better Auth handler is used without Express.
-      if (!["/api/auth/register", "/api/auth/verify-email", "/api/auth/resend-verification"].includes(path)) return { response: errorResponse(404, "NOT_FOUND", "Route not found") };
+      if (!["/api/auth/register", "/api/auth/verify-email", "/api/auth/resend-verification", "/api/auth/login", "/api/auth/logout"].includes(path)) return { response: errorResponse(404, "NOT_FOUND", "Route not found") };
       if (request.method !== "POST") return { response: Response.json({ error: {
         code: "METHOD_NOT_ALLOWED", message: "Method is not allowed",
       } }, { status: 405, headers: { Allow: "POST" } }) };
       if (request.headers.get("origin") !== env.FRONTEND_URL) {
         return { response: errorResponse(403, "ORIGIN_NOT_ALLOWED", "Request origin is not allowed") };
       }
-      if (request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json") {
+      const bodylessLogout = path === "/api/auth/logout" && !request.body;
+      if (!bodylessLogout && request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json") {
         return { response: errorResponse(415, "UNSUPPORTED_MEDIA_TYPE", "JSON content type is required") };
       }
       const reader = request.body?.getReader();
@@ -60,10 +62,12 @@ export function registrationPlugin(options: RegistrationOptions) {
           chunks.push(value);
         }
       }
-      const body = Buffer.concat(chunks).toString("utf8");
+      const body = bodylessLogout ? "{}" : Buffer.concat(chunks).toString("utf8");
       try { JSON.parse(body); }
       catch { return { response: errorResponse(400, "VALIDATION_ERROR", "Invalid JSON body") }; }
-      return { request: new Request(request, { body }) };
+      const headers = new Headers(request.headers);
+      headers.set("content-type", "application/json");
+      return { request: new Request(request, { body, headers }) };
     },
     schema: {
       authLink: { fields: {
@@ -79,6 +83,7 @@ export function registrationPlugin(options: RegistrationOptions) {
     },
     endpoints: {
       ...verificationEndpoints(options),
+      ...sessionEndpoints(options),
       registerAttendee: createAuthEndpoint("/register", { method: "POST", body: z.unknown() }, async ctx => {
         const parsed = input.safeParse(ctx.body);
         if (!parsed.success) return errorResponse(400, "VALIDATION_ERROR", "Invalid registration input");

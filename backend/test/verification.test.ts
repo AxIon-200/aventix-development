@@ -128,7 +128,8 @@ describe("Password-gated email verification", () => {
     expect(landing.headers["cache-control"]).toBe("no-store");
     expect(landing.headers["referrer-policy"]).toBe("no-referrer");
     expect(landing.headers["set-cookie"]).toBeUndefined();
-    for (const path of ["/login", "/sign-in/email", "/send-verification-email"]) {
+    expect((await post(f.app, "/login", { email: f.email, password })).body.error.code).toBe("EMAIL_VERIFICATION_REQUIRED");
+    for (const path of ["/sign-in/email", "/send-verification-email"]) {
       expect((await post(f.app, path, { email: f.email, password })).status).toBe(404);
     }
     expect(f.messages).toHaveLength(1);

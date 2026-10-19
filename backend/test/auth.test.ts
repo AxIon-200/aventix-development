@@ -6,13 +6,15 @@ import app from "../src/app.js";
 // replaces these operations; later tickets add the remaining Aventix endpoints.
 describe("Authentication HTTP boundary", () => {
   it.each([
-    "/sign-up/email", "/sign-in/email", "/login", "/send-verification-email",
+    "/sign-up/email", "/sign-in/email", "/send-verification-email",
     "/request-password-reset", "/reset-password", "/reset-password/arbitrary",
     "/change-password", "/update-user", "/change-email", "/delete-user",
     "/set-password", "/link-social", "/revoke-sessions", "/sign-out", "/get-session",
     "/callback/provider", "/register/", "/REGISTER", "/%72egister", "//register",
     "/verify-email/", "/VERIFY-EMAIL", "/%76erify-email", "//verify-email",
     "/resend-verification/", "/RESEND-VERIFICATION", "/%72esend-verification", "//resend-verification",
+    "/login/", "/LOGIN", "/%6cogin", "//login",
+    "/logout/", "/LOGOUT", "/%6cogout", "//logout", "/own-profile",
   ])("denies native or alternate route %s", async path => {
     const response = await request(app).post(`/api/auth${path}`)
       .set("Origin", process.env.FRONTEND_URL!).send({});

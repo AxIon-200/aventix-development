@@ -2,6 +2,8 @@ import { randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import { verifyPassword } from "better-auth/crypto";
 
 const prefix = "aventix-scrypt-v1";
+const exactHashPattern = /^aventix-scrypt-v1\$([a-f0-9]{32})\$([a-f0-9]{128})$/;
+export const isExactPasswordHash = (hash: string) => exactHashPattern.test(hash);
 const derive = (password: string, salt: Buffer): Promise<Buffer> =>
   new Promise((resolve, reject) => {
     scrypt(password, salt, 64, { N: 131072, r: 8, p: 1, maxmem: 256 * 1024 * 1024 },
@@ -15,7 +17,7 @@ export async function hashExactPassword(password: string) {
 }
 
 export async function verifyExactPassword({ hash, password }: { hash: string; password: string }) {
-  const match = /^aventix-scrypt-v1\$([a-f0-9]{32})\$([a-f0-9]{128})$/.exec(hash);
+  const match = exactHashPattern.exec(hash);
   if (!match) return false;
   const key = await derive(password, Buffer.from(match[1]!, "hex"));
   return timingSafeEqual(key, Buffer.from(match[2]!, "hex"));
