@@ -1,3 +1,4 @@
+import { SELF_SERVICE_ROLES } from "./role-permissions.js";
 import { createAuthEndpoint } from "better-auth/api";
 import { z } from "zod";
 import type { Account, Session, User } from "../generated/prisma/client.js";
@@ -36,7 +37,7 @@ export function profileEndpoints(options: RegistrationOptions) {
           const credential = await tx.findOne<Account>({ model: "account", where: [
             { field: "userId", value: user.id }, { field: "providerId", value: "credential" },
           ] });
-          const denied = accountAccessError(user, credential);
+          const denied = accountAccessError(user, credential, { roles: SELF_SERVICE_ROLES });
           if (denied) return denied;
           const changes = parsed.data;
           const nameChanged = changes.firstName !== undefined || changes.lastName !== undefined;

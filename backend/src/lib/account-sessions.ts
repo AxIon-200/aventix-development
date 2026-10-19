@@ -1,3 +1,4 @@
+import { SELF_SERVICE_ROLES } from "./role-permissions.js";
 import { createAuthEndpoint } from "better-auth/api";
 import { deleteSessionCookie, setSessionCookie } from "better-auth/cookies";
 import { z } from "zod";
@@ -6,6 +7,7 @@ import type { RegistrationOptions } from "./registration.js";
 import { accountAccessError, publicProfile } from "./account-access.js";
 import { withAccountLock } from "./account-lifecycle.js";
 import { errorResponse } from "./auth-response.js";
+import { readCurrentAccountSession } from "./current-account-session.js";
 
 const loginInput = z.object({
   email: z.string().trim().toLowerCase().pipe(z.email()),
@@ -45,7 +47,7 @@ export function sessionEndpoints(options: RegistrationOptions) {
           ] });
           if (!user || user.email !== email || !credential?.password
             || !await ctx.context.password.verify({ hash: credential.password, password })) return invalidCredentials();
-          const denied = accountAccessError(user, credential);
+          const denied = accountAccessError(user, credential, { roles: SELF_SERVICE_ROLES });
           if (denied) return denied;
           const now = options.now();
           // This version-sensitive Better Auth bridge joins the current transaction.
@@ -72,14 +74,9 @@ export function sessionEndpoints(options: RegistrationOptions) {
       try {
         const token = await ctx.getSignedCookie(ctx.context.authCookies.sessionToken.name, ctx.context.secret);
         if (!token) return authenticationRequired();
-        const current = await ctx.context.internalAdapter.findSession(token);
-        if (!current || current.session.expiresAt.getTime() <= options.now().getTime()) return authenticationRequired();
-        const user = await ctx.context.adapter.findOne<User>({ model: "user", where: [{ field: "id", value: current.user.id }] });
-        if (!user) return authenticationRequired();
-        const credential = await ctx.context.adapter.findOne<Account>({ model: "account", where: [
-          { field: "userId", value: user.id }, { field: "providerId", value: "credential" },
-        ] });
-        const denied = accountAccessError(user, credential);
+        const current = await readCurrentAccountSession(token, options.now, SELF_SERVICE_ROLES);
+        if (!current) return authenticationRequired();
+        const { user, denied } = current;
         return denied ?? ctx.json({ data: { user: publicProfile(user) } });
       } catch {
         return errorResponse(500, "INTERNAL_ERROR", "Request could not be completed");

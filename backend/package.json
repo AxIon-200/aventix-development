@@ -4,6 +4,7 @@
   "description": "This directory provides the starting architectural layout for the Aventix backend application, built with **NextJs**, **PostgreSQL**, and **Prisma ORM**.",
   "main": "index.js",
   "scripts": {
+    "accounts": "tsx src/commands/accounts.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "dev": "tsx watch src/server.ts",

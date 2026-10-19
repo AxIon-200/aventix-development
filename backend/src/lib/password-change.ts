@@ -1,3 +1,4 @@
+import { SELF_SERVICE_ROLES } from "./role-permissions.js";
 import { randomUUID } from "node:crypto";
 import { createAuthEndpoint } from "better-auth/api";
 import { z } from "zod";
@@ -39,7 +40,7 @@ export function passwordChangeEndpoints(options: RegistrationOptions) {
           const credential = await tx.findOne<Account>({ model: "account", where: [
             { field: "userId", value: user.id }, { field: "providerId", value: "credential" },
           ] });
-          const denied = accountAccessError(user, credential);
+          const denied = accountAccessError(user, credential, { roles: SELF_SERVICE_ROLES });
           if (denied) return denied;
           const { currentPassword, newPassword } = parsed.data;
           if (!await ctx.context.password.verify({ hash: credential!.password!, password: currentPassword })) {

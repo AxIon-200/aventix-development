@@ -1,3 +1,4 @@
+import { SELF_SERVICE_ROLES } from "./role-permissions.js";
 import { createAuthEndpoint } from "better-auth/api";
 import { z } from "zod";
 import type { Account, User } from "../generated/prisma/client.js";
@@ -38,7 +39,7 @@ export function termsAcceptanceEndpoints(options: RegistrationOptions) {
           if (!user || user.email !== email || !credential?.password
             || !await ctx.context.password.verify({ hash: credential.password, password: currentPassword })) return invalidCredentials();
           // This operation completes consent; every other access gate still applies.
-          const denied = accountAccessError(user, credential, { requireTerms: false });
+          const denied = accountAccessError(user, credential, { roles: SELF_SERVICE_ROLES, requireTerms: false });
           if (denied) return denied;
           if (!user.termsVersion?.trim() || !user.termsAcceptedAt) {
             const updated = await tx.update({ model: "user", where: [{ field: "id", value: user.id }],
