@@ -1,0 +1,83 @@
+[
+  {
+    "n": 1,
+    "title": "Finalize Phase 1 compatibility and deployment contracts",
+    "blocks": [],
+    "bodyFile": ".scratch/phase-1-tickets/01.md"
+  },
+  {
+    "n": 2,
+    "title": "Register attendees with genuine terms acceptance and verification email",
+    "blocks": [
+      1
+    ],
+    "bodyFile": ".scratch/phase-1-tickets/02.md"
+  },
+  {
+    "n": 3,
+    "title": "Complete password-gated email verification and resend",
+    "blocks": [
+      2
+    ],
+    "bodyFile": ".scratch/phase-1-tickets/03.md"
+  },
+  {
+    "n": 4,
+    "title": "Log in, access the authenticated account, and log out",
+    "blocks": [
+      3
+    ],
+    "bodyFile": ".scratch/phase-1-tickets/04.md"
+  },
+  {
+    "n": 5,
+    "title": "Collect missing terms acceptance from legacy accounts",
+    "blocks": [
+      4
+    ],
+    "bodyFile": ".scratch/phase-1-tickets/05.md"
+  },
+  {
+    "n": 6,
+    "title": "Edit permitted profile details atomically",
+    "blocks": [
+      4
+    ],
+    "bodyFile": ".scratch/phase-1-tickets/06.md"
+  },
+  {
+    "n": 7,
+    "title": "Recover passwords and invalidate prior access",
+    "blocks": [
+      4
+    ],
+    "bodyFile": ".scratch/phase-1-tickets/07.md"
+  },
+  {
+    "n": 8,
+    "title": "Change passwords while preserving the requesting session",
+    "blocks": [
+      7
+    ],
+    "bodyFile": ".scratch/phase-1-tickets/08.md"
+  },
+  {
+    "n": 9,
+    "title": "Enforce role permissions and trusted account operations",
+    "blocks": [
+      4
+    ],
+    "bodyFile": ".scratch/phase-1-tickets/09.md"
+  },
+  {
+    "n": 10,
+    "title": "Verify the complete Phase 1 lifecycle and deployment contract",
+    "blocks": [
+      5,
+      6,
+      8,
+      9
+    ],
+    "bodyFile": ".scratch/phase-1-tickets/10.md"
+  }
+]

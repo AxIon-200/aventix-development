@@ -1,0 +1,105 @@
+﻿[
+    {
+        "ticket":  1,
+        "number":  55,
+        "title":  "Finalize Phase 1 compatibility and deployment contracts",
+        "url":  "https://github.com/AxIon-200/aventix-development/issues/55",
+        "blockers":  [
+
+                     ],
+        "createExit":  0
+    },
+    {
+        "ticket":  2,
+        "number":  56,
+        "title":  "Register attendees with genuine terms acceptance and verification email",
+        "url":  "https://github.com/AxIon-200/aventix-development/issues/56",
+        "blockers":  [
+                         1
+                     ],
+        "createExit":  0
+    },
+    {
+        "ticket":  3,
+        "number":  57,
+        "title":  "Complete password-gated email verification and resend",
+        "url":  "https://github.com/AxIon-200/aventix-development/issues/57",
+        "blockers":  [
+                         2
+                     ],
+        "createExit":  0
+    },
+    {
+        "ticket":  4,
+        "number":  58,
+        "title":  "Log in, access the authenticated account, and log out",
+        "url":  "https://github.com/AxIon-200/aventix-development/issues/58",
+        "blockers":  [
+                         3
+                     ],
+        "createExit":  0
+    },
+    {
+        "ticket":  5,
+        "number":  59,
+        "title":  "Collect missing terms acceptance from legacy accounts",
+        "url":  "https://github.com/AxIon-200/aventix-development/issues/59",
+        "blockers":  [
+                         4
+                     ],
+        "createExit":  0
+    },
+    {
+        "ticket":  6,
+        "number":  60,
+        "title":  "Edit permitted profile details atomically",
+        "url":  "https://github.com/AxIon-200/aventix-development/issues/60",
+        "blockers":  [
+                         4
+                     ],
+        "createExit":  0
+    },
+    {
+        "ticket":  7,
+        "number":  61,
+        "title":  "Recover passwords and invalidate prior access",
+        "url":  "https://github.com/AxIon-200/aventix-development/issues/61",
+        "blockers":  [
+                         4
+                     ],
+        "createExit":  0
+    },
+    {
+        "ticket":  8,
+        "number":  62,
+        "title":  "Change passwords while preserving the requesting session",
+        "url":  "https://github.com/AxIon-200/aventix-development/issues/62",
+        "blockers":  [
+                         7
+                     ],
+        "createExit":  0
+    },
+    {
+        "ticket":  9,
+        "number":  63,
+        "title":  "Enforce role permissions and trusted account operations",
+        "url":  "https://github.com/AxIon-200/aventix-development/issues/63",
+        "blockers":  [
+                         4
+                     ],
+        "createExit":  0
+    },
+    {
+        "ticket":  10,
+        "number":  64,
+        "title":  "Verify the complete Phase 1 lifecycle and deployment contract",
+        "url":  "https://github.com/AxIon-200/aventix-development/issues/64",
+        "blockers":  [
+                         5,
+                         6,
+                         8,
+                         9
+                     ],
+        "createExit":  0
+    }
+]
