@@ -9,6 +9,9 @@
  * 🟢 You can import this file directly.
  */
 export type * from './models/User.js'
+export type * from './models/AuthLink.js'
+export type * from './models/EmailCooldown.js'
+export type * from './models/AuthRateLimit.js'
 export type * from './models/Session.js'
 export type * from './models/Account.js'
 export type * from './models/Verification.js'

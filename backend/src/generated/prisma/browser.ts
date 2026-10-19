@@ -23,6 +23,21 @@ export * from './enums.js';
  */
 export type User = Prisma.UserModel
 /**
+ * Model AuthLink
+ * 
+ */
+export type AuthLink = Prisma.AuthLinkModel
+/**
+ * Model EmailCooldown
+ * 
+ */
+export type EmailCooldown = Prisma.EmailCooldownModel
+/**
+ * Model AuthRateLimit
+ * 
+ */
+export type AuthRateLimit = Prisma.AuthRateLimitModel
+/**
  * Model Session
  * 
  */
