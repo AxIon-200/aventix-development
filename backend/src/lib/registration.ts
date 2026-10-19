@@ -12,6 +12,8 @@ import { verificationEndpoints } from "./email-verification.js";
 import { issueVerificationLink, verificationUrl } from "./verification-link.js";
 import { sessionEndpoints } from "./account-sessions.js";
 import { termsAcceptanceEndpoints } from "./terms-acceptance.js";
+import { profileEndpoints } from "./account-profile.js";
+import { profileName, profilePhone } from "./profile-input.js";
 
 export interface RegistrationOptions {
   terms?: CurrentTerms;
@@ -19,13 +21,11 @@ export interface RegistrationOptions {
   now: () => Date;
 }
 
-const name = z.string().trim().refine(value => value.isWellFormed() && !value.includes("\u0000") && [...value].length >= 1 && [...value].length <= 100);
 const input = z.object({
-  firstName: name, lastName: name,
+  firstName: profileName, lastName: profileName,
   email: z.string().trim().toLowerCase().pipe(z.email()),
   password: z.string().refine(value => value.isWellFormed() && [...value].length >= 15 && [...value].length <= 128),
-  phoneNumber: z.string().regex(/^(?:09[0-9]{9}|\+639[0-9]{9})$/)
-    .transform(value => value.startsWith("09") ? `+63${value.slice(1)}` : value).optional(),
+  phoneNumber: profilePhone.optional(),
   termsAccepted: z.literal(true), termsVersion: z.string(),
 }).strict();
 
@@ -86,6 +86,7 @@ export function registrationPlugin(options: RegistrationOptions) {
       ...verificationEndpoints(options),
       ...sessionEndpoints(options),
       ...termsAcceptanceEndpoints(options),
+      ...profileEndpoints(options),
       registerAttendee: createAuthEndpoint("/register", { method: "POST", body: z.unknown() }, async ctx => {
         const parsed = input.safeParse(ctx.body);
         if (!parsed.success) return errorResponse(400, "VALIDATION_ERROR", "Invalid registration input");

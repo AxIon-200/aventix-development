@@ -1,5 +1,6 @@
 import cors from "cors";
 import express from "express";
+import type { ErrorRequestHandler } from "express";
 import { fromNodeHeaders, toNodeHandler } from "better-auth/node";
 
 import { createAuth } from "./lib/auth.js";
@@ -98,23 +99,48 @@ export function createApp(options: AppOptions = {}) {
   // Keep Better Auth before the application JSON parser.
   app.all("/api/auth/*splat", toNodeHandler(auth));
 
-  app.use("/api/v1/me", async (req, res) => {
+  const parseProfileBody = express.json({ limit: "16kb", strict: false });
+  app.use("/api/v1/me", (req, res, next) => {
     res.set("Cache-Control", "no-store");
     if (req.originalUrl.split("?")[0] !== "/api/v1/me") {
       res.status(404).json({ error: { code: "NOT_FOUND", message: "Route not found" } });
       return;
     }
-    if (req.method !== "GET") {
-      res.set("Allow", "GET").status(405).json({ error: { code: "METHOD_NOT_ALLOWED", message: "Method is not allowed" } });
+    if (req.method !== "GET" && req.method !== "PATCH") {
+      res.set("Allow", "GET, PATCH").status(405).json({ error: { code: "METHOD_NOT_ALLOWED", message: "Method is not allowed" } });
       return;
     }
+    if (req.method === "PATCH") {
+      if (req.get("Origin") !== env.FRONTEND_URL) {
+        res.status(403).json({ error: { code: "ORIGIN_NOT_ALLOWED", message: "Request origin is not allowed" } });
+        return;
+      }
+      if (!req.is("application/json")) {
+        res.status(415).json({ error: { code: "UNSUPPORTED_MEDIA_TYPE", message: "JSON content type is required" } });
+        return;
+      }
+      parseProfileBody(req, res, next);
+      return;
+    }
+    next();
+  }, async (req, res) => {
     try {
-      const response = await auth.api.readOwnProfile({ headers: fromNodeHeaders(req.headers), asResponse: true });
+      const headers = fromNodeHeaders(req.headers);
+      const response = req.method === "PATCH"
+        ? await auth.api.updateOwnProfile({ headers, body: req.body, asResponse: true })
+        : await auth.api.readOwnProfile({ headers, asResponse: true });
       res.status(response.status).json(await response.json());
     } catch {
       res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Request could not be completed" } });
     }
   });
+  app.use("/api/v1/me", ((error, _req, res, _next) => {
+    const tooLarge = error?.type === "entity.too.large";
+    res.status(tooLarge ? 413 : 400).json({ error: {
+      code: tooLarge ? "PAYLOAD_TOO_LARGE" : "VALIDATION_ERROR",
+      message: tooLarge ? "Request body is too large" : "Invalid JSON body",
+    } });
+  }) satisfies ErrorRequestHandler);
 
   app.all("/api/v1/terms", (req, res) => {
     res.set("Cache-Control", "no-store");
