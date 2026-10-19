@@ -21,6 +21,7 @@ export interface AppOptions {
   aggregateLimit?: number;
   loginLimit?: number;
   logoutLimit?: number;
+  termsAcceptanceLimit?: number;
 }
 
 export function createApp(options: AppOptions = {}) {
@@ -36,6 +37,7 @@ export function createApp(options: AppOptions = {}) {
     "/api/auth/resend-verification": positiveLimit(options.verificationResendLimit ?? process.env.AUTH_VERIFICATION_RESEND_IP_LIMIT, 10),
     "/api/auth/login": positiveLimit(options.loginLimit ?? process.env.AUTH_LOGIN_IP_LIMIT, 20),
     "/api/auth/logout": positiveLimit(options.logoutLimit ?? process.env.AUTH_LOGOUT_IP_LIMIT, 60),
+    "/api/auth/accept-terms": positiveLimit(options.termsAcceptanceLimit ?? process.env.AUTH_TERMS_ACCEPTANCE_IP_LIMIT, 10),
   };
   const auth = createAuth({ ...(terms ? { terms } : {}),
     sendVerificationEmail: options.sendVerificationEmail ?? sendVerificationEmail,

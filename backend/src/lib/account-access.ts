@@ -2,10 +2,10 @@ import type { Account, User } from "../generated/prisma/client.js";
 import { errorResponse } from "./auth-response.js";
 import { isExactPasswordHash, isLegacyPasswordHash } from "./exact-password.js";
 
-export function accountAccessError(user: User, credential: Account | null) {
+export function accountAccessError(user: User, credential: Account | null, { requireTerms = true } = {}) {
   if (user.status !== "ACTIVE") return errorResponse(403, "ACCOUNT_DISABLED", "Account access is disabled");
   if (!user.emailVerified) return errorResponse(403, "EMAIL_VERIFICATION_REQUIRED", "Email verification required");
-  if (!user.termsVersion?.trim() || !user.termsAcceptedAt) {
+  if (requireTerms && (!user.termsVersion?.trim() || !user.termsAcceptedAt)) {
     return errorResponse(403, "TERMS_ACCEPTANCE_REQUIRED", "Terms acceptance required");
   }
   if (credential?.password && isLegacyPasswordHash(credential.password)) {

@@ -11,6 +11,7 @@ import { errorResponse } from "./auth-response.js";
 import { verificationEndpoints } from "./email-verification.js";
 import { issueVerificationLink, verificationUrl } from "./verification-link.js";
 import { sessionEndpoints } from "./account-sessions.js";
+import { termsAcceptanceEndpoints } from "./terms-acceptance.js";
 
 export interface RegistrationOptions {
   terms?: CurrentTerms;
@@ -36,7 +37,7 @@ export function registrationPlugin(options: RegistrationOptions) {
     async onRequest(request) {
       const path = new URL(request.url).pathname;
       // Defense in depth when the Better Auth handler is used without Express.
-      if (!["/api/auth/register", "/api/auth/verify-email", "/api/auth/resend-verification", "/api/auth/login", "/api/auth/logout"].includes(path)) return { response: errorResponse(404, "NOT_FOUND", "Route not found") };
+      if (!["/api/auth/register", "/api/auth/verify-email", "/api/auth/resend-verification", "/api/auth/login", "/api/auth/logout", "/api/auth/accept-terms"].includes(path)) return { response: errorResponse(404, "NOT_FOUND", "Route not found") };
       if (request.method !== "POST") return { response: Response.json({ error: {
         code: "METHOD_NOT_ALLOWED", message: "Method is not allowed",
       } }, { status: 405, headers: { Allow: "POST" } }) };
@@ -84,6 +85,7 @@ export function registrationPlugin(options: RegistrationOptions) {
     endpoints: {
       ...verificationEndpoints(options),
       ...sessionEndpoints(options),
+      ...termsAcceptanceEndpoints(options),
       registerAttendee: createAuthEndpoint("/register", { method: "POST", body: z.unknown() }, async ctx => {
         const parsed = input.safeParse(ctx.body);
         if (!parsed.success) return errorResponse(400, "VALIDATION_ERROR", "Invalid registration input");
