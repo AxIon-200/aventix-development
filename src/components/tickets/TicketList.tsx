@@ -10,7 +10,7 @@ const emptyMessages: Record<TicketTab, string> = {
 
 const columns =
   "md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,1.2fr)_128px] md:items-center md:gap-4";
-  
+
 function cancelledNote(refund?: RefundStatus): string {
   if (refund === "PENDING") return "Event cancelled · refund pending";
   if (refund === "FAILED") return "Event cancelled · refund failed";
@@ -18,7 +18,13 @@ function cancelledNote(refund?: RefundStatus): string {
   return "Event cancelled";
 }
 
-export default function TicketList({ tickets, tab }: { tickets: DisplayTicket[]; tab: TicketTab }) {
+interface TicketListProps {
+  tickets: DisplayTicket[];
+  tab: TicketTab;
+  onShowPass: (ticket: DisplayTicket) => void;
+}
+
+export default function TicketList({ tickets, tab, onShowPass }: TicketListProps) {
   if (tickets.length === 0) {
     return (
       <div className="rounded-xl border border-white/10 bg-[#111622] p-8 text-center">
@@ -65,7 +71,7 @@ export default function TicketList({ tickets, tab }: { tickets: DisplayTicket[];
               <div>
                 <p className="text-[11px] uppercase tracking-wide text-slate-500 md:sr-only">Date &amp; venue</p>
                 <p className="text-[13px] text-slate-300">
-                  {formatEventDate(ticket.eventDate)} • {ticket.venue}
+                  {ticket.dateLabel ?? formatEventDate(ticket.eventDate)} • {ticket.venue}
                 </p>
               </div>
 
@@ -79,17 +85,18 @@ export default function TicketList({ tickets, tab }: { tickets: DisplayTicket[];
               </div>
 
               <div>
-                <Link
-                  href={`/dashboard/tickets/${encodeURIComponent(ticket.ticketId)}`}
-                  aria-label={`${usable ? "View ticket" : "View details"} for ${ticket.eventName}, ${ticket.ticketId}`}
-                  className={`inline-block rounded-lg px-3 py-1.5 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 ${
-                    usable
-                      ? "border border-teal-500/30 bg-teal-500/10 text-teal-300 hover:bg-teal-500/20"
-                      : "border border-white/10 text-slate-400 hover:text-white"
-                  }`}
-                >
-                  {usable ? "View Ticket" : "View Details"}
-                </Link>
+                {usable ? (
+                  <button
+                    type="button"
+                    onClick={() => onShowPass(ticket)}
+                    aria-label={`Show QR pass for ${ticket.eventName}, ${ticket.ticketId}`}
+                    className="rounded-lg border border-teal-500/30 bg-teal-500/10 px-3 py-1.5 text-xs font-medium text-teal-300 transition hover:bg-teal-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+                  >
+                    Show QR Pass
+                  </button>
+                ) : (
+                  <span className="text-xs text-slate-500">Pass unavailable</span>
+                )}
               </div>
             </li>
           );

@@ -17,6 +17,8 @@ export interface MyTicket {
   status: TicketStatus;
   eventCancelled?: boolean;
   refundStatus?: RefundStatus;
+  dateLabel?: string; // shown instead of the formatted date when set (tickets saved by the booking flow)
+  price?: string;
 }
 
 // A ticket plus the status that should actually be shown to the attendee.
@@ -152,4 +154,66 @@ export async function getMyTickets(): Promise<MyTicket[]> {
   const body = await res.json();
   const list: MyTicket[] = Array.isArray(body) ? body : (body?.data ?? []);
   return list.map(normalizeTicket);
+}
+
+// ---- Tickets saved by the booking flow (Abrigo) in the browser's localStorage ----
+
+export const BOOKED_TICKETS_KEY = "aventix_attendee_tickets";
+
+interface BookedTicketItem {
+  id: string;
+  eventTitle: string;
+  tier: string;
+  date: string; // already formatted by the booking flow, e.g. "Sat, Dec 5, 2026"
+  venue: string;
+  status: string; // "confirmed" or "pending"
+  seat: string;
+  price?: string;
+}
+
+function statusFromBooked(raw: string): TicketStatus {
+  const s = String(raw).toUpperCase();
+  if (s === "USED" || s === "CANCELLED" || s === "EXPIRED") return s;
+  return "VALID"; // "confirmed" and "pending" bookings
+}
+
+function fromBookedItem(item: BookedTicketItem): MyTicket {
+  const parsed = new Date(item.date);
+  // The booked date has no time, so count the ticket as valid until the end of that day.
+  if (!Number.isNaN(parsed.getTime())) parsed.setHours(23, 59, 59, 0);
+
+  return {
+    ticketId: item.id,
+    eventId: item.id, // booked items carry no separate event id
+    eventName: item.eventTitle,
+    eventDate: Number.isNaN(parsed.getTime()) ? "2999-01-01T00:00:00Z" : parsed.toISOString(),
+    dateLabel: item.date,
+    venue: item.venue,
+    ticketType: item.tier,
+    seatLabel: item.seat,
+    status: statusFromBooked(item.status),
+    price: item.price,
+  };
+}
+
+export function parseBookedTickets(raw: string | null): MyTicket[] {
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    const result: MyTicket[] = [];
+    for (const item of parsed as BookedTicketItem[]) {
+      if (!item || typeof item.id !== "string" || typeof item.eventTitle !== "string") continue;
+      result.push(fromBookedItem(item));
+    }
+    return result;
+  } catch {
+    return [];
+  }
+}
+
+// Booked tickets come first; a loaded ticket with the same id is not shown twice.
+export function mergeTickets(booked: MyTicket[], loaded: MyTicket[]): MyTicket[] {
+  const bookedIds = new Set(booked.map((t) => t.ticketId));
+  return [...booked, ...loaded.filter((t) => !bookedIds.has(t.ticketId))];
 }
