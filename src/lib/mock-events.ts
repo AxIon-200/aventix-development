@@ -18,6 +18,63 @@ const organizer = {
 
 export const MOCK_EVENTS: EventDetails[] = [
   {
+    id: "neon-nights-2026",
+    genre: "Electronic / Techno",
+    name: "Neon Nights: Live Sessions",
+    performers: ["Charlotte de Witte", "Enrico Sangiuliano"],
+    type: "Concert",
+    description:
+      "A high-energy electronic and techno headline event featuring Charlotte de Witte and Enrico Sangiuliano at The Astoria.",
+    bannerUrl: "/images/charlie_puth.jpg",
+    posterUrl: "/images/charlie_puth.jpg",
+    gallery: ["/images/charlie_puth.jpg"],
+    startsAt: "2026-12-05T19:00:00+08:00",
+    endsAt: "2026-12-05T23:30:00+08:00",
+    venue: {
+      name: "The Astoria",
+      address: "2/F Poblacion Strip, Makati City",
+      city: "Makati City",
+      latitude: 14.5645,
+      longitude: 121.0319,
+    },
+    organizer: {
+      name: "Soundwave PH",
+      description: "Premier electronic and techno promoter in the Philippines.",
+    },
+    status: "PUBLISHED",
+    salesStartAt: "2026-10-01T10:00:00+08:00",
+    salesEndAt: "2026-12-05T18:00:00+08:00",
+    categories: [
+      {
+        id: "neon-vip",
+        name: "VIP",
+        description: "Section A · Row 5 · Seat 12 · Priority gate admission & lounge access.",
+        price: 4500,
+        status: "ACTIVE",
+        availability: "AVAILABLE",
+        remaining: 45,
+      },
+      {
+        id: "neon-patron",
+        name: "Patron / Lower Box",
+        description: "Section B · Prime sightlines and reserved seating.",
+        price: 2800,
+        status: "ACTIVE",
+        availability: "AVAILABLE",
+        remaining: 120,
+      },
+      {
+        id: "neon-ga",
+        name: "General Admission",
+        description: "Open floor standing access near the stage.",
+        price: 1800,
+        status: "ACTIVE",
+        availability: "AVAILABLE",
+        remaining: 350,
+      },
+    ],
+  },
+  {
     id: "puth-2026",
     genre: "Pop",
     name: "Charlie Puth - Whatever's Clever! World Tour",

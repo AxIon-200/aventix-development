@@ -14,6 +14,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   X,
+  TicketPlus,
   type LucideIcon,
 } from "lucide-react";
 
@@ -60,6 +61,7 @@ const mainLinks: NavItem[] = [
 ];
 
 const ticketLinks: NavItem[] = [
+  { href: "/dashboard/buy-tickets", label: "Buy Tickets", icon: TicketPlus },
   { href: "/dashboard/tickets", label: "My Tickets", icon: Ticket },
   { href: "/dashboard/booking-history", label: "Booking History", icon: History },
 ];
