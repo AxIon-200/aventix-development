@@ -6,6 +6,7 @@ import { Search, MapPin, Calendar, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import HeroMockups from "./HeroMockups";
 import styles from "./Hero.module.css";
+import { DatePicker } from "@/components/shared/date-picker";
 
 interface HeroProps {
   onSearchSubmit?: (filters: { query: string; location: string; date: string }) => void;
@@ -33,6 +34,7 @@ export default function Hero({ onSearchSubmit, onExploreClick }: HeroProps) {
 
   return (
     <section id="hero-section" className={`${styles.hero} scroll-mt-24 snap-section`}>
+    <section id="hero-section" className="relative overflow-visible pt-8 pb-16 md:pt-14 md:pb-24 scroll-mt-24 snap-section">
       {/* Background ambient lighting */}
       <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[#66fcf1]/10 rounded-full blur-[140px] pointer-events-none -z-10" />
       <div className="absolute top-1/3 right-1/4 w-[450px] h-[450px] bg-[#0099ff]/10 rounded-full blur-[130px] pointer-events-none -z-10" />
@@ -74,6 +76,7 @@ export default function Hero({ onSearchSubmit, onExploreClick }: HeroProps) {
             <form
               onSubmit={handleSearch}
               className={`${styles.search} bg-[#121a25]/90 border border-[#223347] hover:border-[#66fcf1]/40 hover:shadow-[0_0_35px_rgba(102,252,241,0.15)] transition-all duration-300 backdrop-blur-xl p-2 rounded-2xl shadow-2xl`}
+              className="bg-[#121a25]/90 border border-[#223347] hover:border-[#66fcf1]/40 hover:shadow-[0_0_35px_rgba(102,252,241,0.15)] transition-all duration-300 backdrop-blur-xl p-2 sm:p-2.5 rounded-2xl shadow-2xl flex flex-col md:flex-row items-stretch md:items-center gap-2 max-w-2xl relative z-20"
             >
               {/* Field 1: Search artist or event */}
               <div className="min-w-0 flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#1f2833] focus-within:bg-[#1f2833] transition-colors">
@@ -108,15 +111,16 @@ export default function Hero({ onSearchSubmit, onExploreClick }: HeroProps) {
               <div className="hidden md:block w-px h-8 bg-[#223347]" />
 
               {/* Field 3: Date */}
-              <div className="min-w-0 flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#1f2833] focus-within:bg-[#1f2833] transition-colors">
+              <div className="min-w-0 flex-1 flex items-center gap-2.5 px-3 py-1.5 rounded-xl hover:bg-[#1f2833] focus-within:bg-[#1f2833] transition-colors relative z-30">
                 <Calendar className="w-4 h-4 text-[#66fcf1] shrink-0" />
-                <input
-                  type="date"
-                  aria-label="Event date"
+                <DatePicker
                   value={date}
-                  onChange={(e) => setDate(e.target.value)}
+                  onChange={setDate}
+                  variant="hero"
+                  align="right"
+                  direction="down"
                   placeholder="Select date"
-                  className="w-full bg-transparent text-sm text-white placeholder-slate-400 focus:outline-none"
+                  ariaLabel="Event date"
                 />
               </div>
 

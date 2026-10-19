@@ -22,7 +22,7 @@ export default async function AttendeeDashboardPage() {
           </p>
         </div>
         <Link
-          href="/events"
+          href="/dashboard/buy-tickets"
           className="flex items-center gap-1.5 rounded-lg bg-teal-500 px-3.5 py-2 text-xs font-medium text-slate-950 transition hover:bg-teal-400"
         >
           <PlusIcon className="h-3.5 w-3.5" />

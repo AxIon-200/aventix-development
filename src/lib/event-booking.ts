@@ -62,6 +62,6 @@ export function getBookingState(event: EventDetails): BookingState {
 
 /** Booking-flow entry. The event identity travels in the URL (and the chosen category in the query). */
 export function bookingHref(eventId: string, categoryId?: string): string {
-  const base = `/events/${encodeURIComponent(eventId)}/tickets`;
-  return categoryId ? `${base}?category=${encodeURIComponent(categoryId)}` : base;
+  const base = `/dashboard/buy-tickets?eventId=${encodeURIComponent(eventId)}`;
+  return categoryId ? `${base}&category=${encodeURIComponent(categoryId)}` : base;
 }
