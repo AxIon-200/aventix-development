@@ -398,6 +398,9 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 export const ModelName = {
   User: 'User',
+  AuthLink: 'AuthLink',
+  EmailCooldown: 'EmailCooldown',
+  AuthRateLimit: 'AuthRateLimit',
   Session: 'Session',
   Account: 'Account',
   Verification: 'Verification',
@@ -429,7 +432,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "session" | "account" | "verification" | "organizerProfile" | "venue" | "event" | "eventMedia" | "ticketCategory" | "eventSeat" | "booking" | "bookingItem" | "bookingSeat" | "payment" | "ticket" | "ticketVerification" | "activityLog"
+    modelProps: "user" | "authLink" | "emailCooldown" | "authRateLimit" | "session" | "account" | "verification" | "organizerProfile" | "venue" | "event" | "eventMedia" | "ticketCategory" | "eventSeat" | "booking" | "bookingItem" | "bookingSeat" | "payment" | "ticket" | "ticketVerification" | "activityLog"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -504,6 +507,228 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.UserCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.UserCountAggregateOutputType> | number
+        }
+      }
+    }
+    AuthLink: {
+      payload: Prisma.$AuthLinkPayload<ExtArgs>
+      fields: Prisma.AuthLinkFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AuthLinkFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthLinkPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AuthLinkFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthLinkPayload>
+        }
+        findFirst: {
+          args: Prisma.AuthLinkFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthLinkPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AuthLinkFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthLinkPayload>
+        }
+        findMany: {
+          args: Prisma.AuthLinkFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthLinkPayload>[]
+        }
+        create: {
+          args: Prisma.AuthLinkCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthLinkPayload>
+        }
+        createMany: {
+          args: Prisma.AuthLinkCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AuthLinkCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthLinkPayload>[]
+        }
+        delete: {
+          args: Prisma.AuthLinkDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthLinkPayload>
+        }
+        update: {
+          args: Prisma.AuthLinkUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthLinkPayload>
+        }
+        deleteMany: {
+          args: Prisma.AuthLinkDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AuthLinkUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AuthLinkUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthLinkPayload>[]
+        }
+        upsert: {
+          args: Prisma.AuthLinkUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthLinkPayload>
+        }
+        aggregate: {
+          args: Prisma.AuthLinkAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAuthLink>
+        }
+        groupBy: {
+          args: Prisma.AuthLinkGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AuthLinkGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AuthLinkCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AuthLinkCountAggregateOutputType> | number
+        }
+      }
+    }
+    EmailCooldown: {
+      payload: Prisma.$EmailCooldownPayload<ExtArgs>
+      fields: Prisma.EmailCooldownFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.EmailCooldownFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailCooldownPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.EmailCooldownFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailCooldownPayload>
+        }
+        findFirst: {
+          args: Prisma.EmailCooldownFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailCooldownPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.EmailCooldownFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailCooldownPayload>
+        }
+        findMany: {
+          args: Prisma.EmailCooldownFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailCooldownPayload>[]
+        }
+        create: {
+          args: Prisma.EmailCooldownCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailCooldownPayload>
+        }
+        createMany: {
+          args: Prisma.EmailCooldownCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.EmailCooldownCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailCooldownPayload>[]
+        }
+        delete: {
+          args: Prisma.EmailCooldownDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailCooldownPayload>
+        }
+        update: {
+          args: Prisma.EmailCooldownUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailCooldownPayload>
+        }
+        deleteMany: {
+          args: Prisma.EmailCooldownDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.EmailCooldownUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.EmailCooldownUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailCooldownPayload>[]
+        }
+        upsert: {
+          args: Prisma.EmailCooldownUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailCooldownPayload>
+        }
+        aggregate: {
+          args: Prisma.EmailCooldownAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateEmailCooldown>
+        }
+        groupBy: {
+          args: Prisma.EmailCooldownGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.EmailCooldownGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.EmailCooldownCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.EmailCooldownCountAggregateOutputType> | number
+        }
+      }
+    }
+    AuthRateLimit: {
+      payload: Prisma.$AuthRateLimitPayload<ExtArgs>
+      fields: Prisma.AuthRateLimitFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AuthRateLimitFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthRateLimitPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AuthRateLimitFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthRateLimitPayload>
+        }
+        findFirst: {
+          args: Prisma.AuthRateLimitFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthRateLimitPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AuthRateLimitFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthRateLimitPayload>
+        }
+        findMany: {
+          args: Prisma.AuthRateLimitFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthRateLimitPayload>[]
+        }
+        create: {
+          args: Prisma.AuthRateLimitCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthRateLimitPayload>
+        }
+        createMany: {
+          args: Prisma.AuthRateLimitCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AuthRateLimitCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthRateLimitPayload>[]
+        }
+        delete: {
+          args: Prisma.AuthRateLimitDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthRateLimitPayload>
+        }
+        update: {
+          args: Prisma.AuthRateLimitUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthRateLimitPayload>
+        }
+        deleteMany: {
+          args: Prisma.AuthRateLimitDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AuthRateLimitUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AuthRateLimitUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthRateLimitPayload>[]
+        }
+        upsert: {
+          args: Prisma.AuthRateLimitUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthRateLimitPayload>
+        }
+        aggregate: {
+          args: Prisma.AuthRateLimitAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAuthRateLimit>
+        }
+        groupBy: {
+          args: Prisma.AuthRateLimitGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AuthRateLimitGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AuthRateLimitCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AuthRateLimitCountAggregateOutputType> | number
         }
       }
     }
@@ -1744,10 +1969,43 @@ export const UserScalarFieldEnum = {
   role: 'role',
   status: 'status',
   termsAcceptedAt: 'termsAcceptedAt',
-  termsVersion: 'termsVersion'
+  termsVersion: 'termsVersion',
+  lifecycleLock: 'lifecycleLock'
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const AuthLinkScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  purpose: 'purpose',
+  digest: 'digest',
+  createdAt: 'createdAt',
+  expiresAt: 'expiresAt',
+  consumedAt: 'consumedAt'
+} as const
+
+export type AuthLinkScalarFieldEnum = (typeof AuthLinkScalarFieldEnum)[keyof typeof AuthLinkScalarFieldEnum]
+
+
+export const EmailCooldownScalarFieldEnum = {
+  id: 'id',
+  email: 'email',
+  purpose: 'purpose',
+  attemptedAt: 'attemptedAt'
+} as const
+
+export type EmailCooldownScalarFieldEnum = (typeof EmailCooldownScalarFieldEnum)[keyof typeof EmailCooldownScalarFieldEnum]
+
+
+export const AuthRateLimitScalarFieldEnum = {
+  id: 'id',
+  count: 'count',
+  expiresAt: 'expiresAt'
+} as const
+
+export type AuthRateLimitScalarFieldEnum = (typeof AuthRateLimitScalarFieldEnum)[keyof typeof AuthRateLimitScalarFieldEnum]
 
 
 export const SessionScalarFieldEnum = {
@@ -2082,6 +2340,20 @@ export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaM
 
 
 /**
+ * Reference to a field of type 'Int'
+ */
+export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
+    
+
+
+/**
+ * Reference to a field of type 'Int[]'
+ */
+export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
+    
+
+
+/**
  * Reference to a field of type 'OrganizerStatus'
  */
 export type EnumOrganizerStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OrganizerStatus'>
@@ -2120,20 +2392,6 @@ export type EnumEventTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$Prisma
  * Reference to a field of type 'EventType[]'
  */
 export type ListEnumEventTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EventType[]'>
-    
-
-
-/**
- * Reference to a field of type 'Int'
- */
-export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
-    
-
-
-/**
- * Reference to a field of type 'Int[]'
- */
-export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
     
 
 
@@ -2428,6 +2686,9 @@ export interface PrismaClientOptionsWithAdapter extends PrismaClientBaseOptions 
 export type PrismaClientOptions = PrismaClientOptionsWithAccelerateUrl | PrismaClientOptionsWithAdapter
 export type GlobalOmitConfig = {
   user?: Prisma.UserOmit
+  authLink?: Prisma.AuthLinkOmit
+  emailCooldown?: Prisma.EmailCooldownOmit
+  authRateLimit?: Prisma.AuthRateLimitOmit
   session?: Prisma.SessionOmit
   account?: Prisma.AccountOmit
   verification?: Prisma.VerificationOmit

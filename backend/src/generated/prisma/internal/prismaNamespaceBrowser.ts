@@ -52,6 +52,9 @@ export const AnyNull = runtime.AnyNull
 
 export const ModelName = {
   User: 'User',
+  AuthLink: 'AuthLink',
+  EmailCooldown: 'EmailCooldown',
+  AuthRateLimit: 'AuthRateLimit',
   Session: 'Session',
   Account: 'Account',
   Verification: 'Verification',
@@ -100,10 +103,43 @@ export const UserScalarFieldEnum = {
   role: 'role',
   status: 'status',
   termsAcceptedAt: 'termsAcceptedAt',
-  termsVersion: 'termsVersion'
+  termsVersion: 'termsVersion',
+  lifecycleLock: 'lifecycleLock'
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const AuthLinkScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  purpose: 'purpose',
+  digest: 'digest',
+  createdAt: 'createdAt',
+  expiresAt: 'expiresAt',
+  consumedAt: 'consumedAt'
+} as const
+
+export type AuthLinkScalarFieldEnum = (typeof AuthLinkScalarFieldEnum)[keyof typeof AuthLinkScalarFieldEnum]
+
+
+export const EmailCooldownScalarFieldEnum = {
+  id: 'id',
+  email: 'email',
+  purpose: 'purpose',
+  attemptedAt: 'attemptedAt'
+} as const
+
+export type EmailCooldownScalarFieldEnum = (typeof EmailCooldownScalarFieldEnum)[keyof typeof EmailCooldownScalarFieldEnum]
+
+
+export const AuthRateLimitScalarFieldEnum = {
+  id: 'id',
+  count: 'count',
+  expiresAt: 'expiresAt'
+} as const
+
+export type AuthRateLimitScalarFieldEnum = (typeof AuthRateLimitScalarFieldEnum)[keyof typeof AuthRateLimitScalarFieldEnum]
 
 
 export const SessionScalarFieldEnum = {

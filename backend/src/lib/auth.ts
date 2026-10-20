@@ -3,69 +3,91 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 
 import { prisma } from "./prisma.js";
 import { env } from "../config/env.js";
+import { registrationPlugin } from "./registration.js";
+import type { RegistrationOptions } from "./registration.js";
+import { hashExactPassword, verifyCurrentPassword } from "./exact-password.js";
 
-export const auth = betterAuth({
-  database: prismaAdapter(prisma, {
-    provider: "postgresql",
-  }),
+export function createAuth(options: RegistrationOptions) {
+  if (env.NODE_ENV === "production" && [env.BETTER_AUTH_URL, env.FRONTEND_URL].some(url => new URL(url).protocol !== "https:")) {
+    throw new Error("Production authentication requires HTTPS frontend and API origins");
+  }
+  return betterAuth({
+    database: prismaAdapter(prisma, {
+      provider: "postgresql",
+      transaction: true,
+    }),
 
-  baseURL: env.BETTER_AUTH_URL,
-  secret: env.BETTER_AUTH_SECRET,
+    baseURL: env.BETTER_AUTH_URL,
+    secret: env.BETTER_AUTH_SECRET,
 
-  trustedOrigins: [env.FRONTEND_URL],
+    trustedOrigins: [env.FRONTEND_URL],
 
-  emailAndPassword: {
-    enabled: true,
-  },
-
-  advanced: {
-    database: {
-      generateId: "uuid",
+    emailAndPassword: {
+      enabled: true,
+      disableSignUp: true,
+      autoSignIn: false,
+      requireEmailVerification: true,
+      password: { hash: hashExactPassword, verify: verifyCurrentPassword },
     },
-  },
+    plugins: [registrationPlugin(options)],
+    logger: { disabled: true },
+    rateLimit: { enabled: false }, // Durable Express limits use the verified direct peer IP.
+    session: { expiresIn: 604800, disableSessionRefresh: true, cookieCache: { enabled: false } },
 
-  user: {
-    additionalFields: {
-      firstName: {
-        type: "string",
-        required: true,
-      },
-
-      lastName: {
-        type: "string",
-        required: true,
-      },
-
-      phoneNumber: {
-        type: "string",
-        required: false,
-      },
-
-      role: {
-        type: "string",
-        required: true,
-        defaultValue: "ATTENDEE",
-        input: false,
-      },
-
-      status: {
-        type: "string",
-        required: true,
-        defaultValue: "ACTIVE",
-        input: false,
-      },
-
-      termsAcceptedAt: {
-        type: "date",
-        required: false,
-        input: false,
-      },
-
-      termsVersion: {
-        type: "string",
-        required: false,
-        input: false,
+    advanced: {
+      useSecureCookies: env.NODE_ENV === "production" || new URL(env.BETTER_AUTH_URL).protocol === "https:",
+      defaultCookieAttributes: { httpOnly: true, sameSite: "lax", path: "/" },
+      // Only the Express boundary may set this header from its direct peer.
+      ipAddress: { ipAddressHeaders: ["x-aventix-client-ip"] },
+      database: {
+        generateId: "uuid",
       },
     },
-  },
-});
+
+    user: {
+      additionalFields: {
+        firstName: {
+          type: "string",
+          required: true,
+        },
+
+        lastName: {
+          type: "string",
+          required: true,
+        },
+
+        phoneNumber: {
+          type: "string",
+          required: false,
+        },
+
+        role: {
+          type: "string",
+          required: true,
+          defaultValue: "ATTENDEE",
+          input: false,
+        },
+
+        status: {
+          type: "string",
+          required: true,
+          defaultValue: "ACTIVE",
+          input: false,
+        },
+
+        termsAcceptedAt: {
+          type: "date",
+          required: false,
+          input: false,
+        },
+
+        termsVersion: {
+          type: "string",
+          required: false,
+          input: false,
+        },
+        lifecycleLock: { type: "string", required: false, input: false, returned: false },
+      },
+    },
+  });
+}

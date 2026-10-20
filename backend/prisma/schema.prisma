@@ -27,10 +27,12 @@ model User {
   status          String    @default("ACTIVE")
   termsAcceptedAt DateTime?
   termsVersion    String?
+  lifecycleLock   String    @default("")
 
   // Better Auth relationships
   sessions            Session[]
   accounts            Account[]
+  authLinks           AuthLink[]
   ticketVerifications TicketVerification[]
   activityLogs        ActivityLog[]
 
@@ -43,6 +45,38 @@ model User {
 
   @@unique([email])
   @@map("user")
+}
+
+model AuthLink {
+  id         String    @id @db.Uuid
+  userId     String    @db.Uuid
+  purpose    String
+  digest     String    @unique
+  createdAt  DateTime
+  expiresAt  DateTime
+  consumedAt DateTime?
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+  @@map("auth_link")
+}
+
+model EmailCooldown {
+  id          String   @id @db.Uuid
+  email       String
+  purpose     String
+  attemptedAt DateTime
+
+  @@unique([email, purpose])
+  @@map("email_cooldown")
+}
+
+model AuthRateLimit {
+  id        String   @id
+  count     Int
+  expiresAt DateTime
+
+  @@map("auth_rate_limit")
 }
 
 model Session {
