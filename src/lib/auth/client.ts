@@ -1,9 +1,8 @@
 import { createBetterAuthClient } from "./better-auth";
 import { AuthClientError, type AuthErrorCode } from "./errors";
-/** Frontend adapter for the supplied Better Auth configuration.
- * Implement these methods using the agreed client; never store credentials or
- * tokens in localStorage, assign roles, or infer authentication from UI state.
- * The adapter must establish the server session before resolving login.
+/** Frontend adapter for the approved Aventix HTTP contracts.
+ * Credentials and session tokens are never stored in browser storage.
+ * Login confirms the permitted current account before authorizing navigation.
  */
 export type AttendeeRegistration = {
   firstName: string; lastName: string; email: string; phoneNumber: string;
@@ -21,12 +20,10 @@ export interface AccountSession {
 export { AuthClientError } from "./errors";
 export type { AuthErrorCode } from "./errors";
 export interface PublicAuthClient {
-  rememberMeSupported: boolean;
-  checkConnection?: () => Promise<boolean>;
   getSession?: () => Promise<AccountSession | null>;
   logout?: () => Promise<void>;
   passwordRules?: { description: string; validate: (password: string) => string | undefined };
-  login?: (data: { email: string; password: string; rememberMe?: boolean }) => Promise<AuthResult>;
+  login?: (data: { email: string; password: string }) => Promise<AuthResult>;
   registerAttendee?: (data: AttendeeRegistration) => Promise<void | AuthResult>;
   requestPasswordReset?: (data: { email: string }) => Promise<void>;
   // The agreed adapter extracts/verifies its own backend-issued link format.
@@ -48,8 +45,14 @@ export function authErrorMessage(error: unknown): string {
     RATE_LIMITED: "Too many attempts. Please wait before trying again.",
     UNAVAILABLE: "The account service is unavailable. Check the backend connection and try again.",
     EMAIL_NOT_VERIFIED: "Verify your email address before logging in.",
-    REQUEST_UNCERTAIN: "We could not confirm the request. It may have reached the server. Try logging in before registering again.",
+    EMAIL_VERIFICATION_REQUIRED: "Verify your email address before logging in.",
+    TERMS_ACCEPTANCE_REQUIRED: "Accept the current terms with your password before logging in separately.",
+    PASSWORD_RESET_REQUIRED: "Reset your password through account recovery before logging in.",
+    AUTHENTICATION_REQUIRED: "Your session has ended. Please log in again.",
+    VALIDATION_ERROR: "Check your account details and try again.",
+    LOGOUT_UNCERTAIN: "Sign-out could not be confirmed. Protected content is unavailable. Retry sign-out to continue.",
+    REQUEST_UNCERTAIN: "We could not confirm the request. It may have reached the server. Check your current account before trying again.",
     INVALID_RESPONSE: "The account service returned an unsupported response or no verified session. Please try logging in again.",
   };
-  return messages[error.code];
+  return messages[error.code] + (error.retryAfter !== undefined ? ` Try again in ${error.retryAfter} seconds.` : "");
 }

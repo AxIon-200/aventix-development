@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import { AdminService } from "../services/admin.service.js";
 
 export const getAdminOverview = async (req: Request, res: Response) => {

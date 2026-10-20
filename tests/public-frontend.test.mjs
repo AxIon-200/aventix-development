@@ -15,6 +15,7 @@ test('booking return survives auth links without admitting external or privilege
   assert.equal(safeReturnTo(target), target);
   assert.equal(new URL(authHref('/login', target), 'https://test.invalid').searchParams.get('returnTo'), target);
   for (const input of ['https://evil.test', '//evil.test', '/admin', '/events/../admin', '/events/%2e%2e/tickets', '/events/%5cevil/tickets', '/events/foo#fragment', '/events/foo?category=x&role=admin', 'javascript:alert(1)', '/events/%0Afoo', '/events/%2f%2fevil']) assert.equal(safeReturnTo(input), undefined, input);
+  for (const input of ['/dashboard', '/dashboard/buy-tickets', '/dashboard/buy-tickets?eventId=', '/dashboard/buy-tickets?eventId=x&role=admin', '/dashboard/buy-tickets?eventId=x&eventId=y', '/dashboard/buy-tickets?eventId=%0ax']) assert.equal(safeReturnTo(input), undefined, input);
 });
 test('registration allowlists account fields and excludes confirmation and privileges', () => {
   const data = new FormData();

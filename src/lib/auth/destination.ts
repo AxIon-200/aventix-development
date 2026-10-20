@@ -1,6 +1,6 @@
 /** Only public event/ticket destinations may be supplied by a visitor. */
 export function safeReturnTo(value?: string | null): string | undefined {
-  if (!value || !(/^(?:\/events\/[^/?#]+(?:\/(?:tickets|seats))?(?:\?category=[^&#]+)?|\/bookings\/[^/?#]+\/(?:summary|payment|confirmation))$/.test(value))) return;
+  if (!value || !(/^(?:\/events\/[^/?#]+(?:\/(?:tickets|seats))?(?:\?category=[^&#]+)?|\/bookings\/[^/?#]+\/(?:summary|payment|confirmation)|\/dashboard\/buy-tickets\?eventId=[^&#]+(?:&category=[^&#]+)?)$/.test(value))) return;
   try {
     const decoded = decodeURIComponent(value);
     if (/[\\\x00-\x1f]/.test(decoded) || decoded.includes("..") || decoded.includes("//")) return;

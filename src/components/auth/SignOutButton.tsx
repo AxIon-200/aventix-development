@@ -19,7 +19,7 @@ export default function SignOutButton({ children, className, title }: { children
     finally { busy.current = false; setPending(false); }
   }
   return <>
-    <button type="button" title={title} aria-label={pending ? "Signing out…" : "Sign Out"} aria-busy={pending} disabled={pending} onClick={signOut} className={`${className ?? ""} disabled:cursor-wait disabled:opacity-50`}>{children}</button>
+    <button type="button" title={title} aria-label={pending ? "Signing out…" : title} aria-busy={pending} disabled={pending} onClick={signOut} className={`${className ?? ""} disabled:cursor-wait disabled:opacity-50`}>{children}</button>
     {error && <p role="alert" className="mt-2 max-w-full break-words px-2 text-xs text-red-300">{error}</p>}
   </>;
 }

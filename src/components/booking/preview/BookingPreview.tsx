@@ -25,7 +25,7 @@ const seats: EventSeat[] = event.categories.flatMap((category, index) => Array.f
   displayLabel: `${index ? "B" : "A"}${n + 1}`, status: "AVAILABLE" as const,
 })));
 const options: TicketOptions = { event, purchaseLimit: 4, confirmedQuantity: 0, heldQuantity: 0 };
-const sampleAuth: PublicAuthClient = { rememberMeSupported: false, getSession: async () => ({ userId: "sample-ui-only", displayName: "Sample attendee", canBook: true }) };
+const sampleAuth: PublicAuthClient = { getSession: async () => ({ userId: "sample-ui-only", displayName: "Sample attendee", canBook: true }) };
 const tabs = ["Tickets", "Numbered seats", "Summary", "Payment", "Confirmation"];
 
 /** Isolated visual review only. No login cookies, account storage, reservations or payment mutations. */

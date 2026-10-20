@@ -8,6 +8,7 @@ import FormField, { submitClass } from "./FormField";
 import { AuthClientError, authErrorMessage, publicAuthClient, type PublicAuthClient, type AuthResult } from "@/lib/auth/client";
 import { attendeePayload, normalizePhone, passwordError, validEmail } from "@/lib/auth/validation";
 import { authHref, safeReturnTo } from "@/lib/auth/destination";
+import AccountGate from "./AccountGate";
 
 type Mode = "login" | "attendee" | "forgot" | "reset";
 const titles: Record<Mode, [string, string]> = {
@@ -21,6 +22,8 @@ export default function AuthForm({ mode, returnTo, client = publicAuthClient }: 
   const router = useRouter();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState("");
+  const [gate, setGate] = useState<import("@/lib/auth/client").AuthErrorCode>();
+  const [uncertain, setUncertain] = useState(false);
   const [success, setSuccess] = useState(false);
   const [busy, setBusy] = useState(false);
   const submitting = useRef(false);
@@ -29,17 +32,7 @@ export default function AuthForm({ mode, returnTo, client = publicAuthClient }: 
   const destination = safeReturnTo(returnTo);
   const configured = mode === "login" ? !!client.login : mode === "attendee" ? !!client.registerAttendee : mode === "forgot" ? !!client.requestPasswordReset : !!client.resetPassword && !!client.verifyRecoveryLink;
 
-  const [connection, setConnection] = useState<boolean | null>(null);
-  const [connectionAttempt, setConnectionAttempt] = useState(0);
-  const checkingConnection = configured && Boolean(client.checkConnection) && connection === null;
-  const connected = configured && (!client.checkConnection || connection === true);
-  useEffect(() => {
-    let active = true;
-    if (configured && client.checkConnection) {
-      void client.checkConnection().then(value => { if (active) setConnection(value); }).catch(() => { if (active) setConnection(false); });
-    }
-    return () => { active = false; };
-  }, [client, configured, connectionAttempt]);
+  const connected = configured;
 
   function navigate(result: AuthResult) {
     const target = result.allowBookingReturn && destination ? destination : result.destination ?? "/events";
@@ -74,6 +67,8 @@ export default function AuthForm({ mode, returnTo, client = publicAuthClient }: 
     const get = (name: string) => String(data.get(name) ?? "");
     const next: Record<string, string> = {};
     setMessage("");
+    setGate(undefined);
+    setUncertain(false);
     if (mode !== "reset" && !validEmail(get("email"))) next.email = "Enter a valid email address.";
     if (mode === "login" && !get("password")) next.password = "Enter your password.";
     if (mode === "attendee") {
@@ -99,7 +94,7 @@ export default function AuthForm({ mode, returnTo, client = publicAuthClient }: 
       if (configured && !connected) throw new AuthClientError("UNAVAILABLE");
       if (mode === "login") {
         if (!client.login) throw new AuthClientError("UNAVAILABLE");
-        const result = await client.login({ email: get("email").trim(), password: get("password"), ...(client.rememberMeSupported ? { rememberMe: get("rememberMe") === "on" } : {}) });
+        const result = await client.login({ email: get("email").trim().toLowerCase(), password: get("password") });
         navigate(result);
       } else if (mode === "attendee") {
         if (!client.registerAttendee) throw new AuthClientError("UNAVAILABLE");
@@ -126,6 +121,11 @@ export default function AuthForm({ mode, returnTo, client = publicAuthClient }: 
       }
     } catch (error) {
       setMessage(authErrorMessage(error));
+      if (error instanceof AuthClientError) {
+        setErrors(error.fieldErrors);
+        setUncertain(error.code === "REQUEST_UNCERTAIN" || error.code === "INVALID_RESPONSE");
+        if (["ACCOUNT_DISABLED", "EMAIL_VERIFICATION_REQUIRED", "TERMS_ACCEPTANCE_REQUIRED", "PASSWORD_RESET_REQUIRED"].includes(error.code)) { setGate(error.code); setMessage(""); }
+      }
       if (mode === "reset" && error instanceof AuthClientError && ["INVALID_RECOVERY_LINK", "EXPIRED_RECOVERY_LINK", "USED_RECOVERY_LINK"].includes(error.code)) setRecovery("invalid");
     } finally { submitting.current = false; setBusy(false); }
   }
@@ -136,8 +136,7 @@ export default function AuthForm({ mode, returnTo, client = publicAuthClient }: 
     <p className="mt-2 text-center text-sm text-[#9fa3a8]">{titles[mode][1]}</p>
     {destination && <p className="mt-4 rounded-lg bg-[#66fcf1]/10 p-3 text-xs text-[#66fcf1]">Your event is saved in this link. Sign in to continue when booking is available.</p>}
     {!connected && <div className={`${styles.notice} rounded-lg border border-amber-400/25 bg-amber-400/5 text-xs leading-5 text-amber-200`}>
-      <p role="status">{checkingConnection ? "Connecting to the account service…" : configured ? "The account service is unavailable. Start the backend and check its authentication setup." : mode === "reset" ? "Password recovery is unavailable until the backend recovery service is connected." : "This account service is not available yet. No details will be submitted."}</p>
-      {configured && !checkingConnection && <button type="button" className="mt-2 rounded px-2 py-1 font-semibold text-[#66fcf1] underline" onClick={() => { setConnection(null); setConnectionAttempt(n => n + 1); }}>Retry connection</button>}
+      <p role="status">{mode === "reset" ? "Password recovery is unavailable until the backend recovery service is connected." : "This account service is not available yet. No details will be submitted."}</p>
     </div>}
     {process.env.NODE_ENV === "development" && <p className="mt-3 text-center text-xs text-[#9fa3a8]"><Link href="/preview/booking" className="text-[#66fcf1] underline">Preview booking screens with sample data</Link></p>}
     {success ? <div className="mt-8 space-y-6"><p role="status" className="text-sm leading-6 text-[#66fcf1]">{message}</p><Link href={authHref("/login", destination)} className={submitClass}>Return to Login</Link></div> : <form onSubmit={submit} noValidate aria-busy={busy} className={`${styles.form} ${mode === "attendee" ? styles.registration : ""}`}>
@@ -151,12 +150,14 @@ export default function AuthForm({ mode, returnTo, client = publicAuthClient }: 
       {mode !== "forgot" && <FormField name="password" label={mode === "reset" ? "New Password" : "Password"} type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} placeholder={mode === "login" ? "Enter your password" : "Create a password"} error={errors.password} disabled={mode === "reset" && recovery !== "valid"} hint={mode === "login" ? undefined : client.passwordRules?.description ?? "Use at least 8 characters. Final password requirements await the account service."} required />}
       {(mode === "attendee" || mode === "reset") && <FormField name="confirmPassword" label="Confirm Password" type="password" autoComplete="new-password" placeholder="Re-enter your password" error={errors.confirmPassword} disabled={mode === "reset" && recovery !== "valid"} required />}
       {mode === "login" && <div className="space-y-2"><div className="flex flex-wrap items-center justify-between gap-3 text-xs">
-        <label className="flex items-center gap-2 text-[#c5c6c7]"><input name="rememberMe" type="checkbox" disabled={!client.rememberMeSupported || !connected} aria-describedby={!client.rememberMeSupported ? "remember-note" : undefined} className="h-4 w-4 accent-[#66fcf1]" />Remember Me</label>
+        <span className="text-[#c5c6c7]">Sessions last seven days from sign-in.</span>
         <Link className="text-[#66fcf1]" href={authHref("/forgot-password", destination)}>Forgot password?</Link>
-      </div>{!client.rememberMeSupported && <p id="remember-note" className="text-xs text-[#9fa3a8]">Remember Me needs account-service support.</p>}</div>}
+      </div></div>}
       {mode === "attendee" && <div className="sm:col-span-2"><label className="flex items-start gap-2 text-xs leading-5 text-[#c5c6c7]"><input name="terms" type="checkbox" required aria-invalid={!!errors.terms} aria-describedby={errors.terms ? "terms-error" : undefined} className="mt-1 h-4 w-4 shrink-0 accent-[#66fcf1]" /><span>I agree to the <Link href="/legal/terms" className="text-[#66fcf1] underline" target="_blank">Terms & Conditions</Link> and <Link href="/legal/privacy" className="text-[#66fcf1] underline" target="_blank">Privacy Policy</Link>.</span></label>{errors.terms && <p id="terms-error" className="mt-2 text-xs text-red-300">{errors.terms}</p>}</div>}
       {message && <p role="alert" className={`${mode === "attendee" ? "sm:col-span-2" : ""} rounded-lg border border-red-400/30 bg-red-400/5 p-3 text-sm text-red-200`}>{message}</p>}
-      <button type="submit" disabled={busy || checkingConnection || (configured && !connected) || (mode === "reset" && recovery !== "valid")} className={`${submitClass} ${mode === "attendee" ? "sm:col-span-2" : ""}`}>{checkingConnection ? "Connecting…" : busy ? "Please wait…" : mode === "login" ? "Login" : mode === "attendee" ? "Register" : mode === "forgot" ? "Request recovery link" : "Reset password"}</button>
+      {gate && <AccountGate code={gate} returnTo={destination} />}
+      {uncertain && mode === "login" && <button type="button" className="text-[#66fcf1] underline" onClick={() => window.dispatchEvent(new Event("aventix:session-updated"))}>Check current account</button>}
+      <button type="submit" disabled={busy || !configured || (mode === "reset" && recovery !== "valid")} className={`${submitClass} ${mode === "attendee" ? "sm:col-span-2" : ""}`}>{busy ? "Please wait…" : mode === "login" ? "Login" : mode === "attendee" ? "Register" : mode === "forgot" ? "Request recovery link" : "Reset password"}</button>
       {mode === "reset" && <Link className="block text-center text-sm text-[#66fcf1]" href="/forgot-password">Request a new recovery link</Link>}
     </form>}
     {!success && <p className={`${styles.footer} text-center text-[13px] text-[#9fa3a8]`}>{mode === "login" ? <>New to Aventix? <Link className="hover:text-[#66fcf1]" href={authHref("/register", destination)}>Create an account</Link></> : <>{mode === "attendee" ? "Already have an account? " : "Back to "}<Link className="hover:text-[#66fcf1]" href={authHref("/login", destination)}>Log in</Link></>}</p>}

@@ -1,71 +1,49 @@
 "use client";
-import { useEffect, useState } from "react";
-import {
-  publicAuthClient,
-  type AccountSession,
-  type PublicAuthClient,
-} from "@/lib/auth/client";
+import { useEffect, useRef, useState } from "react";
+import { AuthClientError, publicAuthClient, type AccountSession, type AuthErrorCode, type PublicAuthClient } from "@/lib/auth/client";
 
-export function useAccountSession(client: PublicAuthClient = publicAuthClient) {
-  const [state, setState] = useState<{
-    loading: boolean;
-    session: AccountSession | null;
-    unavailable: boolean;
-  }>({
-    loading: Boolean(client.getSession),
-    session: null,
-    unavailable: false,
-  });
+export type AccountState = { loading: boolean; session: AccountSession | null; unavailable: boolean; error?: AuthErrorCode };
+
+export function useAccountSession(client: PublicAuthClient = publicAuthClient, initial?: AccountState) {
+  const [state, setState] = useState<AccountState>(initial ?? { loading: true, session: null, unavailable: false });
+  const sequence = useRef(0);
+  const reload = useRef<() => void>(() => {});
   useEffect(() => {
     let active = true;
-    let request = 0;
     async function load() {
-      const current = ++request;
+      const current = ++sequence.current;
       try {
-        const session = client.getSession ? await client.getSession() : null;
-        if (
-          session &&
-          (typeof session.userId !== "string" ||
-            typeof session.displayName !== "string" ||
-            typeof session.canBook !== "boolean")
-        )
-          throw new Error("Unsupported session format");
-        if (
-          session?.navigation &&
-          (!Array.isArray(session.navigation) ||
-            !session.navigation.every(
-              (item) =>
-                typeof item.label === "string" && typeof item.href === "string",
-            ))
-        )
-          throw new Error("Unsupported account navigation");
-        if (active && current === request)
-          setState({
-            loading: false,
-            session,
-            unavailable: !client.getSession,
-          });
-      } catch {
-        if (active && current === request)
-          setState({ loading: false, session: null, unavailable: true });
+        if (!client.getSession) throw new AuthClientError("UNAVAILABLE");
+        const session = await client.getSession();
+        if (active && current === sequence.current) setState({ loading: false, session, unavailable: false });
+      } catch (error) {
+        if (active && current === sequence.current) setState({ loading: false, session: null, unavailable: true,
+          error: error instanceof AuthClientError ? error.code : "UNAVAILABLE" });
       }
     }
-    const reload = () => { void load(); };
-    const onVisible = () => { if (document.visibilityState === "visible") reload(); };
-    reload();
-    window.addEventListener("aventix:session-updated", reload);
-    window.addEventListener("focus", reload);
-    document.addEventListener("visibilitychange", onVisible);
+    const refresh = () => { void load(); };
+    reload.current = refresh;
+    const changed = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      if (detail === "signed-out" || detail === "blocked") {
+        ++sequence.current;
+        setState({ loading: false, session: null, unavailable: detail === "blocked", error: detail === "blocked" ? "LOGOUT_UNCERTAIN" : undefined });
+      } else refresh();
+    };
+    const visible = () => { if (document.visibilityState === "visible") refresh(); };
+    refresh();
+    window.addEventListener("aventix:session-updated", changed);
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", visible);
     return () => {
       active = false;
-      window.removeEventListener("aventix:session-updated", reload);
-      window.removeEventListener("focus", reload);
-      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("aventix:session-updated", changed);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", visible);
     };
   }, [client]);
-  return {
-    ...state,
-    clearSession: () =>
-      setState({ loading: false, session: null, unavailable: false }),
-  };
+  return { ...state, retry: () => reload.current(), clearSession: () => {
+    ++sequence.current;
+    setState({ loading: false, session: null, unavailable: false });
+  } };
 }
