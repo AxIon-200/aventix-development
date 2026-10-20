@@ -73,8 +73,15 @@ Navigation/cross-tab refresh beyond the existing focus refresh is also separate.
 
 - Frontend contract/public/booking suite: 23 tests passed.
 - Backend session HTTP suite: 28 tests passed on the guarded dedicated test DB.
-- Backend typecheck, frontend typecheck and production build passed during implementation.
-- Final full backend suite and final static checks are recorded below when complete.
+- Backend typecheck, frontend typecheck, scoped ESLint and production build passed.
+- Full backend suite: 254 passed, 1 failed across 12 files (255 tests).
+  The existing `authorization.test.ts:117` expects `/api/v1/admin` to return
+  404, while the existing router's guest authorization middleware returns 401.
+  The same focused failure was reproduced on an isolated archive of task-start
+  commit `9944231d744837b2d4869705d64f475b3267cff1` using
+  `npx vitest run test/authorization.test.ts -t "never mounts demonstration routes"`
+  (1 failed, 7 skipped). This is a confirmed baseline failure; #107 does not
+  change business-router authorization or weaken the test to make it pass.
 - Headless Chrome on the actual 3000 → 5000 arrangement passed all 12 checks:
   sign-in to events; persistent HttpOnly cookie issuance; reload identity;
   server-rendered current identity on login and registration; safe Continue
@@ -93,7 +100,25 @@ cookie serializer's expiry limit; rerunning with a browser-compatible isolated
 clock passed. Temporary diagnostics were removed. The actual server startup
 also required correcting five Express imports to `import type`; static checking
 and the browser run validate that correction.
+The post-run read-only preflight confirmed that the original aggregate account
+inventory and its consent, verification and legacy-credential counts were unchanged.
 
 No genuine legal acceptance, provider delivery, real-user activation, production
 deployment, complete S01 walkthrough or finished business authorization is
 claimed by these checks.
+
+## Review
+
+The code-review skill compared the implementation against task-start commit
+`9944231d744837b2d4869705d64f475b3267cff1` in separate Standards and Spec reviews.
+
+### Standards
+
+No documented-standard violations. One low-priority duplication in desktop/mobile
+account controls was consolidated during review and rechecked: zero remaining findings.
+
+### Spec
+
+Zero findings against #107's scoped acceptance criteria. The separate S01
+registration, verification, consent, recovery, workspace-protection and refresh
+boundaries remain explicit.

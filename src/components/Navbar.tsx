@@ -67,6 +67,12 @@ export default function Navbar({ onOpenAuth, onSearch, searchEvents }: NavbarPro
       </Link>
     );
 
+  const accountControls = loading ? <span role="status">Checking account…</span>
+    : unavailable ? <div className="max-w-64 text-xs">
+      <AccountGate code={error ?? "UNAVAILABLE"} />
+      {error === "LOGOUT_UNCERTAIN" ? <SignOutButton>Retry sign-out</SignOutButton> : <button type="button" onClick={retry}>Retry account check</button>}
+    </div> : session ? <AccountMenu session={session} client={publicAuthClient} onLoggedOut={clearSession} /> : null;
+
   return (
     <header
       onKeyDown={(event) => {
@@ -113,10 +119,8 @@ export default function Navbar({ onOpenAuth, onSearch, searchEvents }: NavbarPro
           })}
         </nav>
 
-        {/* Right Actions: Role Selector, Search, Auth */}
+        {/* Search and account controls */}
         <div className="hidden items-center gap-3 xl:flex">
-          {/* Demo Role Switcher */}
-
           {/* Search field */}
           <EventSearchField
             events={searchEvents}
@@ -125,12 +129,7 @@ export default function Navbar({ onOpenAuth, onSearch, searchEvents }: NavbarPro
           />
 
           {/* Auth Controls */}
-          {loading ? <span role="status">Checking account…</span> : unavailable ? <div className="max-w-64 text-xs">
-            <AccountGate code={error ?? "UNAVAILABLE"} />
-            {error === "LOGOUT_UNCERTAIN" ? <SignOutButton>Retry sign-out</SignOutButton> : <button type="button" onClick={retry}>Retry account check</button>}
-          </div> : session ? (
-            <AccountMenu session={session} client={publicAuthClient} onLoggedOut={clearSession} />
-          ) : (
+          {accountControls ?? (
             <div className="flex items-center gap-2">
               {authControl("login", "Log in", pillButton)}
               {authControl("register", "Register", pillButton)}
@@ -191,12 +190,7 @@ export default function Navbar({ onOpenAuth, onSearch, searchEvents }: NavbarPro
             })}
           </div>
           <div className="flex gap-2 pt-2 border-t border-white/10">
-            {loading ? <span role="status">Checking account…</span> : unavailable ? <div>
-              <AccountGate code={error ?? "UNAVAILABLE"} />
-              {error === "LOGOUT_UNCERTAIN" ? <SignOutButton>Retry sign-out</SignOutButton> : <button type="button" onClick={retry}>Retry account check</button>}
-            </div> : session ? (
-              <AccountMenu session={session} client={publicAuthClient} onLoggedOut={clearSession} />
-            ) : (
+            {accountControls ?? (
               <>
                 {authControl("login", "Log in", `${pillButton} flex-1`, () =>
                   setMobileMenuOpen(false)
