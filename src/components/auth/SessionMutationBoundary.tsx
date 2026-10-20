@@ -1,31 +1,32 @@
 "use client";
-import { useEffect, useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import SignOutButton from "./SignOutButton";
+import { useAccountSession } from "./useAccountSession";
+import AccountGate from "./AccountGate";
+import { authHref } from "@/lib/auth/destination";
 
-/** Hide workspace content while a local sign-out cannot be confirmed.
- * General role/page authorization is delivered separately in S01.
+/** Hide mounted workspace content whenever account state is unknown or ineligible.
+ * Exact role/page and API authorization remain separate S01 work.
  */
 export default function SessionMutationBoundary({ children }: { children: ReactNode }) {
-  const [blocked, setBlocked] = useState(false);
+  const account = useAccountSession();
   const pathname = usePathname();
-  useEffect(() => {
-    const update = (event: Event) => {
-      const detail = (event as CustomEvent).detail;
-      if (detail === "blocked") setBlocked(true);
-      if (detail === "signed-out") setBlocked(false);
-    };
-    window.addEventListener("aventix:session-updated", update);
-    return () => window.removeEventListener("aventix:session-updated", update);
-  }, []);
   const workspace = /^\/(?:dashboard|organizer|admin|bookings)(?:\/|$)/.test(pathname ?? "")
     || /^\/events\/[^/]+\/(?:tickets|seats)$/.test(pathname ?? "");
-  if (!blocked || !workspace) return children;
+  if (!workspace || account.session) return children;
   return <main id="main-content" className="mx-auto max-w-xl space-y-6 px-6 py-24">
-    <h1 className="text-2xl">Sign-out could not be confirmed</h1>
-    <p role="alert">Protected content is unavailable until your sign-out is confirmed.</p>
-    <SignOutButton className="text-[#66fcf1] underline">Retry sign-out</SignOutButton>
+    {account.loading ? <p role="status">Checking your current account…</p>
+      : account.unavailable ? <>
+        <AccountGate code={account.error ?? "UNAVAILABLE"} returnTo={pathname ?? undefined} />
+        {account.error === "LOGOUT_UNCERTAIN"
+          ? <SignOutButton className="text-[#66fcf1] underline">Retry sign-out</SignOutButton>
+          : <button type="button" className="text-[#66fcf1] underline" onClick={account.retry}>Retry account check</button>}
+      </> : <>
+        <h1 className="text-2xl">Log in to continue</h1>
+        <Link className="text-[#66fcf1] underline" href={authHref("/login", pathname ?? undefined)}>Log in</Link>
+      </>}
     <Link href="/events" className="block text-[#66fcf1] underline">Browse public events</Link>
   </main>;
 }

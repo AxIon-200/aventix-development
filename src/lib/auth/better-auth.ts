@@ -2,13 +2,11 @@ import { AuthClientError } from "./errors";
 import { accountFromProfile, accountDestination, isObject } from "./profile";
 import type { PublicAuthClient } from "./client";
 import { accountRequest } from "./transport";
+import { notifyAccountChange as notify } from "./session-events";
 
 export function createBetterAuthClient(transport: typeof fetch = (...args) => fetch(...args)): PublicAuthClient {
   let logoutBlocked = false;
   let pendingLogout: Promise<void> | undefined;
-  const notify = (state: "changed" | "signed-out" | "blocked") => {
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("aventix:session-updated", { detail: state }));
-  };
   const request = (path: string, body?: Record<string, unknown>) => accountRequest(transport, path, body);
   const readSession = async () => {
     try { return accountFromProfile(await request("/api/v1/me")); }
@@ -18,8 +16,20 @@ export function createBetterAuthClient(transport: typeof fetch = (...args) => fe
     }
   };
   const getSession = async () => {
-    if (logoutBlocked) throw new AuthClientError("LOGOUT_UNCERTAIN");
-    return readSession();
+    if (logoutBlocked && pendingLogout) throw new AuthClientError("LOGOUT_UNCERTAIN");
+    try {
+      const session = await readSession();
+      // A later defined refresh can confirm sign-out (including after reset),
+      // but a remaining identity must never lift an uncertain-logout block.
+      if (logoutBlocked) {
+        if (pendingLogout || session) throw new AuthClientError("LOGOUT_UNCERTAIN");
+        logoutBlocked = false;
+      }
+      return session;
+    } catch (error) {
+      if (logoutBlocked) throw new AuthClientError("LOGOUT_UNCERTAIN", error instanceof AuthClientError ? error.retryAfter : undefined);
+      throw error;
+    }
   };
   const logout = async () => {
       logoutBlocked = true;

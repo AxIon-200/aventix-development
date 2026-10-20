@@ -63,7 +63,7 @@ test('logout is idempotent and a lost response is reconciled once without resubm
   const uncertain=createBetterAuthClient(async url=>{calls.push(url);if(url.endsWith('/logout'))throw Error('lost');return response();});
   await assert.rejects(uncertain.logout(),e=>e.code==='LOGOUT_UNCERTAIN');
   await assert.rejects(uncertain.getSession(),e=>e.code==='LOGOUT_UNCERTAIN');
-  assert.deepEqual(calls,['/api/auth/logout','/api/v1/me']);
+  assert.deepEqual(calls,['/api/auth/logout','/api/v1/me','/api/v1/me']);
  }
 });
 
@@ -92,4 +92,15 @@ test('overlapping explicit sign-out actions send only one mutation and keep acco
  await assert.rejects(client.getSession(),e=>e.code==='LOGOUT_UNCERTAIN');
  complete(json({data:{loggedOut:true}}));await Promise.all([first,second]);
  assert.deepEqual(calls,['/api/auth/logout']);
+});
+
+test('a fresh account read can confirm browser sign-out after an earlier logout response was uncertain', async () => {
+ let offline=true;
+ const client=createBetterAuthClient(async()=>{
+  if(offline)throw Error('offline');
+  return json({error:{code:'AUTHENTICATION_REQUIRED'}},401);
+ });
+ await assert.rejects(client.logout(),e=>e.code==='LOGOUT_UNCERTAIN');
+ offline=false;
+ assert.equal(await client.getSession(),null);
 });

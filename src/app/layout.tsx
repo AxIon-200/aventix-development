@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Inter, Space_Grotesk, Geist } from "next/font/google";
 import "./globals.css";
 
@@ -37,6 +38,7 @@ export const metadata: Metadata = {
 
 import ButtonClickEffect from "@/components/shared/ButtonClickEffect";
 import SessionMutationBoundary from "@/components/auth/SessionMutationBoundary";
+import AccountNavigationRefresh from "@/components/auth/AccountNavigationRefresh";
 
 export default function RootLayout({
   children,
@@ -47,6 +49,7 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable} ${geist.variable}`}>
       <body className="font-sans bg-[#0b0c10] text-slate-100 antialiased selection:bg-[#66fcf1] selection:text-[#0b0c10]">
         <ButtonClickEffect />
+        <Suspense fallback={null}><AccountNavigationRefresh /></Suspense>
         <a href="#main-content" className="sr-only z-[100] rounded bg-[#66fcf1] p-3 text-[#0b0c10] focus:not-sr-only focus:fixed focus:left-4 focus:top-4">Skip to content</a>
         <SessionMutationBoundary>{children}</SessionMutationBoundary>
       </body>
