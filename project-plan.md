@@ -92,29 +92,35 @@ These are proposed conventions for new business APIs; existing approved auth con
 
 **Backend/API:** Reuse `User`, `Account`, `Session`, `AuthLink`, cooldown/rate-limit records; existing `GET /terms`, `GET /me`, `POST /api/auth/register`, `/verify-email`, `/resend-verification`, `/login`, `/logout`, and `/accept-terms`.
 
+**Interview decisions:** All nineteen recommendations and the consolidated [S01 integration decisions](backend/docs/specs/s01-attendee-authentication.md) were confirmed on 2026-10-21; the planning interview is complete. They cover fixed frontend verification/reset pages and existing-link bridges, recovery request/reset moved into S01, same-origin browser transport with explicit server-side cookie forwarding, `/events` as the default attendee destination, truthful session/failure states, and unavailable content for unfinished workspaces. Planning confirmation does not start implementation.
+
 1. Check the current implementation against the approved contract and existing auth tests. Confirm configuration/migrations and delivery without fabricating verification or consent.
 2. Replace native auth calls and response/error parsing in the frontend adapter. Obtain current terms before registration; omit an empty optional phone; never send role, status, derived name, or remember-me fields.
 3. Add the missing verification/resend and legacy-consent UI. Correct signup success copy: account creation requires verification and separate login. Handle account-created/email-failed without prompting duplicate registration.
-4. Read `/me` for account navigation and booking eligibility. Add account/role checks to workspace layouts and retain safe internal booking return URLs.
+4. Read `/me` for account navigation and booking eligibility. Add account/role checks at protected page/data boundaries as well as workspace layouts, and retain safe internal booking return URLs. Layout-only checks do not protect nested rendering or every navigation in the installed Next.js version.
+5. Integrate `POST /api/auth/request-password-reset` and `/reset-password` with the forgot/reset pages so mandatory legacy credential recovery does not dead-end in S01. Token validity remains server-checked at submission; there is no reset-token preflight operation.
+6. Keep completion tokens only in memory and immediately strip fragments from browser history, including existing-link bridges. Explain how to reopen a link after reload. Remove role-demo controls from the connected app; refresh account state on navigation/focus and cross-tab hints, and reconcile uncertain logout without claiming success.
 
-**Integrate:** [auth client](src/lib/auth), [auth components](src/components/auth), registration/login pages, Navbar/account menu, and the three workspace layouts.
+**Integrate:** [auth client](src/lib/auth), [auth components](src/components/auth), registration/login/verification/consent/forgot/reset pages, compatibility actions on existing API email landing pages, Navbar/account menu, and protection at workspace page/data boundaries.
 
-**Done when:** Registration persists genuine consent without a session; wrong-password verification leaves a link usable; verified eligible users can log in; reload retains a valid session; logout clears access; disabled/unverified/wrong-role users cannot use protected APIs or workspace pages.
+**Done when:** Registration persists genuine consent without a session; wrong-password verification leaves a link usable; verified eligible users can log in; reload retains a valid session; logout clears access; recovery consumes reset links and invalidates every session without verifying email or enabling disabled accounts; all workspaces enforce current account eligibility and explicit roles. Cover the authentication/profile API boundary and role middleware without claiming later business APIs are integrated; unfinished business operations remain unavailable. Invalid links, uncertain submissions, outdated terms, and account-service outages follow the confirmed [S01 decisions](backend/docs/specs/s01-attendee-authentication.md).
 
-### S02 — Recover credentials and edit the current account
+**Evidence:** Updated frontend tests, passing backend authentication tests on the dedicated database, frontend type/build checks, and an actual localhost browser walkthrough of cookies and protected-page access. Report technical completion separately from real-user activation, which still requires genuine terms and verified real delivery; controlled test mail is not delivery proof.
 
-**Outcome:** A user resets a forgotten password, updates allowed personal fields, and changes a known password. **Dependencies:** S01.
+### S02 — Edit the current account and change its password
 
-**Backend/API:** Reuse `GET/PATCH /me`, `POST /api/auth/request-password-reset`, `/reset-password`, `/change-password`; existing lifecycle/session invalidation code and audits.
+**Outcome:** A user updates allowed personal fields and changes a known password. Recovery request/reset integration now belongs to S01; this slice reuses that flow. **Dependencies:** S01.
 
-1. Connect missing recovery adapter methods and the backend-issued link format. Adjust the reset form's preflight requirement to the agreed contract; final validity remains server-checked at submission.
+**Backend/API:** Reuse `GET/PATCH /me` and `POST /api/auth/change-password`, plus S01's recovery flow; existing lifecycle/session invalidation code and audits.
+
+1. Reuse the recovery request/reset flow integrated in S01; do not introduce a separate token-preflight operation.
 2. Connect attendee and admin personal forms to the same current-user profile; use first/last name and optional phone, keep email read-only, and keep role/status/consent noneditable.
 3. Route both admin password entry points through the existing change-password operation instead of inventing independent password implementations.
 4. Handle legacy reset-required, link-invalid/expired, password reuse, field validation, and missing consent consistently.
 
-**Integrate:** forgot/reset pages, attendee profile, admin profile/security and settings password modal. Admin-specific activity/avatar fields remain separate extensions.
+**Integrate:** attendee profile, admin profile/security and settings password modal; link to S01's forgot/reset pages as needed. Admin-specific activity/avatar fields remain separate extensions.
 
-**Done when:** Reset consumes links and invalidates every session; authenticated change preserves only the requesting session with its original expiry; invalid profile updates change nothing; clearing a phone persists; recovery works for disabled/unverified accounts without enabling login.
+**Done when:** Authenticated password change preserves only the requesting session with its original expiry; invalid profile updates change nothing; clearing a phone persists; users who forgot their current password can reach S01's recovery flow.
 
 ### S03 — Apply as an organizer and receive an administrator decision
 
