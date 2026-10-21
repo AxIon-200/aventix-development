@@ -94,7 +94,7 @@ async function connect(url) {
 
 test('account identity stays current and account switching preserves safe booking context', {
   skip: !browserPath && 'Set BROWSER_PATH to an installed Chrome/Chromium browser',
-  timeout: 360000,
+  timeout: 600000,
 }, async t => {
   const profile = (id, role = 'ATTENDEE') => ({
     id, name: `Fixture ${id}`, firstName: 'Fixture', lastName: id,
@@ -105,6 +105,7 @@ test('account identity stays current and account switching preserves safe bookin
   });
   let logoutMode = 'confirmed';
   let loginRole = 'ATTENDEE';
+  let currentRole = 'ATTENDEE';
   let logoutRequests = 0;
   let accountResponse;
   let holdAccountReads = false;
@@ -115,7 +116,7 @@ test('account identity stays current and account switching preserves safe bookin
     const account = /fixture-account=(old|new)/.exec(request.headers.cookie ?? '')?.[1];
     if (request.url === '/api/v1/me') {
       const result = accountResponse ?? { status: account ? 200 : 401, body: account
-        ? { data: { user: profile(account, account === 'new' ? loginRole : 'ATTENDEE') } }
+        ? { data: { user: profile(account, account === 'new' ? loginRole : currentRole) } }
         : { error: { code: 'AUTHENTICATION_REQUIRED' } } };
       const complete = () => {
         response.statusCode = result.status;
@@ -178,6 +179,14 @@ test('account identity stays current and account switching preserves safe bookin
   }, 'Next login page');
   console.log('Account switching browser: isolated Next app ready');
 
+  await t.test('a direct nested workspace request redirects a guest before rendering personal content', async () => {
+    const response = await fetch(`${origin}/dashboard/tickets`, { redirect: 'manual' });
+    const body = await response.text();
+    assert.ok(response.status === 307 || /http-equiv="refresh" content="[01];url=\/login"/.test(body));
+    if (response.status === 307) assert.equal(response.headers.get('location'), '/login');
+    assert.doesNotMatch(body, /Sherwin Cruz|Upcoming Events|TicketStats|This feature is unavailable/);
+  });
+
   const browserProfile = mkdtempSync(path.join(tmpdir(), 'aventix-account-switch-'));
   const browser = spawn(browserPath, ['--headless=new', '--no-first-run', '--no-default-browser-check',
     '--remote-debugging-port=0', `--user-data-dir=${browserProfile}`, 'about:blank'],
@@ -206,7 +215,7 @@ test('account identity stays current and account switching preserves safe bookin
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
   const evaluate = async (expression, connection = cdp) => {
     const value = await connection.send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
-    if (value.exceptionDetails) throw new Error(value.exceptionDetails.text);
+    if (value.exceptionDetails) throw new Error(value.exceptionDetails.exception?.description ?? value.exceptionDetails.text);
     return value.result.value;
   };
   const click = async label => {
@@ -223,10 +232,10 @@ test('account identity stays current and account switching preserves safe bookin
     if (returnTo !== undefined) target.searchParams.set('returnTo', returnTo);
     await cdp.send('Page.navigate', { url: target.href });
     try {
-      await until(() => evaluate(`document.readyState === 'complete' && document.body.innerText.includes('Hi, Fixture old') && document.body.innerText.includes('You are signed in')`), 'hydrated current account');
+      await until(() => evaluate(`document.readyState === 'complete' && (document.body?.innerText ?? "").includes('Hi, Fixture old') && (document.body?.innerText ?? "").includes('You are signed in')`), 'hydrated current account');
     } catch (error) {
       console.error('Next output:', appOutput);
-      console.error('Browser page:', await evaluate('document.body.innerText'));
+      console.error('Browser page:', await evaluate('(document.body?.innerText ?? "")'));
       throw error;
     }
   };
@@ -248,15 +257,206 @@ test('account identity stays current and account switching preserves safe bookin
     if (failure) throw failure;
   };
 
+  const workspaceRoutes = {
+    ATTENDEE: ['/dashboard', '/dashboard/tickets', '/dashboard/profile', '/dashboard/booking-history',
+      '/dashboard/buy-tickets?eventId=concert&category=standing', '/events/concert/tickets', '/events/concert/seats',
+      '/bookings/fixture/summary', '/bookings/fixture/payment', '/bookings/fixture/confirmation'],
+    ORGANIZER: ['/organizer', '/organizer/dashboard', '/organizer/events', '/organizer/events/new',
+      '/organizer/analytics', '/organizer/check-in', '/organizer/profile'],
+    ADMINISTRATOR: ['/admin', '/admin/dashboard', '/admin/users', '/admin/organizers', '/admin/events',
+      '/admin/bookings', '/admin/payments', '/admin/activity-logs', '/admin/profile', '/admin/settings'],
+  };
+  const noPersonalSamples = body => {
+    assert.doesNotMatch(body, /Sherwin Cruz|Sarah Johnson|Admission Pass Issued|Booking Confirmed|Total Revenue|Recent Transactions/);
+  };
+
+  await scenario('every protected page rejects direct guest requests and preserves only allowed returns', async () => {
+    for (const route of Object.values(workspaceRoutes).flat()) {
+      const response = await fetch(`${origin}${route}`, { redirect: 'manual' });
+      const body = await response.text();
+      const location = response.headers.get('location');
+      assert.ok(location?.startsWith('/login') || /http-equiv="refresh" content="[01];url=\/login/.test(body), route);
+      assert.doesNotMatch(body, /This feature is unavailable|Signed in as/);
+      noPersonalSamples(body);
+    }
+    for (const [route, expected] of [
+      ['/events/concert/tickets?category=standing', '/events/concert/tickets?category=standing'],
+      ['/bookings/fixture/payment', '/bookings/fixture/payment'],
+      ['/dashboard/buy-tickets?eventId=concert&category=standing', '/dashboard/buy-tickets?eventId=concert&category=standing'],
+      ['/admin/users?returnTo=https://evil.invalid&role=ADMINISTRATOR', null],
+      ['/dashboard/buy-tickets?eventId=%2e%2e', null],
+    ]) {
+      const response = await fetch(`${origin}${route}`, { redirect: 'manual' });
+      const body = await response.text();
+      const location = response.headers.get('location') ?? /http-equiv="refresh" content="[01];url=([^"]+)/.exec(body)?.[1];
+      assert.ok(location, route);
+      assert.equal(new URL(location, origin).searchParams.get('returnTo'), expected, route);
+    }
+    assert.equal((await fetch(`${origin}/preview/booking`)).status, 404);
+  });
+
+  await scenario('all direct role pairings and nested pages render only the exact permitted workspace', async () => {
+    for (const role of Object.keys(workspaceRoutes)) {
+      currentRole = role;
+      for (const [requiredRole, routes] of Object.entries(workspaceRoutes)) {
+        for (const route of routes) {
+          const response = await fetch(`${origin}${route}`, { headers: { Cookie: 'fixture-account=old' } });
+          const body = await response.text();
+          assert.equal(response.status, 200, `${role} ${route}`);
+          noPersonalSamples(body);
+          if (role === requiredRole) {
+            assert.match(body, /This feature is unavailable/, `${role} ${route}`);
+            assert.match(body, /Fixture old/);
+          } else {
+            assert.match(body, /Access denied/, `${role} ${route}`);
+            assert.match(body, /Go to your permitted workspace/);
+            assert.doesNotMatch(body, /This feature is unavailable|Signed in as/);
+          }
+        }
+      }
+    }
+    currentRole = 'ATTENDEE';
+  });
+
+  await scenario('direct browser navigation enforces guests and all nine exact role pairings', async () => {
+    await cdp.send('Network.clearBrowserCookies');
+    for (const route of ['/dashboard/tickets', '/organizer/events/new', '/admin/users']) {
+      await cdp.send('Page.navigate', { url: `${origin}${route}` });
+      await until(() => evaluate(`location.pathname === '/login' && Boolean(document.querySelector('input[name="email"]'))`), `guest ${route}`);
+      assert.equal(await evaluate(`(document.body?.innerText ?? "").includes('This feature is unavailable')`), false);
+    }
+    await cdp.send('Network.setCookie', { name: 'fixture-account', value: 'old', url: origin, httpOnly: true, path: '/' });
+    for (const role of Object.keys(workspaceRoutes)) {
+      currentRole = role;
+      for (const [requiredRole, route] of [['ATTENDEE', '/dashboard/tickets'], ['ORGANIZER', '/organizer/events/new'], ['ADMINISTRATOR', '/admin/users']]) {
+        holdAccountReads = true;
+        await cdp.send('Page.navigate', { url: `${origin}${route}?role=${requiredRole}` });
+        await until(() => evaluate(`location.pathname === ${JSON.stringify(route)} && (document.body?.innerText ?? "").includes('Checking your current account')`), 'hydrated direct workspace');
+        await until(() => delayedAccountReads.length > 0, 'direct browser account read');
+        holdAccountReads = false;
+        delayedAccountReads.splice(0).forEach(complete => complete());
+        const expected = role === requiredRole ? 'This feature is unavailable' : 'Access denied';
+        await until(() => evaluate(`location.pathname === ${JSON.stringify(route)} && (document.body?.innerText ?? "").includes(${JSON.stringify(expected)})`), `${role} ${requiredRole}`);
+        const body = await evaluate('(document.body?.innerText ?? "")');
+        noPersonalSamples(body);
+        if (role !== requiredRole) assert.doesNotMatch(body, /This feature is unavailable|Signed in as/);
+        else assert.match(body, /Signed in as Fixture old/);
+        assert.equal(await evaluate(`Boolean(document.querySelector('input, select'))`), false);
+      }
+    }
+    currentRole = 'ATTENDEE';
+  });
+
+  await scenario('direct nested requests fail closed for every account gate, stale session, and outage', async () => {
+    for (const [status, code, message] of [
+      [401, 'AUTHENTICATION_REQUIRED', undefined],
+      [403, 'ACCOUNT_DISABLED', 'This account cannot sign in'],
+      [403, 'EMAIL_VERIFICATION_REQUIRED', 'Verify your email address'],
+      [403, 'TERMS_ACCEPTANCE_REQUIRED', 'Accept the current terms'],
+      [403, 'PASSWORD_RESET_REQUIRED', 'Reset your password through account recovery'],
+      [503, 'INTERNAL_ERROR', 'account service is unavailable'],
+      [200, undefined, 'unsupported response'],
+    ]) {
+      accountResponse = { status, body: code ? { error: { code } } : { data: { user: { id: 'malformed' } } } };
+      for (const route of ['/dashboard/tickets', '/organizer/events/new', '/admin/payments']) {
+        const response = await fetch(`${origin}${route}`, { redirect: 'manual', headers: { Cookie: 'fixture-account=old' } });
+        const body = await response.text();
+        assert.doesNotMatch(body, /This feature is unavailable|Signed in as|Fixture old/);
+        noPersonalSamples(body);
+        if (message) assert.ok(body.includes(message), `${code} ${route}`);
+        else assert.equal(response.headers.get('location'), '/login');
+      }
+    }
+    accountResponse = undefined;
+  });
+
+  await scenario('client navigation rechecks all role pairings without signing denied accounts out', async () => {
+    const before = logoutRequests;
+    for (const [requiredRole, base, nested] of [
+      ['ATTENDEE', '/dashboard', '/dashboard/tickets'],
+      ['ORGANIZER', '/organizer/dashboard', '/organizer/events/new'],
+      ['ADMINISTRATOR', '/admin/dashboard', '/admin/users'],
+    ]) {
+      for (const role of [...Object.keys(workspaceRoutes), 'GUEST']) {
+        await cdp.send('Network.setCookie', { name: 'fixture-account', value: 'old', url: origin, httpOnly: true, path: '/' });
+        currentRole = requiredRole;
+        holdAccountReads = true;
+        await cdp.send('Page.navigate', { url: `${origin}${base}` });
+        await until(() => evaluate(`location.pathname === ${JSON.stringify(base)} && (document.body?.innerText ?? "").includes('Checking your current account')`), 'hydrated workspace waits for current account');
+        await until(() => delayedAccountReads.length > 0, 'hydrated browser account read');
+        holdAccountReads = false;
+        delayedAccountReads.splice(0).forEach(complete => complete());
+        await until(() => evaluate(`(document.body?.innerText ?? "").includes('This feature is unavailable')`), 'permitted starting workspace');
+        await evaluate('window.workspaceNavigationMarker = true');
+        if (role === 'GUEST') await cdp.send('Network.clearBrowserCookies');
+        else currentRole = role;
+        await evaluate(`document.querySelector('a[href="${nested}"]').click()`);
+        if (role === 'GUEST') {
+          await until(() => evaluate(`location.pathname === '/login' && Boolean(document.querySelector('input[name="email"]'))`), `client guest ${requiredRole}`);
+          assert.equal(await evaluate('window.workspaceNavigationMarker'), true);
+          assert.equal(await evaluate(`(document.body?.innerText ?? "").includes('This feature is unavailable')`), false);
+          assert.equal(logoutRequests, before);
+          continue;
+        }
+        const expected = role === requiredRole ? 'This feature is unavailable' : 'Access denied';
+        await until(() => evaluate(`location.pathname === ${JSON.stringify(nested)} && (document.body?.innerText ?? "").includes(${JSON.stringify(expected)})`), `client ${role} ${requiredRole}`);
+        assert.equal(await evaluate('window.workspaceNavigationMarker'), true, 'navigation stays in the client router');
+        const body = await evaluate('(document.body?.innerText ?? "")');
+        noPersonalSamples(body);
+        if (role !== requiredRole) {
+          assert.doesNotMatch(body, /This feature is unavailable|Signed in as/);
+          await evaluate(`Array.from(document.querySelectorAll('a')).find(a => a.textContent === 'Go to your permitted workspace').click()`);
+          await until(() => evaluate(`(document.body?.innerText ?? "").includes('This feature is unavailable') && (document.body?.innerText ?? "").includes('Signed in as Fixture old')`), 'permitted destination');
+        }
+        assert.equal(logoutRequests, before);
+      }
+    }
+    await cdp.send('Network.setCookie', { name: 'fixture-account', value: 'old', url: origin, httpOnly: true, path: '/' });
+    currentRole = 'ATTENDEE';
+  });
+
   await scenario('focus hides old identity until the current server account is known', async () => {
     await openAccount('/login');
     holdAccountReads = true;
     await evaluate(`window.dispatchEvent(new Event('focus'))`);
     await until(() => delayedAccountReads.length > 0, 'delayed frontend account read');
-    assert.equal(await evaluate(`document.body.innerText.includes('Hi, Fixture old') || document.body.innerText.includes('You are signed in')`), false);
+    assert.equal(await evaluate(`(document.body?.innerText ?? "").includes('Hi, Fixture old') || (document.body?.innerText ?? "").includes('You are signed in')`), false);
     holdAccountReads = false;
     delayedAccountReads.splice(0).forEach(complete => complete());
-    await until(() => evaluate(`document.body.innerText.includes('Hi, Fixture old') && document.body.innerText.includes('You are signed in')`), 'fresh identity after focus');
+    await until(() => evaluate(`(document.body?.innerText ?? "").includes('Hi, Fixture old') && (document.body?.innerText ?? "").includes('You are signed in')`), 'fresh identity after focus');
+  });
+
+  await scenario('nested navigation never inserts stale workspace content while the new account check is delayed', async () => {
+    for (const [status, code, message] of [[403, 'ACCOUNT_DISABLED', 'This account cannot sign in'], [503, 'INTERNAL_ERROR', 'account service is unavailable']]) {
+      currentRole = 'ORGANIZER';
+      holdAccountReads = true;
+      await cdp.send('Page.navigate', { url: `${origin}/organizer/events` });
+      await until(() => delayedAccountReads.length > 0, 'starting workspace hydration');
+      holdAccountReads = false;
+      delayedAccountReads.splice(0).forEach(complete => complete());
+      await until(() => evaluate(`(document.body?.innerText ?? "").includes('This feature is unavailable')`), 'hydrated organizer workspace');
+      await evaluate(`window.staleWorkspaceInsertions = [];
+        window.workspaceObserver = new MutationObserver(changes => {
+          if (location.pathname !== '/organizer/events/new') return;
+          for (const change of changes) for (const node of change.addedNodes) {
+            if (/This feature is unavailable|Signed in as Fixture/.test(node.textContent ?? '')) window.staleWorkspaceInsertions.push(node.textContent);
+          }
+        });
+        window.workspaceObserver.observe(document.body, {childList:true, subtree:true});`);
+      accountResponse = { status, body: { error: { code } } };
+      holdAccountReads = true;
+      await evaluate(`document.querySelector('a[href="/organizer/events/new"]').click()`);
+      await until(() => evaluate(`location.pathname === '/organizer/events/new'`), 'nested navigation commits');
+      await until(() => delayedAccountReads.length > 0, 'pending navigation account check');
+      assert.equal(await evaluate(`(document.body?.innerText ?? "").includes('This feature is unavailable') || (document.body?.innerText ?? "").includes('Signed in as Fixture')`), false);
+      holdAccountReads = false;
+      delayedAccountReads.splice(0).forEach(complete => complete());
+      await until(() => evaluate(`(document.body?.innerText ?? "").includes(${JSON.stringify(message)})`), 'fresh navigation restriction');
+      assert.deepEqual(await evaluate('window.staleWorkspaceInsertions'), []);
+      await evaluate('window.workspaceObserver.disconnect()');
+      accountResponse = undefined;
+    }
+    currentRole = 'ATTENDEE';
   });
 
   await scenario('a newer failed eligibility check wins over an older successful response', async () => {
@@ -267,52 +467,51 @@ test('account identity stays current and account switching preserves safe bookin
     holdAccountReads = false;
     accountResponse = { status: 403, body: { error: { code: 'ACCOUNT_DISABLED' } } };
     await evaluate(`window.dispatchEvent(new Event('focus'))`);
-    await until(() => evaluate(`document.body.innerText.includes('This account cannot sign in')`), 'current eligibility failure');
+    await until(() => evaluate(`(document.body?.innerText ?? "").includes('This account cannot sign in')`), 'current eligibility failure');
     delayedAccountReads.splice(0).forEach(complete => complete());
     await delay(250);
-    assert.equal(await evaluate(`document.body.innerText.includes('Hi, Fixture old') || document.body.innerText.includes('You are signed in')`), false);
-    assert.equal(await evaluate(`document.body.innerText.includes('This account cannot sign in')`), true);
+    assert.equal(await evaluate(`(document.body?.innerText ?? "").includes('Hi, Fixture old') || (document.body?.innerText ?? "").includes('You are signed in')`), false);
+    assert.equal(await evaluate(`(document.body?.innerText ?? "").includes('This account cannot sign in')`), true);
     accountResponse = undefined;
   });
 
   await scenario('navigation and query-only navigation refresh preserved workspace layouts', async () => {
     await openAccount('/login');
     await cdp.send('Page.navigate', { url: `${origin}/dashboard` });
-    await until(() => evaluate(`document.body.innerText.includes('Welcome back,')`), 'eligible workspace');
+    await until(() => evaluate(`(document.body?.innerText ?? "").includes('This feature is unavailable')`), 'eligible workspace');
     accountResponse = { status: 403, body: { error: { code: 'ACCOUNT_DISABLED' } } };
     await evaluate(`document.querySelector('a[href="/dashboard/tickets"]').click()`);
-    await until(() => evaluate(`location.pathname === '/dashboard/tickets' && document.body.innerText.includes('This account cannot sign in')`), 'navigation eligibility refresh');
-    assert.equal(await evaluate(`document.body.innerText.includes('Sherwin Cruz')`), false);
+    await until(() => evaluate(`location.pathname === '/dashboard/tickets' && (document.body?.innerText ?? "").includes('This account cannot sign in')`), 'navigation eligibility refresh');
+    assert.equal(await evaluate(`(document.body?.innerText ?? "").includes('Sherwin Cruz')`), false);
     accountResponse = { status: 401, body: { error: { code: 'AUTHENTICATION_REQUIRED' } } };
     await evaluate(`history.pushState(null, '', '?view=refresh')`);
-    await until(() => evaluate(`document.body.innerText.includes('Log in to continue')`), 'query navigation authentication refresh');
-    assert.equal(await evaluate(`document.body.innerText.includes('My Tickets')`), false);
+    await until(() => evaluate(`location.pathname === '/login' && Boolean(document.querySelector('input[name="email"]'))`), 'query navigation authentication refresh');
+    assert.equal(await evaluate(`(document.body?.innerText ?? "").includes('My Tickets')`), false);
     accountResponse = undefined;
   });
 
   await scenario('unknown workspace state hides content and preserves distinct approved account gates', async () => {
     await openAccount('/login');
     await cdp.send('Page.navigate', { url: `${origin}/dashboard` });
-    await until(() => evaluate(`document.body.innerText.includes('Welcome back,')`), 'eligible workspace');
+    await until(() => evaluate(`(document.body?.innerText ?? "").includes('This feature is unavailable')`), 'eligible workspace');
     holdAccountReads = true;
     await evaluate(`window.dispatchEvent(new Event('focus'))`);
     await until(() => delayedAccountReads.length > 0, 'pending workspace check');
-    assert.equal(await evaluate(`document.body.innerText.includes('Welcome back,')`), false);
+    assert.equal(await evaluate(`(document.body?.innerText ?? "").includes('This feature is unavailable')`), false);
     holdAccountReads = false;
     delayedAccountReads.splice(0).forEach(complete => complete());
-    await until(() => evaluate(`document.body.innerText.includes('Welcome back,')`), 'confirmed workspace');
+    await until(() => evaluate(`(document.body?.innerText ?? "").includes('This feature is unavailable')`), 'confirmed workspace');
     for (const [response, message] of [
       [{ status: 403, body: { error: { code: 'EMAIL_VERIFICATION_REQUIRED' } } }, 'Verify your email address'],
       [{ status: 403, body: { error: { code: 'TERMS_ACCEPTANCE_REQUIRED' } } }, 'Accept the current terms'],
       [{ status: 403, body: { error: { code: 'PASSWORD_RESET_REQUIRED' } } }, 'Reset your password through account recovery'],
       [{ status: 200, body: { data: { user: { id: 'malformed' } } } }, 'unsupported response'],
       [{ status: 503, body: { error: { code: 'INTERNAL_ERROR' } } }, 'account service is unavailable'],
-      [{ status: 401, body: { error: { code: 'AUTHENTICATION_REQUIRED' } } }, 'Log in to continue'],
     ]) {
       accountResponse = response;
       await evaluate(`window.dispatchEvent(new Event('focus'))`);
-      await until(() => evaluate(`document.body.innerText.includes(${JSON.stringify(message)})`), message);
-      assert.equal(await evaluate(`document.body.innerText.includes('Welcome back,') || document.body.innerText.includes('Sherwin Cruz')`), false);
+      await until(() => evaluate(`(document.body?.innerText ?? "").includes(${JSON.stringify(message)})`), message);
+      assert.equal(await evaluate(`(document.body?.innerText ?? "").includes('This feature is unavailable') || (document.body?.innerText ?? "").includes('Signed in as Fixture') || (document.body?.innerText ?? "").includes('Sherwin Cruz')`), false);
     }
     accountResponse = undefined;
   });
@@ -326,10 +525,10 @@ test('account identity stays current and account switching preserves safe bookin
     await cdp.send('Network.clearBrowserCookies');
     // #112 owns the reset form. Exercise its account-change signal without a token or reset preflight.
     await evaluate(`window.dispatchEvent(new CustomEvent('aventix:session-updated', { detail: 'reset' }))`);
-    await until(() => evaluate(`Boolean(document.querySelector('input[name="email"]')) && !document.body.innerText.includes('Hi, Fixture old')`), 'reset sign-out');
+    await until(() => evaluate(`Boolean(document.querySelector('input[name="email"]')) && !(document.body?.innerText ?? "").includes('Hi, Fixture old')`), 'reset sign-out');
     delayedAccountReads.splice(0).forEach(complete => complete());
     await delay(250);
-    assert.equal(await evaluate(`document.body.innerText.includes('Hi, Fixture old') || document.body.innerText.includes('You are signed in')`), false);
+    assert.equal(await evaluate(`(document.body?.innerText ?? "").includes('Hi, Fixture old') || (document.body?.innerText ?? "").includes('You are signed in')`), false);
   });
 
   await scenario('a confirmed logout signal checks current account even without navigation', async () => {
@@ -337,8 +536,8 @@ test('account identity stays current and account switching preserves safe bookin
     await cdp.send('Network.clearBrowserCookies');
     accountResponse = { status: 503, body: { error: { code: 'INTERNAL_ERROR' } } };
     await evaluate(`window.dispatchEvent(new CustomEvent('aventix:session-updated', { detail: 'signed-out' }))`);
-    assert.equal(await evaluate(`document.body.innerText.includes('Hi, Fixture old') || document.body.innerText.includes('You are signed in')`), false);
-    await until(() => evaluate(`document.body.innerText.includes('account service is unavailable')`), 'post-logout account check', 15000);
+    assert.equal(await evaluate(`(document.body?.innerText ?? "").includes('Hi, Fixture old') || (document.body?.innerText ?? "").includes('You are signed in')`), false);
+    await until(() => evaluate(`(document.body?.innerText ?? "").includes('account service is unavailable')`), 'post-logout account check', 15000);
     accountResponse = undefined;
   });
 
@@ -346,10 +545,10 @@ test('account identity stays current and account switching preserves safe bookin
     await openAccount('/login');
     logoutMode = 'uncertain';
     await click('Sign out to use another account');
-    await until(() => evaluate(`document.body.innerText.includes('Sign-out could not be confirmed')`), 'uncertain logout before reset');
+    await until(() => evaluate(`(document.body?.innerText ?? "").includes('Sign-out could not be confirmed')`), 'uncertain logout before reset');
     await cdp.send('Network.clearBrowserCookies');
     await evaluate(`window.dispatchEvent(new CustomEvent('aventix:session-updated', { detail: 'reset' }))`);
-    await until(() => evaluate(`Boolean(document.querySelector('input[name="email"]')) && !document.body.innerText.includes('Sign-out could not be confirmed')`), 'reset confirms browser sign-out');
+    await until(() => evaluate(`Boolean(document.querySelector('input[name="email"]')) && !(document.body?.innerText ?? "").includes('Sign-out could not be confirmed')`), 'reset confirms browser sign-out');
     assert.equal(logoutRequests, 1);
     logoutMode = 'confirmed';
   });
@@ -363,36 +562,36 @@ test('account identity stays current and account switching preserves safe bookin
       await other.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
       await other.send('Page.navigate', { url: `${origin}/login` });
       const otherEvaluate = expression => evaluate(expression, other);
-      await until(() => otherEvaluate(`document.body.innerText.includes('Hi, Fixture old') && document.body.innerText.includes('You are signed in')`), 'second tab identity');
+      await until(() => otherEvaluate(`(document.body?.innerText ?? "").includes('Hi, Fixture old') && (document.body?.innerText ?? "").includes('You are signed in')`), 'second tab identity');
       await otherEvaluate(`window.accountHints = []; window.addEventListener('storage', event => {
         if (event.key === 'aventix:account-changed' && event.newValue) window.accountHints.push(event.newValue);
       })`);
       await cdp.send('Page.bringToFront');
-      await until(() => evaluate(`document.body.innerText.includes('You are signed in')`), 'first tab focus');
+      await until(() => evaluate(`(document.body?.innerText ?? "").includes('You are signed in')`), 'first tab focus');
       holdAccountReads = true;
       await otherEvaluate(`window.dispatchEvent(new Event('focus'))`);
       await until(() => delayedAccountReads.length > 0, 'second tab pre-logout read');
       holdAccountReads = false;
       await click('Sign out to use another account');
-      await until(() => otherEvaluate(`Boolean(document.querySelector('input[name="email"]')) && !document.body.innerText.includes('You are signed in')`), 'background tab logout hint');
+      await until(() => otherEvaluate(`Boolean(document.querySelector('input[name="email"]')) && !(document.body?.innerText ?? "").includes('You are signed in')`), 'background tab logout hint');
       delayedAccountReads.splice(0).forEach(complete => complete());
       await delay(250);
-      assert.equal(await otherEvaluate(`document.body.innerText.includes('Hi, Fixture old') || document.body.innerText.includes('You are signed in')`), false);
+      assert.equal(await otherEvaluate(`(document.body?.innerText ?? "").includes('Hi, Fixture old') || (document.body?.innerText ?? "").includes('You are signed in')`), false);
       await until(() => evaluate(`location.pathname === '/login' && Boolean(document.querySelector('input[name="email"]'))`), 'first tab login form');
       loginRole = 'ATTENDEE';
       await evaluate(`document.querySelector('input[name="email"]').value = 'new@example.invalid';
         document.querySelector('input[name="password"]').value = ' fixture password ';
         document.querySelector('input[name="email"]').form.requestSubmit()`);
-      await until(() => otherEvaluate(`document.body.innerText.includes('Hi, Fixture new') && document.body.innerText.includes('You are signed in')`), 'background tab login hint');
+      await until(() => otherEvaluate(`(document.body?.innerText ?? "").includes('Hi, Fixture new') && (document.body?.innerText ?? "").includes('You are signed in')`), 'background tab login hint');
       const hints = await otherEvaluate('window.accountHints');
       assert.ok(hints.length >= 2);
       assert.ok(hints.every(hint => /^[0-9a-f-]{36}$/.test(hint)));
       assert.equal(await otherEvaluate(`localStorage.getItem('aventix:account-changed')`), null);
       accountResponse = { status: 401, body: { error: { code: 'AUTHENTICATION_REQUIRED' } } };
       await delay(250);
-      assert.equal(await otherEvaluate(`document.body.innerText.includes('Hi, Fixture new')`), true, 'remote expiry has no immediate idle-tab promise');
+      assert.equal(await otherEvaluate(`(document.body?.innerText ?? "").includes('Hi, Fixture new')`), true, 'remote expiry has no immediate idle-tab promise');
       await other.send('Page.bringToFront');
-      await until(() => otherEvaluate(`Boolean(document.querySelector('input[name="email"]')) && !document.body.innerText.includes('Hi, Fixture new')`), 'actual tab focus checks expiry');
+      await until(() => otherEvaluate(`Boolean(document.querySelector('input[name="email"]')) && !(document.body?.innerText ?? "").includes('Hi, Fixture new')`), 'actual tab focus checks expiry');
     } finally {
       accountResponse = undefined;
       other.close();
@@ -428,7 +627,7 @@ test('account identity stays current and account switching preserves safe bookin
     await openAccount('/register/attendee', target);
     logoutMode = 'uncertain';
     await click('Sign out to use another account');
-    await until(() => evaluate(`document.body.innerText.includes('Sign-out could not be confirmed')`), 'uncertain sign-out');
+    await until(() => evaluate(`(document.body?.innerText ?? "").includes('Sign-out could not be confirmed')`), 'uncertain sign-out');
     assert.equal(await evaluate('location.pathname'), '/register/attendee');
     assert.equal(new URL(await evaluate('location.href')).searchParams.get('returnTo'), target);
     assert.equal(await evaluate(`Boolean(document.querySelector('input[name="email"]'))`), false);
@@ -455,7 +654,7 @@ test('account identity stays current and account switching preserves safe bookin
         await until(() => evaluate(`location.pathname + location.search === ${JSON.stringify(destination)}`), `${role} destination`, 15000);
       } catch (error) {
         console.error('Login destination:', await evaluate('location.pathname + location.search'));
-        console.error('Login page:', await evaluate('document.body.innerText'));
+        console.error('Login page:', await evaluate('(document.body?.innerText ?? "")'));
         throw error;
       }
     }

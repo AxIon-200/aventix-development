@@ -5,8 +5,10 @@ import { accountSession, checkingAccount, type AccountState } from "@/lib/auth/a
 
 export type { AccountState } from "@/lib/auth/account-session";
 
-export function useAccountSession(client: PublicAuthClient = publicAuthClient, initial?: AccountState) {
+export function useAccountSession(client: PublicAuthClient = publicAuthClient, initial?: AccountState, route?: string) {
   const account = accountSession(client);
-  const state = useSyncExternalStore(account.subscribe, account.getSnapshot, () => initial ?? checkingAccount);
+  const state = useSyncExternalStore(account.subscribe,
+    route === undefined ? account.getSnapshot : () => account.getSnapshotForRoute(route),
+    () => initial ?? checkingAccount);
   return { ...state, retry: account.retry, clearSession: account.clear };
 }

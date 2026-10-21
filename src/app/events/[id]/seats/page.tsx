@@ -1,9 +1,13 @@
-import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import WorkspacePage from "@/components/auth/WorkspacePage";
 
-export const metadata: Metadata = { title: "Numbered-seat selection | Aventix", robots: { index: false, follow: false } };
+export const metadata = { title: "Event seats | Aventix", robots: { index: false, follow: false } };
 
-export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+export default async function Page({ params, searchParams }: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ category?: string }>;
+}) {
   const { id } = await params;
-  redirect(`/dashboard/buy-tickets?eventId=${encodeURIComponent(id)}`);
+  const { category } = await searchParams;
+  const returnTo = `/events/${encodeURIComponent(id)}/seats${typeof category === "string" ? `?category=${encodeURIComponent(category)}` : ""}`;
+  return <WorkspacePage role="ATTENDEE" title="Event seats" returnTo={returnTo} />;
 }

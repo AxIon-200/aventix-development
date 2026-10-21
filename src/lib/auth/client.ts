@@ -9,8 +9,10 @@ export type AttendeeRegistration = {
   password: string; termsAccepted: true;
 };
 export type AuthResult = { destination?: string; allowBookingReturn?: boolean };
+export type AccountRole = "ATTENDEE" | "ORGANIZER" | "ADMINISTRATOR";
 export interface AccountSession {
   userId: string;
+  role: AccountRole;
   displayName: string;
   email?: string;
   /** Effective booking eligibility from the shared backend/session client. */
@@ -43,7 +45,7 @@ export function authErrorMessage(error: unknown): string {
     EXPIRED_RECOVERY_LINK: "This recovery link has expired. Request a new link.",
     USED_RECOVERY_LINK: "This recovery link has already been used. Request a new link.",
     RATE_LIMITED: "Too many attempts. Please wait before trying again.",
-    UNAVAILABLE: "The account service is unavailable. Check the backend connection and try again.",
+    UNAVAILABLE: "The account service is unavailable. Please try again.",
     EMAIL_NOT_VERIFIED: "Verify your email address before logging in.",
     EMAIL_VERIFICATION_REQUIRED: "Verify your email address before logging in.",
     TERMS_ACCEPTANCE_REQUIRED: "Accept the current terms with your password before logging in separately.",

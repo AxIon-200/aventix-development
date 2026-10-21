@@ -37,7 +37,6 @@ export const metadata: Metadata = {
 };
 
 import ButtonClickEffect from "@/components/shared/ButtonClickEffect";
-import SessionMutationBoundary from "@/components/auth/SessionMutationBoundary";
 import AccountNavigationRefresh from "@/components/auth/AccountNavigationRefresh";
 
 export default function RootLayout({
@@ -51,7 +50,7 @@ export default function RootLayout({
         <ButtonClickEffect />
         <Suspense fallback={null}><AccountNavigationRefresh /></Suspense>
         <a href="#main-content" className="sr-only z-[100] rounded bg-[#66fcf1] p-3 text-[#0b0c10] focus:not-sr-only focus:fixed focus:left-4 focus:top-4">Skip to content</a>
-        <SessionMutationBoundary>{children}</SessionMutationBoundary>
+        {children}
       </body>
     </html>
   );

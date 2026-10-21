@@ -22,6 +22,7 @@ test('current account permits only supported eligible profiles and exact role na
  for (const [role,href,canBook] of [['ATTENDEE','/events',true],['ORGANIZER','/organizer/dashboard',false],['ADMINISTRATOR','/admin/dashboard',false]]) {
   const account=await createBetterAuthClient(async()=>profile(user(role))).getSession();
   assert.equal(account.displayName,'Review User');assert.equal(account.navigation[0].href,href);assert.equal(account.canBook,canBook);
+  assert.equal(account.role,role);
  }
  for (const changes of [{role:'ADMIN'},{role:['ATTENDEE']},{email:'not-an-email'},{phoneNumber:42},{status:'DISABLED'},{emailVerified:false},{termsVersion:null},{termsAcceptedAt:null},{name:' '},{id:undefined},{createdAt:'bad'}]) {
   await assert.rejects(createBetterAuthClient(async()=>profile({...user(),...changes})).getSession(),e=>e.code==='INVALID_RESPONSE');

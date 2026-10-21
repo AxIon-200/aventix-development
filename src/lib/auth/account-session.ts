@@ -48,6 +48,9 @@ function createAccountSession(client: PublicAuthClient) {
   };
   return {
     getSnapshot: () => state,
+    // A new page cannot use an account checked for the previous navigation,
+    // even before AccountNavigationRefresh's effect starts the next read.
+    getSnapshotForRoute: (currentRoute: string) => route === currentRoute ? state : checkingAccount,
     retry,
     clear,
     navigate: (nextRoute: string) => {

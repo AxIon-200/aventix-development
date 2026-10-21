@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useAccountSession } from "@/components/auth/useAccountSession";
 import { UserRole, ROLE_CONFIGS } from "@/types/roles";
 
 export interface UseRoleReturn {
@@ -15,22 +15,11 @@ export interface UseRoleReturn {
 }
 
 /**
- * Hook to inspect the active role context and permissions based on route hierarchy.
+ * Current account UI only. Page and API access still require live authorization.
  */
 export function useRole(): UseRoleReturn {
-  const pathname = usePathname() || "";
-
-  let currentRole: UserRole = "GUEST";
-
-  if (pathname.startsWith("/admin")) {
-    currentRole = "ADMINISTRATOR";
-  } else if (pathname.startsWith("/organizer")) {
-    currentRole = "ORGANIZER";
-  } else if (pathname.startsWith("/dashboard") || pathname.startsWith("/bookings")) {
-    currentRole = "ATTENDEE";
-  } else {
-    currentRole = "GUEST";
-  }
+  const { session } = useAccountSession();
+  const currentRole: UserRole = session?.role ?? "GUEST";
 
   const config = ROLE_CONFIGS[currentRole];
 
@@ -42,6 +31,6 @@ export function useRole(): UseRoleReturn {
     isAdmin: currentRole === "ADMINISTRATOR",
     dashboardPath: config.dashboardPath,
     allowedPrefixes: config.allowedPrefixes,
-    displayName: config.displayName,
+    displayName: session?.displayName ?? config.displayName,
   };
 }
