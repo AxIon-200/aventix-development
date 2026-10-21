@@ -51,6 +51,31 @@ export function createBetterAuthClient(transport: typeof fetch = (...args) => fe
   };
   return {
     getSession,
+    getTerms: async () => {
+      const result = await request("/api/v1/terms");
+      if (!isObject(result) || !isObject(result.data)) throw new AuthClientError("INVALID_RESPONSE");
+      const { version, documentUrl } = result.data;
+      if (typeof version !== "string" || !version.trim() || typeof documentUrl !== "string") throw new AuthClientError("INVALID_RESPONSE");
+      let url: URL;
+      try { url = new URL(documentUrl); } catch { throw new AuthClientError("INVALID_RESPONSE"); }
+      if (!["https:", "http:"].includes(url.protocol) || url.username || url.password) throw new AuthClientError("INVALID_RESPONSE");
+      return { version, documentUrl };
+    },
+    registerAttendee: async data => {
+      let result: unknown;
+      try {
+        result = await request("/api/auth/register", {
+          firstName: data.firstName.trim(), lastName: data.lastName.trim(), email: data.email.trim().toLowerCase(),
+          password: data.password, ...(data.phoneNumber === "" || data.phoneNumber === undefined ? {} : { phoneNumber: data.phoneNumber }),
+          termsAccepted: data.termsAccepted, termsVersion: data.termsVersion,
+        });
+      } catch (error) {
+        // An unsupported gateway error may replace the response after creation.
+        if (error instanceof AuthClientError && error.code === "UNAVAILABLE") throw new AuthClientError("REQUEST_UNCERTAIN", error.retryAfter);
+        throw error;
+      }
+      if (!isObject(result) || !isObject(result.data) || result.data.verificationRequired !== true) throw new AuthClientError("REQUEST_UNCERTAIN");
+    },
     login: async data => {
       const email = data.email.trim().toLowerCase();
       const loggedIn = accountFromProfile(await request("/api/auth/login", { email, password: data.password }));

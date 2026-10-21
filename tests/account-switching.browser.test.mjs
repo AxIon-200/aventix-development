@@ -109,6 +109,10 @@ test('account identity stays current and account switching preserves safe bookin
   let logoutRequests = 0;
   let accountResponse;
   let holdAccountReads = false;
+  let termsAvailable = true;
+  let termsVersion = 'fixture-v1';
+  let registrationMode = 'created';
+  const registrations = [];
   const delayedAccountReads = [];
   const api = createServer(async (request, response) => {
     response.setHeader('Content-Type', 'application/json');
@@ -136,6 +140,25 @@ test('account identity stays current and account switching preserves safe bookin
       assert.deepEqual(input, { email: 'new@example.invalid', password: ' fixture password ' });
       response.setHeader('Set-Cookie', 'fixture-account=new; Path=/; HttpOnly; SameSite=Lax');
       response.end(JSON.stringify({ data: { user: profile('new', loginRole) } }));
+    } else if (request.url === '/api/v1/terms') {
+      response.statusCode = termsAvailable ? 200 : 503;
+      response.end(JSON.stringify(termsAvailable ? { data: { version: termsVersion, documentUrl: `https://example.invalid/${termsVersion}` } } : { error: { code: 'INTERNAL_ERROR' } }));
+    } else if (request.url === '/api/auth/register' && request.method === 'POST') {
+      let body = '';
+      for await (const chunk of request) body += chunk;
+      registrations.push(JSON.parse(body));
+      if (registrationMode === 'uncertain') { request.socket.destroy(); return; }
+      if (registrationMode === 'stale') termsVersion = 'fixture-v2';
+      const result = { created: [201, { data: { verificationRequired: true } }],
+        stale: [409, { error: { code: 'TERMS_VERSION_OUTDATED' } }],
+        duplicate: [409, { error: { code: 'EMAIL_ALREADY_REGISTERED' } }],
+        'delivery-failed': [503, { error: { code: 'ACCOUNT_CREATED_EMAIL_FAILED' } }],
+        limited: [429, { error: { code: 'RATE_LIMITED' } }],
+        gateway: [502, { error: { code: 'BAD_GATEWAY' } }],
+      }[registrationMode];
+      response.statusCode = result[0];
+      if (registrationMode === 'limited') response.setHeader('Retry-After', '60');
+      response.end(JSON.stringify(result[1]));
     } else {
       response.statusCode = 404;
       response.end(JSON.stringify({ error: { code: 'NOT_FOUND' } }));
@@ -256,6 +279,94 @@ test('account identity stays current and account switching preserves safe bookin
     });
     if (failure) throw failure;
   };
+
+  const registrationReturn = '/events/concert/tickets?category=standing';
+  const openRegistration = async () => {
+    await cdp.send('Network.clearBrowserCookies');
+    await cdp.send('Page.navigate', { url: `${origin}/register/attendee?returnTo=${encodeURIComponent(registrationReturn)}` });
+    await until(() => evaluate(`document.querySelector('input[name="firstName"]')?.checkVisibility() && (Boolean(document.querySelector('input[name="terms"]')) || document.body.innerText.includes('Current terms could not be loaded'))`), 'registration form and terms');
+  };
+  const fillRegistration = async (password = ' exact password e\u0301 🔒 ', firstName = ' Ana ') => {
+    await evaluate(`for (const [name, value] of Object.entries(${JSON.stringify({ firstName, lastName: ' Cruz ', email: ' ANA+tag@EXAMPLE.invalid ', password, confirmPassword: password })})) document.querySelector('[name="' + name + '"]').value = value;
+      if (!document.querySelector('[name="terms"]').checked) document.querySelector('[name="terms"]').click()`);
+    await until(() => evaluate(`!document.querySelector('button[type="submit"]').disabled`), 'explicit acceptance');
+  };
+
+  await scenario('reading terms and returning to the registration tab preserves entered fields and credentials', async () => {
+    await openRegistration();
+    await fillRegistration();
+    holdAccountReads = true;
+    await evaluate(`window.dispatchEvent(new Event('focus'))`);
+    await until(() => delayedAccountReads.length > 0, 'pending guest check');
+    assert.equal(await evaluate(`document.querySelector('input[name="firstName"]').checkVisibility()`), false);
+    holdAccountReads = false;
+    delayedAccountReads.splice(0).forEach(complete => complete());
+    await until(() => evaluate(`document.querySelector('input[name="firstName"]')?.checkVisibility()`), 'guest account refresh');
+    assert.equal(await evaluate(`document.querySelector('[name="firstName"]').value`), ' Ana ');
+    assert.equal(await evaluate(`document.querySelector('[name="password"]').value`), ' exact password e\u0301 🔒 ');
+  });
+
+  await scenario('terms outage disables registration with retry while login and recovery remain available', async () => {
+    termsAvailable = false;
+    await openRegistration();
+    assert.equal(await evaluate(`document.querySelector('button[type="submit"]').disabled`), true);
+    assert.equal(await evaluate(`Boolean(document.querySelector('a[href^="/legal/"]'))`), false);
+    assert.ok(await evaluate(`Boolean(document.querySelector('a[href^="/login"]')) && Boolean(document.querySelector('a[href^="/forgot-password"]'))`));
+    termsAvailable = true;
+    await click('Retry current terms');
+    await until(() => evaluate(`Boolean(document.querySelector('a[href="https://example.invalid/fixture-v1"]'))`), 'current document');
+    assert.equal(await evaluate(`document.querySelector('[name="terms"]').checked`), false);
+  });
+
+  await scenario('changed terms require fresh consent and a separate submission while preserving nonsensitive fields', async () => {
+    registrationMode = 'stale';
+    await fillRegistration();
+    const before = registrations.length;
+    await click('Register');
+    await until(() => evaluate(`Boolean(document.querySelector('a[href="https://example.invalid/fixture-v2"]'))`), 'new terms document');
+    assert.equal(await evaluate(`document.querySelector('[name="terms"]').checked`), false);
+    assert.equal(await evaluate(`document.querySelector('[name="firstName"]').value`), ' Ana ');
+    assert.equal(await evaluate(`document.querySelector('[name="email"]').value`), 'ANA+tag@EXAMPLE.invalid');
+    assert.equal(await evaluate(`document.querySelector('[name="password"]').value`), '');
+    assert.equal(await evaluate(`document.querySelector('button[type="submit"]').disabled`), true);
+    assert.equal(registrations.length, before + 1);
+    registrationMode = 'created';
+    const password = '🔒'.repeat(128), firstName = '🪩'.repeat(100);
+    await fillRegistration(password, firstName);
+    for (const name of ['firstName', 'lastName', 'password', 'confirmPassword']) assert.equal(await evaluate(`document.querySelector('[name="${name}"]').hasAttribute('maxlength')`), false);
+    await click('Register');
+    await until(() => evaluate(`document.body.innerText.includes('You have not been signed in')`), 'verification instructions');
+    assert.deepEqual(registrations.at(-1), { firstName, lastName: 'Cruz', email: 'ana+tag@example.invalid', password, termsAccepted: true, termsVersion: 'fixture-v2' });
+    assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);
+    const login = new URL(await evaluate(`Array.from(document.querySelectorAll('a')).find(a => a.textContent === 'Log in separately').href`));
+    assert.equal(login.searchParams.get('returnTo'), registrationReturn);
+    assert.equal(await evaluate(`Boolean(document.querySelector('[name="password"]'))`), false);
+  });
+
+  await scenario('duplicate, failed delivery and lost registration responses offer explicit next steps without resubmitting', async () => {
+    for (const [mode, text] of [['duplicate', 'existing account has not been changed'], ['delivery-failed', 'terms acceptance were saved'], ['uncertain', 'could not confirm registration'], ['gateway', 'could not confirm registration']]) {
+      registrationMode = mode;
+      await openRegistration();
+      await fillRegistration();
+      const before = registrations.length;
+      await click('Register');
+      await until(() => evaluate(`document.body.innerText.includes(${JSON.stringify(text)})`), mode);
+      assert.equal(registrations.length, before + 1);
+      assert.equal(await evaluate(`Boolean(document.querySelector('button[type="submit"]'))`), false);
+      if (mode !== 'duplicate') assert.ok(await evaluate(`Boolean(document.querySelector('a[href^="/verify-email"]'))`));
+      if (mode !== 'delivery-failed') assert.ok(await evaluate(`Boolean(document.querySelector('a[href^="/forgot-password"]'))`));
+    }
+  });
+
+  await scenario('registration throttling preserves input and displays Retry-After', async () => {
+    registrationMode = 'limited';
+    await openRegistration();
+    await fillRegistration();
+    await click('Register');
+    await until(() => evaluate(`document.body.innerText.includes('Try again in 60 seconds')`), 'registration throttle');
+    assert.equal(await evaluate(`document.querySelector('[name="firstName"]').value`), ' Ana ');
+    registrationMode = 'created';
+  });
 
   const workspaceRoutes = {
     ATTENDEE: ['/dashboard', '/dashboard/tickets', '/dashboard/profile', '/dashboard/booking-history',

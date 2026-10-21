@@ -2,7 +2,8 @@ import { AuthClientError, type AuthErrorCode } from "./errors";
 import { isObject } from "./profile";
 
 const publicCodes: AuthErrorCode[] = ["INVALID_CREDENTIALS", "ACCOUNT_DISABLED", "EMAIL_VERIFICATION_REQUIRED",
-  "TERMS_ACCEPTANCE_REQUIRED", "PASSWORD_RESET_REQUIRED", "AUTHENTICATION_REQUIRED", "VALIDATION_ERROR", "RATE_LIMITED"];
+  "TERMS_ACCEPTANCE_REQUIRED", "PASSWORD_RESET_REQUIRED", "AUTHENTICATION_REQUIRED", "VALIDATION_ERROR", "RATE_LIMITED",
+  "EMAIL_ALREADY_REGISTERED", "ACCOUNT_CREATED_EMAIL_FAILED", "TERMS_VERSION_OUTDATED"];
 
 /** Decode only public envelopes. Provider messages and unknown field values never reach the UI. */
 export async function accountRequest(transport: typeof fetch, url: string, body?: Record<string, unknown>, cookie?: string): Promise<unknown> {
@@ -28,6 +29,10 @@ export async function accountRequest(transport: typeof fetch, url: string, body?
       const supplied = isObject(error.fields) ? error.fields : isObject(error.fieldErrors) ? error.fieldErrors : {};
       if (Object.hasOwn(supplied, "email")) fields.email = "Enter a valid email address.";
       if (Object.hasOwn(supplied, "password")) fields.password = "Enter your password using at most 128 characters.";
+      if (Object.hasOwn(supplied, "firstName")) fields.firstName = "Use 1–100 Unicode characters for your first name.";
+      if (Object.hasOwn(supplied, "lastName")) fields.lastName = "Use 1–100 Unicode characters for your last name.";
+      if (Object.hasOwn(supplied, "phoneNumber")) fields.phoneNumber = "Use 09 plus nine digits or +639 plus nine digits, without spaces or hyphens.";
+      if (Object.hasOwn(supplied, "termsAccepted") || Object.hasOwn(supplied, "termsVersion")) fields.terms = "Read and explicitly accept the current terms.";
     }
     throw new AuthClientError(code, Number.isFinite(seconds) && seconds >= 0 ? seconds : undefined, fields);
   }

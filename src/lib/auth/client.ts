@@ -5,9 +5,10 @@ import { AuthClientError, type AuthErrorCode } from "./errors";
  * Login confirms the permitted current account before authorizing navigation.
  */
 export type AttendeeRegistration = {
-  firstName: string; lastName: string; email: string; phoneNumber: string;
-  password: string; termsAccepted: true;
+  firstName: string; lastName: string; email: string; phoneNumber?: string;
+  password: string; termsAccepted: boolean; termsVersion: string;
 };
+export type CurrentTerms = { version: string; documentUrl: string };
 export type AuthResult = { destination?: string; allowBookingReturn?: boolean };
 export type AccountRole = "ATTENDEE" | "ORGANIZER" | "ADMINISTRATOR";
 export interface AccountSession {
@@ -26,7 +27,8 @@ export interface PublicAuthClient {
   logout?: () => Promise<void>;
   passwordRules?: { description: string; validate: (password: string) => string | undefined };
   login?: (data: { email: string; password: string }) => Promise<AuthResult>;
-  registerAttendee?: (data: AttendeeRegistration) => Promise<void | AuthResult>;
+  getTerms?: () => Promise<CurrentTerms>;
+  registerAttendee?: (data: AttendeeRegistration) => Promise<void>;
   requestPasswordReset?: (data: { email: string }) => Promise<void>;
   // The agreed adapter extracts/verifies its own backend-issued link format.
   verifyRecoveryLink?: (link: string) => Promise<void>;
@@ -41,6 +43,9 @@ export function authErrorMessage(error: unknown): string {
     INVALID_CREDENTIALS: "The email address or password is incorrect.",
     ACCOUNT_DISABLED: "This account cannot sign in. Please contact support.",
     DUPLICATE_EMAIL: "This email is already registered. Log in or reset your password.",
+    EMAIL_ALREADY_REGISTERED: "This email is already registered. The existing account has not been changed. Log in or recover your password.",
+    ACCOUNT_CREATED_EMAIL_FAILED: "Your unverified attendee account and terms acceptance were saved, but the verification email could not be sent. Request another verification email, then verify before logging in separately.",
+    TERMS_VERSION_OUTDATED: "The terms have changed. Read the current document and explicitly accept it before submitting again.",
     INVALID_RECOVERY_LINK: "This recovery link is invalid. Request a new link.",
     EXPIRED_RECOVERY_LINK: "This recovery link has expired. Request a new link.",
     USED_RECOVERY_LINK: "This recovery link has already been used. Request a new link.",

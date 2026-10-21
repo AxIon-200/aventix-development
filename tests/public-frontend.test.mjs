@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { load, cache, root } from './load-typescript.mjs';
 const { safeReturnTo, authHref } = load('src/lib/auth/destination.ts');
-const { normalizePhone, attendeePayload, passwordError, validEmail } = load('src/lib/auth/validation.ts');
+const { validPhone, attendeePayload, passwordError, validEmail } = load('src/lib/auth/validation.ts');
 const { getBookingState, bookingHref, isCategoryBookable } = load('src/lib/event-booking.ts');
 const { isEventPayload } = load('src/lib/event-payload.ts');
 const { MOCK_EVENTS } = load('src/lib/mock-events.ts');
@@ -20,17 +20,25 @@ test('booking return survives auth links without admitting external or privilege
 test('registration allowlists account fields and excludes confirmation and privileges', () => {
   const data = new FormData();
   for (const [k, v] of Object.entries({ firstName:' Ana ', lastName:' Cruz ', email:' ana@example.com ', phoneNumber:'0917 123 4567', password:'strong-pass', confirmPassword:'strong-pass', terms:'on', role:'ADMIN', isOrganizer:'true' })) data.set(k, v);
-  assert.deepEqual(attendeePayload(data), { firstName:'Ana', lastName:'Cruz', email:'ana@example.com', phoneNumber:'+639171234567', password:'strong-pass', termsAccepted:true });
+  data.set('phoneNumber', '09171234567');
+  data.set('email', ' ANA+tag@EXAMPLE.com ');
+  data.set('termsVersion', 'tampered');
+  assert.deepEqual(attendeePayload(data, 'fixture-v1'), { firstName:'Ana', lastName:'Cruz', email:'ana+tag@example.com', phoneNumber:'09171234567', password:'strong-pass', termsAccepted:true, termsVersion:'fixture-v1' });
+  data.set('phoneNumber', ''); data.delete('terms');
+  const payload = attendeePayload(data, 'fixture-v2');
+  assert.equal(Object.hasOwn(payload, 'phoneNumber'), false);
+  assert.equal(payload.termsAccepted, false);
+  assert.equal(payload.termsVersion, 'fixture-v2');
 });
-test('contact and provisional password validation reject malformed input', () => {
-  assert.equal(normalizePhone('+63 (917) 123-4567'), '+639171234567');
-  assert.equal(normalizePhone('not-a-number'), undefined);
-  assert.equal(normalizePhone('12345'), undefined);
+test('contact and exact Unicode password validation follow the registration contract', () => {
+  for (const phone of ['09171234567', '+639171234567']) assert.equal(validPhone(phone), true);
+  for (const phone of ['+63 (917) 123-4567', '0917 123 4567', '0917-123-4567', '639171234567', '+14155552671', '0291234567', '０９１７１２３４５６７', ' 09171234567']) assert.equal(validPhone(phone), false, phone);
+  assert.equal(validPhone('not-a-number'), false);
+  assert.equal(validPhone('12345'), false);
   assert.equal(validEmail('bad@'), false);
   assert.equal(validEmail('a@example.com'), true);
-  assert.ok(passwordError('short'));
-  assert.ok(passwordError('        '));
-  assert.equal(passwordError('long-password'), undefined);
+  for (const password of ['a'.repeat(14), '🔒'.repeat(14), 'a'.repeat(129), '🔒'.repeat(129), '\ud800'.repeat(15)]) assert.ok(passwordError(password));
+  for (const password of [' '.repeat(15), 'a'.repeat(15), '🔒'.repeat(15), 'a'.repeat(128), '🔒'.repeat(128), ' exact password e\u0301 ']) assert.equal(passwordError(password), undefined);
 });
 test('non-bookable event and category states cannot proceed', () => {
   const base = structuredClone(MOCK_EVENTS[0]);
