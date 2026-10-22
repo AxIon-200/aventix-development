@@ -29,6 +29,8 @@ export interface PublicAuthClient {
   login?: (data: { email: string; password: string }) => Promise<AuthResult>;
   getTerms?: () => Promise<CurrentTerms>;
   registerAttendee?: (data: AttendeeRegistration) => Promise<void>;
+  verifyEmail?: (data: { token: string; currentPassword: string }) => Promise<void>;
+  resendVerification?: (data: { email: string }) => Promise<void>;
   requestPasswordReset?: (data: { email: string }) => Promise<void>;
   // The agreed adapter extracts/verifies its own backend-issued link format.
   verifyRecoveryLink?: (link: string) => Promise<void>;
@@ -41,6 +43,8 @@ export function authErrorMessage(error: unknown): string {
   if (!(error instanceof AuthClientError)) return "We couldn’t complete your request. Please try again.";
   const messages: Record<AuthErrorCode, string> = {
     INVALID_CREDENTIALS: "The email address or password is incorrect.",
+    CURRENT_PASSWORD_INCORRECT: "The current password is incorrect. Try again with the same email link.",
+    LINK_INVALID_OR_EXPIRED: "Link is invalid or expired. Request another verification email or recover your password.",
     ACCOUNT_DISABLED: "This account cannot sign in. Please contact support.",
     DUPLICATE_EMAIL: "This email is already registered. Log in or reset your password.",
     EMAIL_ALREADY_REGISTERED: "This email is already registered. The existing account has not been changed. Log in or recover your password.",

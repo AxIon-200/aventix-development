@@ -8,6 +8,13 @@ export function createBetterAuthClient(transport: typeof fetch = (...args) => fe
   let logoutBlocked = false;
   let pendingLogout: Promise<void> | undefined;
   const request = (path: string, body?: Record<string, unknown>) => accountRequest(transport, path, body);
+  const requestCompletion = async (path: string, body: Record<string, unknown>) => {
+    try { return await request(path, body); }
+    catch (error) {
+      if (error instanceof AuthClientError && ["UNAVAILABLE", "INVALID_RESPONSE"].includes(error.code)) throw new AuthClientError("REQUEST_UNCERTAIN", error.retryAfter);
+      throw error;
+    }
+  };
   const readSession = async () => {
     try { return accountFromProfile(await request("/api/v1/me")); }
     catch (error) {
@@ -51,6 +58,14 @@ export function createBetterAuthClient(transport: typeof fetch = (...args) => fe
   };
   return {
     getSession,
+    verifyEmail: async ({ token, currentPassword }) => {
+      const result = await requestCompletion("/api/auth/verify-email", { token, currentPassword });
+      if (!isObject(result) || !isObject(result.data) || result.data.emailVerified !== true) throw new AuthClientError("REQUEST_UNCERTAIN");
+    },
+    resendVerification: async ({ email }) => {
+      const result = await requestCompletion("/api/auth/resend-verification", { email: email.trim().toLowerCase() });
+      if (!isObject(result) || !isObject(result.data) || result.data.message !== "If this address is eligible, a verification email will be sent.") throw new AuthClientError("REQUEST_UNCERTAIN");
+    },
     getTerms: async () => {
       const result = await request("/api/v1/terms");
       if (!isObject(result) || !isObject(result.data)) throw new AuthClientError("INVALID_RESPONSE");

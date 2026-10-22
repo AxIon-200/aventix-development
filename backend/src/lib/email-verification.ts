@@ -48,7 +48,7 @@ export function verificationEndpoints(options: RegistrationOptions) {
         return errorResponse(500, "INTERNAL_ERROR", "Request could not be completed");
       }
       if (token) {
-        try { await options.sendVerificationEmail({ to: email, url: verificationUrl(ctx.context.options.baseURL as string, token) }); }
+        try { await options.sendVerificationEmail({ to: email, url: verificationUrl(token) }); }
         catch { console.error("Verification email delivery failed", { correlationId: randomUUID() }); }
       }
       return resendResult();
