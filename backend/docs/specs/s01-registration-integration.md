@@ -70,6 +70,29 @@ so unsupported service errors now use the uncertainty screen. The failing HTTP
 502 contract case passes after the fix, and browser coverage verifies the
 explicit login/recovery/resend choices without another creation submission.
 
+## Revalidation on 2026-10-22
+
+Issue #110 was already implemented in commit `67844c37` when this verification
+started. No application behavior was changed during revalidation.
+
+- Frontend and backend typechecking and scoped frontend ESLint passed.
+- All 29 frontend contract/public/booking tests passed, including all five
+  registration contract tests. All registration browser scenarios passed.
+- The full frontend run timed out in the existing reset/sign-out reconciliation
+  browser scenario. A separate rerun of the complete browser suite passed all
+  26 checks, including that scenario. The initial intermittent failure remains
+  part of this evidence.
+- The focused backend registration suite passed all 49 tests against the guarded
+  dedicated test database.
+- The full backend suite completed with 234 passed and 22 failed tests across
+  12 files. The session suite timed out, then returned unexpected HTTP 500s;
+  its cleanup reported that Prisma could not reach the Supabase database.
+  One verification-policy test also returned an unexpected HTTP 500. This run
+  does not establish a passing full backend suite, and session fixture cleanup
+  was not confirmed.
+- Independent Standards and Spec reviews of `4df2710d...67844c37` reported zero
+  findings on each axis. The unrelated working-tree lockfile change was excluded.
+
 ## Activation boundary
 
 No legal terms or real sending credentials were authored or enabled. Genuine,
