@@ -106,6 +106,23 @@ it.each(roles)("preserves the fixed %s role against public and native mutation a
   expect(profile.body.data.user).toMatchObject({ role, firstName: "Role" });
 });
 
+it("keeps unfinished business operations unavailable to guests and every account role", async () => {
+  const app = fixtureApp();
+  const cookies: (string | undefined)[] = [undefined];
+  for (const role of roles) cookies.push(await login(app, (await identity(role)).email));
+  for (const cookie of cookies) {
+    for (const [method, path] of [
+      ["get", "/attendee/dashboard"], ["get", "/attendee/tickets"], ["get", "/attendee/bookings"],
+      ["get", "/organizer/dashboard"], ["get", "/organizer/events"], ["post", "/organizer/check-in"],
+      ["get", "/admin/dashboard/overview"], ["get", "/admin/users"], ["get", "/admin/organizers"], ["get", "/admin/bookings"],
+    ] as const) {
+      const pending = request(app)[method](`/api/v1${path}`);
+      const response = await (cookie ? pending.set("Cookie", cookie) : pending);
+      expect(response.status, `${method} ${path}`).toBe(404);
+    }
+  }
+});
+
 it("never mounts demonstration routes in the production application or native handler", async () => {
   const original = { ...env };
   try {

@@ -1,25 +1,9 @@
-import type { Metadata } from "next";
-import InteractiveTicketFlow from "@/components/booking/InteractiveTicketFlow";
+import WorkspacePage from "@/components/auth/WorkspacePage";
 
-export const metadata: Metadata = {
-  title: "Buy Tickets & Seat Selection | Aventix Attendee",
-  description:
-    "Select event performance details, ticket tiers, interactive numbered seats, and receive your digital e-ticket.",
-};
+export const metadata = { title: "Buy tickets | Aventix", robots: { index: false, follow: false } };
 
-export default async function BuyTicketsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ eventId?: string; category?: string }>;
-}) {
+export default async function Page({ searchParams }: { searchParams: Promise<{ eventId?: string; category?: string }> }) {
   const { eventId, category } = await searchParams;
-
-  return (
-    <div className="mx-auto max-w-6xl">
-      <InteractiveTicketFlow
-        initialEventId={eventId}
-        initialCategory={category}
-      />
-    </div>
-  );
+  const returnTo = typeof eventId === "string" ? `/dashboard/buy-tickets?eventId=${encodeURIComponent(eventId)}${typeof category === "string" ? `&category=${encodeURIComponent(category)}` : ""}` : undefined;
+  return <WorkspacePage role="ATTENDEE" title="Buy tickets" returnTo={returnTo} />;
 }

@@ -5,4 +5,3 @@ export { default as AuthModal } from "../AuthModal";
 export { default as BookingModal } from "../BookingModal";
 export { default as OrganizerModal } from "../OrganizerModal";
 export { default as ButtonClickEffect } from "./ButtonClickEffect";
-export { default as DemoRoleSwitcher } from "./DemoRoleSwitcher";

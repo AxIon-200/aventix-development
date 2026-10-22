@@ -1,5 +1,7 @@
-import { redirect } from "next/navigation";
+import WorkspacePage from "@/components/auth/WorkspacePage";
 
-export default function AdminPage() {
-  redirect("/admin/dashboard");
-}
+export const metadata = { title: "Administrator workspace | Aventix", robots: { index: false, follow: false } };
+
+export default function Page() {
+  return <WorkspacePage role="ADMINISTRATOR" title="Administrator workspace" />;
+}

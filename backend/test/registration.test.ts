@@ -86,8 +86,8 @@ describe("Attendee registration", () => {
     const app = makeApp({ sendVerificationEmail: async message => { messages.push(message); } });
     expect((await register(app, body)).status).toBe(201);
     const link = new URL(messages[0]!.url);
-    expect(link.origin).toBe(new URL(process.env.BETTER_AUTH_URL!).origin);
-    expect(link.pathname).toBe("/api/auth/verification");
+    expect(link.origin).toBe(new URL(process.env.FRONTEND_URL!).origin);
+    expect(link.pathname).toBe("/verify-email");
     expect(link.search).toBe("");
     const token = new URLSearchParams(link.hash.slice(1)).get("token")!;
     expect(token).toMatch(/^[A-Za-z0-9_-]{43}$/);
@@ -100,7 +100,7 @@ describe("Attendee registration", () => {
     expect(derive(body.password)).toBe(key);
     expect(derive(body.password.trim())).not.toBe(key);
     expect(derive(body.password.normalize("NFD"))).not.toBe(key);
-    const landing = await request(app).get(link.pathname);
+    const landing = await request(app).get("/api/auth/verification");
     expect(landing.status).toBe(200);
     expect(landing.headers["cache-control"]).toBe("no-store");
     expect(landing.headers["referrer-policy"]).toBe("no-referrer");

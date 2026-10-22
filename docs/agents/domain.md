@@ -4,7 +4,7 @@ Paths in this document are relative to the Git repository root.
 
 For backend work:
 - Read backend/AGENTS.md.
-- Use backend/GLOSSARY.md when present.
+- Use backend/GLOSSARY.md for account identity terminology.
 - If backend/GLOSSARY-MAP.md exists, follow its context references.
 - Consult relevant decisions in backend/docs/adr/.
 - Read the task's specification in backend/docs/specs/.
@@ -18,8 +18,9 @@ those requirements and records implementation/testing decisions.
 Keep glossary entries about domain concepts. Keep behavioral requirements in
 their authoritative document and architectural rationale in ADRs.
 
-The backend glossary does not currently exist. Create it only when confirmed
-domain terminology needs recording.
+For S01 frontend authentication integration, read
+backend/docs/specs/s01-attendee-authentication.md alongside the authoritative
+Phase 1 backend requirements and integration contract it references.
 
 Reuse these locations. Do not create parallel root-level glossary, ADR, or
 specification directories as part of setup. Root docs/agents/ holds shared

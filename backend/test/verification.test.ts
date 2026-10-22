@@ -110,6 +110,36 @@ describe("Verification request policy", () => {
 });
 
 describe("Password-gated email verification", () => {
+  it("sends initial and resend links only to the fixed frontend fragment destination", async () => {
+    const f = await fixture();
+    f.advance(60_000);
+    expect((await post(f.app, "/resend-verification", { email: f.email })).status).toBe(200);
+    expect(f.messages).toHaveLength(2);
+    for (const message of f.messages) {
+      const url = new URL(message.url);
+      expect(url.origin).toBe(new URL(process.env.FRONTEND_URL!).origin);
+      expect(url.pathname).toBe("/verify-email");
+      expect(url.search).toBe("");
+      expect(tokenFrom(message)).toBeTruthy();
+    }
+  });
+
+  it("offers an inert legacy bridge with a fixed destination, private headers and no external assets", async () => {
+    const instance = createApp();
+    const bridge = await request(instance).get("/api/auth/verification?callbackURL=https://evil.example");
+    expect(bridge.status).toBe(200);
+    expect(bridge.type).toBe("text/html");
+    expect(bridge.headers["cache-control"]).toBe("no-store");
+    expect(bridge.headers["referrer-policy"]).toBe("no-referrer");
+    expect(bridge.headers["content-security-policy"]).toContain("default-src 'none'");
+    expect(bridge.headers["set-cookie"]).toBeUndefined();
+    expect(bridge.headers.location).toBeUndefined();
+    expect(bridge.text).toContain("Continue to email verification");
+    expect(bridge.text).toContain(new URL("/verify-email", process.env.FRONTEND_URL!).href);
+    expect(bridge.text).not.toContain("evil.example");
+    expect(bridge.text).not.toMatch(/<(?:script|link|img)[^>]+(?:src|href)=/i);
+  });
+
   it("binds the required password to the link's owner and never accepts another account's credential", async () => {
     const first = await fixture();
     const otherPassword = "different account password";
@@ -123,7 +153,7 @@ describe("Password-gated email verification", () => {
 
   it("keeps landing GET read-only and prevents login and native routes from sending verification email", async () => {
     const f = await fixture();
-    const landing = await request(f.app).get(new URL(f.messages[0]!.url).pathname);
+    const landing = await request(f.app).get("/api/auth/verification");
     expect(landing.status).toBe(200);
     expect(landing.headers["cache-control"]).toBe("no-store");
     expect(landing.headers["referrer-policy"]).toBe("no-referrer");
@@ -215,8 +245,8 @@ describe("Password-gated email verification", () => {
     expect(results[0]!.body).toEqual(results[1]!.body);
     expect(f.messages).toHaveLength(2);
     const destination = new URL(f.messages[1]!.url);
-    expect(destination.origin).toBe(new URL(process.env.BETTER_AUTH_URL!).origin);
-    expect(destination.pathname).toBe("/api/auth/verification");
+    expect(destination.origin).toBe(new URL(process.env.FRONTEND_URL!).origin);
+    expect(destination.pathname).toBe("/verify-email");
     expect(destination.search).toBe("");
     expect(await prisma.emailCooldown.findUniqueOrThrow({ where: { id: recovery.id } })).toEqual(recovery);
   });
