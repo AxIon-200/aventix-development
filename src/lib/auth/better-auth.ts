@@ -85,6 +85,13 @@ export function createBetterAuthClient(transport: typeof fetch = (...args) => fe
       if (!["https:", "http:"].includes(url.protocol) || url.username || url.password) throw new AuthClientError("INVALID_RESPONSE");
       return { version, documentUrl };
     },
+    acceptTerms: async data => {
+      const result = await requestCompletion("/api/auth/accept-terms", {
+        email: data.email.trim().toLowerCase(), currentPassword: data.currentPassword,
+        termsAccepted: data.termsAccepted, termsVersion: data.termsVersion,
+      });
+      if (!isObject(result) || !isObject(result.data) || result.data.termsAccepted !== true) throw new AuthClientError("REQUEST_UNCERTAIN");
+    },
     registerAttendee: async data => {
       let result: unknown;
       try {

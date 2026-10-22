@@ -9,6 +9,7 @@ export type AttendeeRegistration = {
   password: string; termsAccepted: boolean; termsVersion: string;
 };
 export type CurrentTerms = { version: string; documentUrl: string };
+export type TermsAcceptance = { email: string; currentPassword: string; termsAccepted: boolean; termsVersion: string };
 export type AuthResult = { destination?: string; allowBookingReturn?: boolean };
 export type AccountRole = "ATTENDEE" | "ORGANIZER" | "ADMINISTRATOR";
 export interface AccountSession {
@@ -28,6 +29,7 @@ export interface PublicAuthClient {
   passwordRules?: { description: string; validate: (password: string) => string | undefined };
   login?: (data: { email: string; password: string }) => Promise<AuthResult>;
   getTerms?: () => Promise<CurrentTerms>;
+  acceptTerms?: (data: TermsAcceptance) => Promise<void>;
   registerAttendee?: (data: AttendeeRegistration) => Promise<void>;
   verifyEmail?: (data: { token: string; currentPassword: string }) => Promise<void>;
   resendVerification?: (data: { email: string }) => Promise<void>;

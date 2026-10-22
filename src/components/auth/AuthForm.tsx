@@ -21,6 +21,7 @@ export default function AuthForm({ mode, returnTo, client = publicAuthClient }: 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState("");
   const [gate, setGate] = useState<import("@/lib/auth/client").AuthErrorCode>();
+  const [gateEmail, setGateEmail] = useState("");
   const [uncertain, setUncertain] = useState(false);
   const [success, setSuccess] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -76,7 +77,7 @@ export default function AuthForm({ mode, returnTo, client = publicAuthClient }: 
       if (error instanceof AuthClientError) {
         setErrors(error.fieldErrors);
         setUncertain(error.code === "REQUEST_UNCERTAIN" || error.code === "INVALID_RESPONSE");
-        if (["ACCOUNT_DISABLED", "EMAIL_VERIFICATION_REQUIRED", "TERMS_ACCEPTANCE_REQUIRED", "PASSWORD_RESET_REQUIRED"].includes(error.code)) { setGate(error.code); setMessage(""); }
+        if (["ACCOUNT_DISABLED", "EMAIL_VERIFICATION_REQUIRED", "TERMS_ACCEPTANCE_REQUIRED", "PASSWORD_RESET_REQUIRED"].includes(error.code)) { setGate(error.code); setGateEmail(get("email")); setMessage(""); }
       }
     } finally { submitting.current = false; setBusy(false); }
   }
@@ -97,7 +98,7 @@ export default function AuthForm({ mode, returnTo, client = publicAuthClient }: 
         <Link className="text-[#66fcf1]" href={authHref("/forgot-password", destination)}>Forgot password?</Link>
       </div></div>}
       {message && <p role="alert" className="rounded-lg border border-red-400/30 bg-red-400/5 p-3 text-sm text-red-200">{message}</p>}
-      {gate && <AccountGate code={gate} returnTo={destination} />}
+      {gate && <AccountGate code={gate} returnTo={destination} email={gateEmail} />}
       {uncertain && mode === "forgot" && <p role="alert">We could not confirm the recovery request. Check your inbox and spam folder. You can explicitly request another link or log in separately; delivery has not been confirmed.</p>}
       {uncertain && mode === "login" && <button type="button" className="text-[#66fcf1] underline" onClick={() => window.dispatchEvent(new Event("aventix:session-updated"))}>Check current account</button>}
       <button type="submit" disabled={busy || !configured} className={submitClass}>{busy ? "Please wait…" : mode === "login" ? "Login" : "Request recovery link"}</button>

@@ -48,10 +48,13 @@ test('verification and recovery work in the localhost browser with real backend 
   let resendMode = 'normal';
   let recoveryMode = 'normal';
   let resetMode = 'normal';
+  let termsMode = 'normal';
+  let consentMode = 'normal';
   let verifyRequests = 0;
   let resendRequests = 0;
   let recoveryRequests = 0;
   let resetRequests = 0;
+  let consentRequests = 0;
   const requestPaths = [];
   const proxy = createServer((req, res) => {
     requestPaths.push(req.url);
@@ -59,16 +62,22 @@ test('verification and recovery work in the localhost browser with real backend 
     const resending = req.url === '/api/auth/resend-verification';
     const recovering = req.url === '/api/auth/request-password-reset';
     const resetting = req.url === '/api/auth/reset-password';
+    const accepting = req.url === '/api/auth/accept-terms';
     if (verifying) verifyRequests++;
     if (resending) resendRequests++;
     if (recovering) recoveryRequests++;
     if (resetting) resetRequests++;
-    if ((verifying && verificationMode === 'throttled') || (resending && resendMode === 'throttled') || (recovering && recoveryMode === 'throttled') || (resetting && resetMode === 'throttled')) {
+    if (accepting) consentRequests++;
+    if (req.url === '/api/v1/terms' && termsMode === 'unavailable') {
+      res.writeHead(503, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: { code: 'INTERNAL_ERROR' } })); return;
+    }
+    if ((verifying && verificationMode === 'throttled') || (resending && resendMode === 'throttled') || (recovering && recoveryMode === 'throttled') || (resetting && resetMode === 'throttled') || (accepting && consentMode === 'throttled')) {
       res.writeHead(429, { 'Content-Type': 'application/json', 'Retry-After': '37' });
       res.end(JSON.stringify({ error: { code: 'RATE_LIMITED' } })); return;
     }
     const upstream = httpRequest({ hostname: '127.0.0.1', port: ready.port, path: req.url, method: req.method, headers: req.headers }, response => {
-      if ((verifying && verificationMode === 'lost') || (resending && resendMode === 'lost') || (recovering && recoveryMode === 'lost') || (resetting && resetMode === 'lost')) { response.resume(); response.on('end', () => res.destroy()); return; }
+      if ((verifying && verificationMode === 'lost') || (resending && resendMode === 'lost') || (recovering && recoveryMode === 'lost') || (resetting && resetMode === 'lost') || (accepting && consentMode === 'lost')) { response.resume(); response.on('end', () => res.destroy()); return; }
       res.writeHead(response.statusCode, response.headers); response.pipe(res);
     });
     upstream.on('error', () => res.destroy()); req.pipe(upstream);
@@ -120,7 +129,7 @@ test('verification and recovery work in the localhost browser with real backend 
   const text = async value => {
     try { await until(() => evaluate(`(document.body?.innerText ?? "").includes(${JSON.stringify(value)})`), value, 30000); }
     catch (error) {
-      console.error('Browser state:', await evaluate('JSON.stringify({path:location.pathname,notices:Array.from(document.querySelectorAll("h1,[role=alert],[role=status]")).map(n=>n.innerText)})'));
+      console.error('Browser state:', await evaluate('JSON.stringify({path:location.pathname,body:document.body?.innerText.slice(0,1000),notices:Array.from(document.querySelectorAll("h1,[role=alert],[role=status]")).map(n=>n.innerText)})'));
       throw error;
     }
   };
@@ -138,6 +147,110 @@ test('verification and recovery work in the localhost browser with real backend 
     await t.test(name, async () => { try { await run(); } catch (error) { failure = error; throw error; } });
     if (failure) throw failure;
   };
+
+  const checkTerms = async () => {
+    await text('current terms (version');
+    await evaluate('document.querySelector("input[name=terms]").click()');
+  };
+  const accept = async password => { await fill('currentPassword', password); await click('Accept current terms'); };
+  const readyLogin = () => until(async () => {
+    const visible = await evaluate('(() => { const email = document.querySelector("input[name=email]"); const button = document.querySelector("button[type=submit]"); return Boolean(email && email.offsetParent !== null && button?.textContent.trim() === "Login"); })()');
+    if (!visible) return false;
+    await click('Login');
+    return evaluate('document.querySelector("#email-error")?.textContent === "Enter a valid email address."');
+  }, 'login form validation');
+
+  await scenario('missing consent follows login to current terms, prefills email, records consent without a session, then allows separate login', async () => {
+    const fixture = await command('consentFixture');
+    const destination = '/events/fixture/tickets';
+    await navigate(`${origin}/login?returnTo=${encodeURIComponent(destination)}`); await text('Welcome back');
+    await readyLogin();
+    await fill('email', fixture.email); await fill('password', fixture.password); await click('Login');
+    await text('Accept the current terms with your password');
+    await evaluate('Array.from(document.querySelectorAll("a")).find(a=>a.textContent.trim()==="Accept current terms").click()');
+    await text('current terms (version verification-browser-fixture)');
+    assert.equal(await evaluate('document.querySelector("input[name=email]").value'), fixture.email);
+    assert.equal(await evaluate('document.querySelector("input[name=currentPassword]").value'), '');
+    assert.equal(await evaluate('new URLSearchParams(location.search).get("returnTo")'), destination);
+    assert.equal(await evaluate('new URLSearchParams(location.search).has("password")'), false);
+    await checkTerms(); await accept(fixture.password);
+    await text('This account has terms acceptance on record.');
+    assert.deepEqual((await cdp.send('Network.getAllCookies')).cookies.map(cookie => ({ name: cookie.name, domain: cookie.domain })), []);
+    await evaluate('Array.from(document.querySelectorAll("a")).find(a=>a.textContent.trim()==="Log in separately").click()');
+    await text('Welcome back');
+    assert.equal(await evaluate('new URLSearchParams(location.search).get("returnTo")'), destination);
+    await fill('email', fixture.email); await fill('password', fixture.password); await click('Login');
+    await until(() => evaluate('location.pathname === "/events/fixture/tickets"'), 'consent return destination');
+    assert.ok((await cdp.send('Network.getAllCookies')).cookies.some(cookie => cookie.name === 'better-auth.session_token'));
+    await command('clearConsent', { email: fixture.email });
+    await navigate(`${origin}/dashboard/tickets`);
+    await text('Accept the current terms with your password');
+    await evaluate('Array.from(document.querySelectorAll("a")).find(a=>a.textContent.trim()==="Accept current terms").click()');
+    await text('current terms (version verification-browser-fixture)');
+    assert.equal(await evaluate('location.pathname'), '/accept-terms');
+    assert.equal(await evaluate('document.querySelector("input[name=currentPassword]").value'), '');
+    await cdp.send('Network.clearBrowserCookies');
+  });
+
+  await scenario('unavailable and changed terms disable or clear acceptance, retain email, and require another explicit submission', async () => {
+    const fixture = await command('consentFixture');
+    termsMode = 'unavailable';
+    await navigate(`${origin}/accept-terms?email=${encodeURIComponent(fixture.email)}`);
+    await text('Current terms could not be loaded.');
+    assert.equal(await evaluate('document.querySelector("button[type=submit]").disabled'), true);
+    termsMode = 'normal';
+    await click('Retry current terms'); await text('current terms (version verification-browser-fixture)');
+    await checkTerms();
+    await command('termsVersion', { version: 'verification-browser-fixture-v2' });
+    const before = consentRequests;
+    await accept(fixture.password);
+    await text('The terms have changed.');
+    await text('current terms (version verification-browser-fixture-v2)');
+    assert.equal(consentRequests, before + 1);
+    assert.equal(await evaluate('document.querySelector("input[name=terms]").checked'), false);
+    assert.equal(await evaluate('document.querySelector("input[name=email]").value'), fixture.email);
+    assert.equal(await evaluate('document.querySelector("input[name=currentPassword]").value'), '');
+    await checkTerms(); await accept(fixture.password);
+    await text('This account has terms acceptance on record.');
+    assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);
+  });
+
+  await scenario('legacy consent requires recovery, then a fresh password and genuine acceptance', async () => {
+    const fixture = await command('consentFixture');
+    await command('legacy', { email: fixture.email });
+    await navigate(`${origin}/accept-terms?email=${encodeURIComponent(fixture.email)}`);
+    await checkTerms(); await accept(fixture.password);
+    await text('This account needs a password reset before consent can be recorded.');
+    assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);
+    await evaluate('Array.from(document.querySelectorAll("a")).find(a=>a.textContent.trim()==="Recover your password").click()');
+    await text('Forgot your password?');
+    assert.equal(await evaluate('Boolean(document.querySelector("input[name=currentPassword]"))'), false);
+    await fill('email', fixture.email); await click('Request recovery link');
+    await text('If an account exists for this address, a password-reset email will be sent.');
+    const mail = (await command('recoveryMessages', { email: fixture.email })).at(-1);
+    await navigate(mail.url); await text('New Password');
+    const newPassword = ' newly recovered consent 🔒 ';
+    await fill('newPassword', newPassword); await fill('confirmPassword', newPassword); await click('Reset password');
+    await text('Your password has been reset.');
+    await navigate(`${origin}/accept-terms?email=${encodeURIComponent(fixture.email)}`);
+    await checkTerms(); await accept(newPassword);
+    await text('This account has terms acceptance on record.');
+    assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);
+  });
+
+  await scenario('a lost consent response shows uncertainty and does not submit acceptance again', async () => {
+    const fixture = await command('consentFixture');
+    await navigate(`${origin}/accept-terms?email=${encodeURIComponent(fixture.email)}`);
+    await checkTerms();
+    consentMode = 'lost';
+    const before = consentRequests;
+    await accept(fixture.password); await text('We could not confirm whether consent was recorded.');
+    assert.equal(consentRequests, before + 1);
+    await text('Log in separately'); await text('Recover your password');
+    consentMode = 'normal';
+  });
+  await command('termsVersion', { version: 'verification-browser-fixture' });
+  await cdp.send('Network.clearBrowserCookies');
 
   let verifiedFixture;
   await scenario('a new email opens a fragment-free password form without verifying or signing in; wrong password can retry the same link', async () => {
@@ -291,6 +404,7 @@ test('verification and recovery work in the localhost browser with real backend 
   let recoveryFixture, recoveryMail;
   const replacement = ' new browser password e\u0301 🔒 ';
   await scenario('recovery requests a generic email and opens an inert reset form with the fragment stripped', async () => {
+    const beforeReset = resetRequests;
     const fixture = await command('fixture');
     recoveryFixture = fixture;
     await navigate(`${origin}/forgot-password?returnTo=${encodeURIComponent('/events/fixture/tickets')}`);
@@ -304,8 +418,8 @@ test('verification and recovery work in the localhost browser with real backend 
     await navigate(mail.url); await text('New Password');
     assert.ok(await evaluate('location.hash === ""'));
     assert.equal(await evaluate('document.querySelector("input[name=newPassword]").disabled'), false);
-    assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);
-    assert.equal(resetRequests, 0);
+    assert.deepEqual((await cdp.send('Network.getAllCookies')).cookies.map(cookie => ({ name: cookie.name, domain: cookie.domain })), []);
+    assert.equal(resetRequests, beforeReset);
     const response = await fetch(`${origin}/reset-password`);
     assert.ok(response.headers.get('cache-control').includes('no-store'));
     assert.equal(response.headers.get('referrer-policy'), 'no-referrer');
