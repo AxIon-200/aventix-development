@@ -19,11 +19,13 @@ The frontend contracts use injected fetch at the public HTTP boundary. The brows
 | Backend | `npm.cmd test -- --run test/terms-acceptance.test.ts` | All 17 passed in isolation, including both timed-out checks. This does not turn the full run into a pass. |
 | Backend | `npm.cmd test -- --testTimeout=30000` | 258 passed, 1 timed out in `account-maintenance.test.ts` at the 30-second limit; 11 of 12 files passed. This is another failed full run. |
 | Backend | `npm.cmd test -- --run test/account-maintenance.test.ts` | All 9 passed in isolation, including the timed-out check. This does not turn either full run into a pass. |
+| Backend | `npm.cmd test -- --run test/account-maintenance.test.ts test/terms-acceptance.test.ts --reporter=verbose` | All 26 tests passed across both previously timeout-prone files. |
+| Backend | `npm.cmd test -- --reporter=verbose` | All 259 tests passed across 12 of 12 files with the repository's unchanged 15-second timeout; the full run took 553.58 seconds. |
 | Repository root | `node node_modules/eslint/bin/eslint.js tests/verification.browser.test.mjs` | No errors; one existing warning at line 30 in the test helper. |
 | Repository root | `node --test tests/verification.browser.test.mjs` | All 25 browser checks passed against real Express/Better Auth/Prisma and the guarded database. |
 | Repository root | `node --test --test-concurrency=1 tests/*.test.mjs` | All 90 frontend tests passed, including the account-switching and real-backend browser suites. |
 
-The first backend registration attempt ran inside the default sandbox and received `EACCES` from Prisma when contacting the guarded test database. The test database identity check succeeded before that connection attempt. Rerunning with database network access passed all 49 registration tests. Both full backend runs remain failed checks despite clean isolated reruns of their timed-out files; no activation claim depends on them.
+The first backend registration attempt ran inside the default sandbox and received `EACCES` from Prisma when contacting the guarded test database. The test database identity check succeeded before that connection attempt. Rerunning with database network access passed all 49 registration tests. The first two full backend runs failed at different tests despite clean focused reruns; the third full run passed at the unchanged 15-second timeout. The earlier timeouts were intermittent, and their cause remains unexplained. One password-change case in the passing run took 14.4 seconds, close to that timeout. The passing run establishes a complete suite result, not a fix for the timing variability; no activation claim depends on it.
 
 ## Browser observations
 
