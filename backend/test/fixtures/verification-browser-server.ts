@@ -21,13 +21,14 @@ const start = new Date(2200, 0, 1 + Math.floor(Math.random() * 100000));
 mock.timers.enable({ apis: ["Date"], now: start });
 let time = new Date(start);
 let failDelivery = false;
+let registrationLimit = 10000;
 const messages: AuthEmailMessage[] = [];
 const recoveryMessages: AuthEmailMessage[] = [];
 const emails: string[] = [];
 const password = " exact browser verification e\u0301 ";
-const terms = { version: "verification-browser-fixture", documentUrl: `${env.FRONTEND_URL}/legal/terms` };
+const terms = { version: "verification-browser-fixture", documentUrl: `${env.FRONTEND_URL}/legal/aventix-prototype-terms-2026-10-22-v1.html` };
 const createFixtureApp = () => createApp({ terms,
-  now: () => time, aggregateLimit: 10000, registrationLimit: 10000, loginLimit: 10000,
+  now: () => time, aggregateLimit: 10000, registrationLimit, loginLimit: 10000,
   verificationLimit: 10000, verificationResendLimit: 10000, termsAcceptanceLimit: 10000,
   recoveryLimit: 10000, resetLimit: 10000,
   sendVerificationEmail: async message => { if (failDelivery) throw Error("Controlled delivery failure"); messages.push(message); },
@@ -41,7 +42,18 @@ server.listen(0, "127.0.0.1", () => {
   process.send?.({ ready: true, port: address.port });
 });
 
-async function command(input: { action: string; milliseconds?: number; enabled?: boolean; email?: string; version?: string }) {
+async function command(input: { action: string; milliseconds?: number; enabled?: boolean; email?: string; version?: string; limit?: number }) {
+  if (input.action === "registrationLimit") {
+    assert.equal(input.limit, 1);
+    registrationLimit = input.limit;
+    app = createFixtureApp();
+    return {};
+  }
+  if (input.action === "registrationFixture") {
+    const email = `joined-browser-${randomUUID()}@example.com`;
+    emails.push(email);
+    return { email, password };
+  }
   if (input.action === "fixture") {
     const email = `verification-browser-${randomUUID()}@example.com`;
     emails.push(email);

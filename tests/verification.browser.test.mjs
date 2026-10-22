@@ -56,8 +56,10 @@ test('verification and recovery work in the localhost browser with real backend 
   let resetRequests = 0;
   let consentRequests = 0;
   const requestPaths = [];
+  const mutationOrigins = [];
   const proxy = createServer((req, res) => {
     requestPaths.push(req.url);
+    if (req.method === 'POST') mutationOrigins.push(req.headers.origin);
     const verifying = req.url === '/api/auth/verify-email';
     const resending = req.url === '/api/auth/resend-verification';
     const recovering = req.url === '/api/auth/request-password-reset';
@@ -104,7 +106,7 @@ test('verification and recovery work in the localhost browser with real backend 
   await until(async () => { try { return (await fetch(`${origin}/login`)).ok; } catch { return false; } }, 'production Next server');
 
   const profile = mkdtempSync(path.join(tmpdir(), 'aventix-verification-chrome-'));
-  const browser = spawn(browserPath, ['--headless=new', '--no-first-run', '--no-default-browser-check', '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank'],
+  let browser = spawn(browserPath, ['--headless=new', '--no-first-run', '--no-default-browser-check', '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank'],
     { windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'] });
   let cdp;
   t.after(async () => {
@@ -134,6 +136,7 @@ test('verification and recovery work in the localhost browser with real backend 
     }
   };
   const click = label => evaluate(`Array.from(document.querySelectorAll('button')).find(button => button.textContent.trim() === ${JSON.stringify(label)}).click()`);
+  const clickLink = label => until(() => evaluate(`(() => { const link = Array.from(document.querySelectorAll('a')).find(a => a.textContent.trim() === ${JSON.stringify(label)}); if (!link) return false; link.click(); return true; })()`), label);
   const fill = (name, value) => evaluate(`document.querySelector('[name="${name}"]').value = ${JSON.stringify(value)}`);
   const submit = async password => { await fill('currentPassword', password); await click('Verify email'); };
   const reset = async password => { await fill('newPassword', password); await fill('confirmPassword', password); await click('Reset password'); };
@@ -152,6 +155,20 @@ test('verification and recovery work in the localhost browser with real backend 
     await text('current terms (version');
     await evaluate('document.querySelector("input[name=terms]").click()');
   };
+  const register = async fixture => {
+    await navigate(`${origin}/register/attendee`);
+    await text('Create your Attendee Account');
+    await text('current terms (version');
+    const documentUrl = await evaluate('document.querySelector("input[name=terms]").closest("label").querySelector("a").href');
+    assert.equal(new URL(documentUrl).origin, origin);
+    assert.equal((await fetch(documentUrl)).status, 200);
+    await checkTerms();
+    for (const [name, value] of Object.entries({
+      firstName: 'Joined', lastName: 'Journey', email: fixture.email,
+      password: fixture.password, confirmPassword: fixture.password,
+    })) await fill(name, value);
+    await click('Register');
+  };
   const accept = async password => { await fill('currentPassword', password); await click('Accept current terms'); };
   const readyLogin = () => until(async () => {
     const visible = await evaluate('(() => { const email = document.querySelector("input[name=email]"); const button = document.querySelector("button[type=submit]"); return Boolean(email && email.offsetParent !== null && button?.textContent.trim() === "Login"); })()');
@@ -160,6 +177,56 @@ test('verification and recovery work in the localhost browser with real backend 
     return evaluate('document.querySelector("#email-error")?.textContent === "Enter a valid email address."');
   }, 'login form validation');
 
+  let joinedFixture;
+  await scenario('registration through current terms joins captured email verification and separate login', async () => {
+    const fixture = await command('registrationFixture');
+    joinedFixture = fixture;
+    await register(fixture);
+    await text('You have not been signed in');
+    assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);
+    const mail = await command('messages', { email: fixture.email });
+    assert.equal(mail.length, 1);
+    assert.equal(new URL(mail[0].url).pathname, '/verify-email');
+    const emailTab = await (await fetch(`http://${new URL(debuggerUrl).host}/json/new?about:blank`, { method: 'PUT' })).json();
+    const emailBrowser = await connect(emailTab.webSocketDebuggerUrl);
+    const registrationTab = cdp;
+    try {
+      await emailBrowser.send('Page.enable'); await emailBrowser.send('Runtime.enable'); await emailBrowser.send('Network.enable');
+      cdp = emailBrowser;
+      await navigate(mail[0].url);
+      await text('Current password');
+      assert.equal(await evaluate('location.hash'), '');
+      assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);
+      await submit(fixture.password);
+      await text('Your email has been verified');
+      assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);
+      await clickLink('Log in separately');
+      await text('Welcome back');
+      await fill('email', fixture.email); await fill('password', fixture.password); await click('Login');
+      await until(() => evaluate('location.pathname === "/events"'), 'separate attendee login in fresh email tab');
+      assert.ok((await cdp.send('Network.getAllCookies')).cookies.some(cookie => cookie.name === 'better-auth.session_token'));
+    } finally { cdp = registrationTab; await emailBrowser.send('Page.close').catch(() => {}); emailBrowser.close(); }
+    assert.ok(mutationOrigins.length >= 3 && mutationOrigins.every(value => value === origin));
+    await cdp.send('Network.clearBrowserCookies');
+  });
+
+  await scenario('failed initial delivery keeps the account, duplicate registration is rejected, and resend supplies a link', async () => {
+    const fixture = await command('registrationFixture');
+    await command('delivery', { enabled: false });
+    await register(fixture);
+    await text('terms acceptance were saved');
+    assert.equal((await command('messages', { email: fixture.email })).length, 0);
+    assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);
+    await command('delivery', { enabled: true });
+    await register(fixture);
+    await text('existing account has not been changed');
+    await command('advance', { milliseconds: 60000 });
+    await navigate(`${origin}/verify-email`); await text('Email for verification');
+    await fill('resendEmail', fixture.email); await click('Request verification email');
+    await text('If this address is eligible, a verification email will be sent.');
+    assert.equal((await command('messages', { email: fixture.email })).length, 1);
+  });
+
   await scenario('missing consent follows login to current terms, prefills email, records consent without a session, then allows separate login', async () => {
     const fixture = await command('consentFixture');
     const destination = '/events/fixture/tickets';
@@ -167,7 +234,7 @@ test('verification and recovery work in the localhost browser with real backend 
     await readyLogin();
     await fill('email', fixture.email); await fill('password', fixture.password); await click('Login');
     await text('Accept the current terms with your password');
-    await evaluate('Array.from(document.querySelectorAll("a")).find(a=>a.textContent.trim()==="Accept current terms").click()');
+    await clickLink('Accept current terms');
     await text('current terms (version verification-browser-fixture)');
     assert.equal(await evaluate('document.querySelector("input[name=email]").value'), fixture.email);
     assert.equal(await evaluate('document.querySelector("input[name=currentPassword]").value'), '');
@@ -176,7 +243,7 @@ test('verification and recovery work in the localhost browser with real backend 
     await checkTerms(); await accept(fixture.password);
     await text('This account has terms acceptance on record.');
     assert.deepEqual((await cdp.send('Network.getAllCookies')).cookies.map(cookie => ({ name: cookie.name, domain: cookie.domain })), []);
-    await evaluate('Array.from(document.querySelectorAll("a")).find(a=>a.textContent.trim()==="Log in separately").click()');
+    await clickLink('Log in separately');
     await text('Welcome back');
     assert.equal(await evaluate('new URLSearchParams(location.search).get("returnTo")'), destination);
     await fill('email', fixture.email); await fill('password', fixture.password); await click('Login');
@@ -185,7 +252,7 @@ test('verification and recovery work in the localhost browser with real backend 
     await command('clearConsent', { email: fixture.email });
     await navigate(`${origin}/dashboard/tickets`);
     await text('Accept the current terms with your password');
-    await evaluate('Array.from(document.querySelectorAll("a")).find(a=>a.textContent.trim()==="Accept current terms").click()');
+    await clickLink('Accept current terms');
     await text('current terms (version verification-browser-fixture)');
     assert.equal(await evaluate('location.pathname'), '/accept-terms');
     assert.equal(await evaluate('document.querySelector("input[name=currentPassword]").value'), '');
@@ -222,7 +289,7 @@ test('verification and recovery work in the localhost browser with real backend 
     await checkTerms(); await accept(fixture.password);
     await text('This account needs a password reset before consent can be recorded.');
     assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);
-    await evaluate('Array.from(document.querySelectorAll("a")).find(a=>a.textContent.trim()==="Recover your password").click()');
+    await clickLink('Recover your password');
     await text('Forgot your password?');
     assert.equal(await evaluate('Boolean(document.querySelector("input[name=currentPassword]"))'), false);
     await fill('email', fixture.email); await click('Request recovery link');
@@ -256,11 +323,12 @@ test('verification and recovery work in the localhost browser with real backend 
   await scenario('a new email opens a fragment-free password form without verifying or signing in; wrong password can retry the same link', async () => {
     const fixture = await command('fixture');
     verifiedFixture = fixture;
+    const before = verifyRequests;
     assert.equal(new URL(fixture.url).pathname, '/verify-email');
     await navigate(fixture.url);
     await text('Current password');
     assert.ok(await evaluate('location.hash === ""'));
-    assert.equal(verifyRequests, 0);
+    assert.equal(verifyRequests, before);
     assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);
     await evaluate(`document.querySelector('a[href="#main-content"]').click()`);
     assert.equal(await evaluate('Boolean(document.querySelector("input[name=currentPassword]"))'), true);
@@ -268,7 +336,7 @@ test('verification and recovery work in the localhost browser with real backend 
     await text('The current password is incorrect');
     await submit(fixture.password);
     await text('Your email has been verified');
-    assert.equal(verifyRequests, 2);
+    assert.equal(verifyRequests, before + 2);
     assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);
   });
 
@@ -345,7 +413,7 @@ test('verification and recovery work in the localhost browser with real backend 
     await fill('email', fixture.email); await fill('password', fixture.password); await click('Login');
     await text('Verify your email address before logging in.');
     assert.equal((await command('messages', { email: fixture.email })).length, 1);
-    await evaluate('Array.from(document.querySelectorAll("a")).find(a=>a.textContent.trim()==="Email verification").click()');
+    await clickLink('Email verification');
     await text('Email for verification');
     const resend = async email => {
       await fill('resendEmail', email); await click('Request verification email');
@@ -535,7 +603,7 @@ test('verification and recovery work in the localhost browser with real backend 
     await command('legacy', { email: verifiedFixture.email });
     await navigate(`${origin}/dashboard`);
     await text('Reset your password through account recovery before logging in.');
-    await evaluate('Array.from(document.querySelectorAll("a")).find(a=>a.textContent.trim()==="Reset password").click()');
+    await clickLink('Reset password');
     await text('Forgot your password?');
     assert.equal(await evaluate('Boolean(document.querySelector("input[type=password]"))'), false);
     await cdp.send('Network.clearBrowserCookies');
@@ -543,7 +611,7 @@ test('verification and recovery work in the localhost browser with real backend 
     await navigate(`${origin}/login?returnTo=${encodeURIComponent(destination)}`); await text('Welcome back');
     await fill('email', verifiedFixture.email); await fill('password', verifiedFixture.password); await click('Login');
     await text('Reset your password through account recovery before logging in.');
-    await evaluate('Array.from(document.querySelectorAll("a")).find(a=>a.textContent.trim()==="Reset password").click()');
+    await clickLink('Reset password');
     await text('Forgot your password?');
     assert.equal(await evaluate('new URLSearchParams(location.search).get("returnTo")'), destination);
     await fill('email', verifiedFixture.email); await click('Request recovery link');
@@ -598,5 +666,56 @@ test('verification and recovery work in the localhost browser with real backend 
     await text('Log in separately'); await text('Request a new recovery link');
     resetMode = 'normal';
     assert.ok(requestPaths.every(url => !url.includes('token') && !url.includes('Password')));
+  });
+
+  await scenario('a browser restart keeps the original persistent session and protected identity', async () => {
+    await cdp.send('Network.clearBrowserCookies');
+    await navigate(`${origin}/login`); await text('Welcome back');
+    await fill('email', joinedFixture.email); await fill('password', joinedFixture.password); await click('Login');
+    await until(() => evaluate('location.pathname === "/events"'), 'attendee login before restart');
+    const original = (await cdp.send('Network.getAllCookies')).cookies.find(cookie => cookie.name === 'better-auth.session_token');
+    assert.ok(original?.expires > Date.now() / 1000);
+    await cdp.send('Page.reload'); await text('Joined Journey');
+    const reloaded = (await cdp.send('Network.getAllCookies')).cookies.find(cookie => cookie.name === 'better-auth.session_token');
+    assert.equal(reloaded?.value, original.value);
+    assert.equal(reloaded?.expires, original.expires);
+    await cdp.send('Browser.close');
+    await until(() => browser.exitCode !== null, 'first Chrome shutdown', 10000);
+    browserOutput = '';
+    browser = spawn(browserPath, ['--headless=new', '--no-first-run', '--no-default-browser-check', '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank'],
+      { windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'] });
+    browser.stderr.on('data', value => { browserOutput = (browserOutput + value).slice(-2000); });
+    const nextDebuggerUrl = await until(() => /DevTools listening on (ws:\/\/[^\s]+)/.exec(browserOutput)?.[1], 'reopened Chrome debugger');
+    const nextTab = await (await fetch(`http://${new URL(nextDebuggerUrl).host}/json/new?about:blank`, { method: 'PUT' })).json();
+    cdp = await connect(nextTab.webSocketDebuggerUrl);
+    await cdp.send('Page.enable'); await cdp.send('Runtime.enable'); await cdp.send('Network.enable');
+    await navigate(`${origin}/dashboard/tickets`);
+    await text('Signed in as');
+    await text('Joined Journey');
+    await text('This feature is unavailable');
+    const persisted = (await cdp.send('Network.getAllCookies')).cookies.find(cookie => cookie.name === 'better-auth.session_token');
+    assert.equal(persisted?.value, original.value);
+    assert.equal(persisted?.expires, original.expires);
+  });
+
+  await scenario('real localhost IP throttling aggregates proxy requests and ignores spoofed forwarding headers', async () => {
+    await cdp.send('Network.clearBrowserCookies');
+    await command('advance', { milliseconds: 900001 });
+    await command('registrationLimit', { limit: 1 });
+    const first = await command('registrationFixture');
+    await register(first); await text('You have not been signed in');
+    assert.equal((await command('messages', { email: first.email })).length, 1);
+    const second = await command('registrationFixture');
+    const response = await evaluate(`fetch('/api/auth/register', {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': '198.51.100.77', 'X-Real-IP': '203.0.113.8' },
+      body: JSON.stringify({ firstName: 'Joined', lastName: 'Journey', email: ${JSON.stringify(second.email)},
+        password: ${JSON.stringify(second.password)}, termsAccepted: true, termsVersion: 'verification-browser-fixture' }),
+    }).then(async response => ({ status: response.status, retryAfter: response.headers.get('Retry-After'),
+      code: (await response.json()).error?.code }))`);
+    assert.equal(response.status, 429);
+    assert.equal(response.code, 'RATE_LIMITED');
+    assert.ok(Number(response.retryAfter) > 0);
+    assert.equal((await command('messages', { email: second.email })).length, 0);
   });
 });
