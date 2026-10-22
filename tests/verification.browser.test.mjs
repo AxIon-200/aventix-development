@@ -10,7 +10,7 @@ import path from 'node:path';
 import { root } from './load-typescript.mjs';
 import { browserPath, until, listen, stop, removeTemporary, connect } from './browser-support.mjs';
 
-test('password-gated verification works in the localhost browser with real backend lifecycle rules', {
+test('verification and recovery work in the localhost browser with real backend lifecycle rules', {
   skip: !browserPath && 'Set BROWSER_PATH to an installed Chrome/Chromium browser', timeout: 600000,
 }, async t => {
   const portReservation = createServer();
@@ -46,21 +46,29 @@ test('password-gated verification works in the localhost browser with real backe
   // Proxy can lose or throttle a response without substituting any lifecycle implementation.
   let verificationMode = 'normal';
   let resendMode = 'normal';
+  let recoveryMode = 'normal';
+  let resetMode = 'normal';
   let verifyRequests = 0;
   let resendRequests = 0;
+  let recoveryRequests = 0;
+  let resetRequests = 0;
   const requestPaths = [];
   const proxy = createServer((req, res) => {
     requestPaths.push(req.url);
     const verifying = req.url === '/api/auth/verify-email';
     const resending = req.url === '/api/auth/resend-verification';
+    const recovering = req.url === '/api/auth/request-password-reset';
+    const resetting = req.url === '/api/auth/reset-password';
     if (verifying) verifyRequests++;
     if (resending) resendRequests++;
-    if ((verifying && verificationMode === 'throttled') || (req.url === '/api/auth/resend-verification' && resendMode === 'throttled')) {
+    if (recovering) recoveryRequests++;
+    if (resetting) resetRequests++;
+    if ((verifying && verificationMode === 'throttled') || (resending && resendMode === 'throttled') || (recovering && recoveryMode === 'throttled') || (resetting && resetMode === 'throttled')) {
       res.writeHead(429, { 'Content-Type': 'application/json', 'Retry-After': '37' });
       res.end(JSON.stringify({ error: { code: 'RATE_LIMITED' } })); return;
     }
     const upstream = httpRequest({ hostname: '127.0.0.1', port: ready.port, path: req.url, method: req.method, headers: req.headers }, response => {
-      if ((verifying && verificationMode === 'lost') || (resending && resendMode === 'lost')) { response.resume(); response.on('end', () => res.destroy()); return; }
+      if ((verifying && verificationMode === 'lost') || (resending && resendMode === 'lost') || (recovering && recoveryMode === 'lost') || (resetting && resetMode === 'lost')) { response.resume(); response.on('end', () => res.destroy()); return; }
       res.writeHead(response.statusCode, response.headers); response.pipe(res);
     });
     upstream.on('error', () => res.destroy()); req.pipe(upstream);
@@ -119,6 +127,12 @@ test('password-gated verification works in the localhost browser with real backe
   const click = label => evaluate(`Array.from(document.querySelectorAll('button')).find(button => button.textContent.trim() === ${JSON.stringify(label)}).click()`);
   const fill = (name, value) => evaluate(`document.querySelector('[name="${name}"]').value = ${JSON.stringify(value)}`);
   const submit = async password => { await fill('currentPassword', password); await click('Verify email'); };
+  const reset = async password => { await fill('newPassword', password); await fill('confirmPassword', password); await click('Reset password'); };
+  const recover = async email => {
+    await navigate(`${origin}/forgot-password`); await text('Forgot your password?');
+    await fill('email', email); await click('Request recovery link');
+    await text('If an account exists for this address, a password-reset email will be sent.');
+  };
   const scenario = async (name, run) => {
     let failure;
     await t.test(name, async () => { try { await run(); } catch (error) { failure = error; throw error; } });
@@ -272,5 +286,203 @@ test('password-gated verification works in the localhost browser with real backe
     await text('Log in separately'); await text('Recover your password'); await text('Request another verification email');
     verificationMode = 'normal';
     assert.ok(requestPaths.every(url => !url.includes('token') && !url.includes('currentPassword')));
+  });
+
+  let recoveryFixture, recoveryMail;
+  const replacement = ' new browser password e\u0301 🔒 ';
+  await scenario('recovery requests a generic email and opens an inert reset form with the fragment stripped', async () => {
+    const fixture = await command('fixture');
+    recoveryFixture = fixture;
+    await navigate(`${origin}/forgot-password?returnTo=${encodeURIComponent('/events/fixture/tickets')}`);
+    await text('Forgot your password?');
+    await fill('email', ` ${fixture.email.toUpperCase()} `); await click('Request recovery link');
+    await text('If an account exists for this address, a password-reset email will be sent.');
+    const mail = (await command('recoveryMessages', { email: fixture.email }))[0];
+    recoveryMail = mail;
+    assert.equal(new URL(mail.url).pathname, '/reset-password');
+    assert.equal(new URL(mail.url).search, '');
+    await navigate(mail.url); await text('New Password');
+    assert.ok(await evaluate('location.hash === ""'));
+    assert.equal(await evaluate('document.querySelector("input[name=newPassword]").disabled'), false);
+    assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);
+    assert.equal(resetRequests, 0);
+    const response = await fetch(`${origin}/reset-password`);
+    assert.ok(response.headers.get('cache-control').includes('no-store'));
+    assert.equal(response.headers.get('referrer-policy'), 'no-referrer');
+  });
+
+  await scenario('reset reload/reopen and old-link Continue keep the token private without preflight or mutation', async () => {
+    const before = resetRequests;
+    await cdp.send('Page.reload'); await text('Reopen the link in your email');
+    assert.equal(await evaluate('Boolean(document.querySelector("input[name=newPassword]"))'), false);
+    await navigate(recoveryMail.url); await text('New Password');
+    await evaluate(`document.querySelector('a[href="#main-content"]').click()`);
+    assert.equal(await evaluate('Boolean(document.querySelector("input[name=newPassword]"))'), true);
+    const token = new URLSearchParams(new URL(recoveryMail.url).hash.slice(1)).get('token');
+    assert.equal(await evaluate(`JSON.stringify([history.state, Object.entries(localStorage), Object.entries(sessionStorage)]).includes(${JSON.stringify(token)})`), false);
+    const legacy = `http://127.0.0.1:${ready.port}/api/auth/password-reset${new URL(recoveryMail.url).hash}`;
+    await navigate(legacy); await text('Continue to password reset');
+    assert.ok(await evaluate('location.hash === ""'));
+    assert.equal(await evaluate('Boolean(document.querySelector("a[href*=token]"))'), false);
+    await cdp.send('Page.reload'); await text('Reopen the link in your email');
+    assert.equal(await evaluate('document.querySelector("#continue").disabled'), true);
+    await navigate(legacy);
+    await until(() => evaluate('!document.querySelector("#continue").disabled'), 'reopened reset bridge');
+    await click('Continue to password reset'); await text('New Password');
+    assert.equal(await evaluate('location.origin'), origin);
+    assert.ok(await evaluate('location.hash === ""'));
+    assert.equal(resetRequests, before);
+  });
+
+  await scenario('reset validates exact Unicode and local confirmation, keeps reuse actionable, and preserves verification', async () => {
+    const before = resetRequests;
+    for (const password of ['🔒'.repeat(14), '🔒'.repeat(129)]) {
+      await reset(password); await text('Use 15–128 Unicode characters.');
+    }
+    await fill('newPassword', replacement); await fill('confirmPassword', replacement + 'x'); await click('Reset password');
+    await text('Passwords must match.');
+    assert.equal(resetRequests, before);
+    await reset(recoveryFixture.password); await text('Choose a new password that differs');
+    assert.equal(await evaluate('document.querySelector("input[name=newPassword]").value'), '');
+    await reset(replacement); await text('Your password has been reset.');
+    assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);
+    await navigate(`${origin}/login`); await text('Welcome back');
+    await fill('email', recoveryFixture.email); await fill('password', replacement); await click('Login');
+    await text('Verify your email address before logging in.');
+    await navigate(recoveryFixture.url); await text('Current password');
+    await submit(replacement); await text('Your email has been verified');
+    assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);
+  });
+
+  await scenario('reset while signed in revokes all target sessions, clears browser identity and refreshes another tab', async () => {
+    const login = async () => {
+      await navigate(`${origin}/login`); await text('Welcome back');
+      await fill('email', recoveryFixture.email); await fill('password', replacement); await click('Login');
+      await text('Hi, Verification Fixture');
+      return (await cdp.send('Network.getAllCookies')).cookies.find(cookie => cookie.name === 'better-auth.session_token');
+    };
+    const first = await login();
+    await cdp.send('Network.clearBrowserCookies');
+    const second = await login();
+    const otherTab = await (await fetch(`http://${new URL(debuggerUrl).host}/json/new?about:blank`, { method: 'PUT' })).json();
+    const other = await connect(otherTab.webSocketDebuggerUrl);
+    try {
+      await other.send('Page.enable'); await other.send('Runtime.enable');
+      await other.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
+      await other.send('Page.navigate', { url: `${origin}/events` });
+      const readOther = async () => (await other.send('Runtime.evaluate', { expression: 'document.body?.innerText ?? ""', returnByValue: true })).result.value;
+      try { await until(async () => (await readOther()).includes('Hi, Verification Fixture'), 'other tab signed in', 15000); }
+      catch (error) {
+        const state = await other.send('Runtime.evaluate', { expression: 'fetch("/api/v1/me",{cache:"no-store"}).then(async r=>JSON.stringify({url:location.href,ready:document.readyState,body:document.body?.innerText,meStatus:r.status}))', returnByValue: true, awaitPromise: true });
+        const cookies = (await other.send('Network.getAllCookies')).cookies.map(cookie => cookie.name);
+        throw Error(`${error.message}; other tab: ${state.result.value}; cookie names: ${cookies}`);
+      }
+      await command('advance', { milliseconds: 60000 });
+      await recover(recoveryFixture.email);
+      const mail = (await command('recoveryMessages', { email: recoveryFixture.email })).at(-1);
+      await navigate(mail.url); await text('New Password');
+      await text('If this browser belongs to another account, its other devices stay signed in.');
+      await reset(' latest browser password 🔒 '); await text('Your password has been reset.');
+      assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);
+      await until(async () => { const body = await readOther(); return !body.includes('Hi, Verification Fixture') && body.includes('Log in'); }, 'other tab refreshed after reset');
+      for (const cookie of [first, second]) {
+        assert.equal((await fetch(`${origin}/api/v1/me`, { headers: { Cookie: `${cookie.name}=${cookie.value}` } })).status, 401);
+      }
+      assert.equal(await evaluate('document.body.innerText.includes("Hi, Verification Fixture")'), false);
+    } finally { await other.send('Page.close').catch(() => {}); other.close(); }
+  });
+
+  await scenario('reset of another account clears this browser while that other signed-in account keeps its other devices', async () => {
+    const signIn = async () => {
+      await navigate(`${origin}/login`); await text('Welcome back');
+      await fill('email', verifiedFixture.email); await fill('password', verifiedFixture.password); await click('Login');
+      await text('Hi, Verification Fixture');
+      return (await cdp.send('Network.getAllCookies')).cookies.find(cookie => cookie.name === 'better-auth.session_token');
+    };
+    const otherDevice = await signIn();
+    await cdp.send('Network.clearBrowserCookies');
+    await signIn();
+    const target = await command('fixture');
+    await recover(target.email);
+    const mail = (await command('recoveryMessages', { email: target.email }))[0];
+    await navigate(mail.url); await text('New Password');
+    await reset(replacement); await text('Your password has been reset.');
+    assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);
+    assert.equal((await fetch(`${origin}/api/v1/me`)).status, 401);
+    const stillSignedIn = await fetch(`${origin}/api/v1/me`, { headers: { Cookie: `${otherDevice.name}=${otherDevice.value}` } });
+    assert.equal(stillSignedIn.status, 200);
+    assert.equal((await stillSignedIn.json()).data.user.email, verifiedFixture.email);
+  });
+
+  await scenario('legacy login and protected-access gates open recovery without carrying a password', async () => {
+    await navigate(`${origin}/login`); await text('Welcome back');
+    await fill('email', verifiedFixture.email); await fill('password', verifiedFixture.password); await click('Login');
+    await text('Hi, Verification Fixture');
+    await command('legacy', { email: verifiedFixture.email });
+    await navigate(`${origin}/dashboard`);
+    await text('Reset your password through account recovery before logging in.');
+    await evaluate('Array.from(document.querySelectorAll("a")).find(a=>a.textContent.trim()==="Reset password").click()');
+    await text('Forgot your password?');
+    assert.equal(await evaluate('Boolean(document.querySelector("input[type=password]"))'), false);
+    await cdp.send('Network.clearBrowserCookies');
+    const destination = '/events/fixture/tickets';
+    await navigate(`${origin}/login?returnTo=${encodeURIComponent(destination)}`); await text('Welcome back');
+    await fill('email', verifiedFixture.email); await fill('password', verifiedFixture.password); await click('Login');
+    await text('Reset your password through account recovery before logging in.');
+    await evaluate('Array.from(document.querySelectorAll("a")).find(a=>a.textContent.trim()==="Reset password").click()');
+    await text('Forgot your password?');
+    assert.equal(await evaluate('new URLSearchParams(location.search).get("returnTo")'), destination);
+    await fill('email', verifiedFixture.email); await click('Request recovery link');
+    await text('If an account exists for this address, a password-reset email will be sent.');
+    const mail = (await command('recoveryMessages', { email: verifiedFixture.email })).at(-1);
+    assert.equal(new URL(mail.url).search, '');
+  });
+
+  await scenario('invalid, expired, and used reset links share one recovery screen', async () => {
+    const fixture = await command('fixture');
+    await recover(fixture.email);
+    const mail = (await command('recoveryMessages', { email: fixture.email }))[0];
+    await command('advance', { milliseconds: 1800000 });
+    for (const url of [mail.url, recoveryMail.url, `${origin}/reset-password#token=unknown-fixture`]) {
+      await navigate(`${origin}/forgot-password`); await text('Forgot your password?');
+      await navigate(url); await text('New Password');
+      await reset(replacement); await text('Link is invalid or expired. Request a new recovery link');
+      assert.equal(await evaluate('Boolean(document.querySelector("input[name=newPassword]"))'), false);
+    }
+  });
+
+  await scenario('recovery keeps cooldown and delivery outcomes generic and handles throttled or lost responses explicitly', async () => {
+    const fixture = await command('fixture');
+    await recover('unknown-recovery@example.com');
+    await recover(fixture.email); await recover(fixture.email);
+    assert.equal((await command('recoveryMessages', { email: fixture.email })).length, 1);
+    await command('advance', { milliseconds: 60000 });
+    await command('delivery', { enabled: false });
+    await recover(fixture.email);
+    await command('delivery', { enabled: true });
+    await recover(fixture.email);
+    assert.equal((await command('recoveryMessages', { email: fixture.email })).length, 1);
+    recoveryMode = 'throttled';
+    await navigate(`${origin}/forgot-password`); await text('Forgot your password?');
+    await fill('email', fixture.email); await click('Request recovery link'); await text('Try again in 37 seconds.');
+    recoveryMode = 'lost';
+    const before = recoveryRequests;
+    await click('Request recovery link'); await text('We could not confirm the recovery request.');
+    assert.equal(recoveryRequests, before + 1);
+    recoveryMode = 'normal';
+    await command('advance', { milliseconds: 60000 });
+    await recover(fixture.email);
+    const mail = (await command('recoveryMessages', { email: fixture.email })).at(-1);
+    await navigate(mail.url); await text('New Password');
+    resetMode = 'throttled';
+    await reset(replacement); await text('Try again in 37 seconds.');
+    resetMode = 'lost';
+    const resets = resetRequests;
+    await reset(replacement); await text('We could not confirm the password reset.');
+    assert.equal(resetRequests, resets + 1);
+    assert.equal(await evaluate('Boolean(document.querySelector("input[name=newPassword]"))'), false);
+    await text('Log in separately'); await text('Request a new recovery link');
+    resetMode = 'normal';
+    assert.ok(requestPaths.every(url => !url.includes('token') && !url.includes('Password')));
   });
 });

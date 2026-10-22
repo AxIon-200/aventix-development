@@ -32,9 +32,7 @@ export interface PublicAuthClient {
   verifyEmail?: (data: { token: string; currentPassword: string }) => Promise<void>;
   resendVerification?: (data: { email: string }) => Promise<void>;
   requestPasswordReset?: (data: { email: string }) => Promise<void>;
-  // The agreed adapter extracts/verifies its own backend-issued link format.
-  verifyRecoveryLink?: (link: string) => Promise<void>;
-  resetPassword?: (data: { recoveryLink: string; password: string }) => Promise<void>;
+  resetPassword?: (data: { token: string; newPassword: string }) => Promise<void>;
 }
 
 export const publicAuthClient: PublicAuthClient = createBetterAuthClient();
@@ -42,6 +40,7 @@ export const publicAuthClient: PublicAuthClient = createBetterAuthClient();
 export function authErrorMessage(error: unknown): string {
   if (!(error instanceof AuthClientError)) return "We couldn’t complete your request. Please try again.";
   const messages: Record<AuthErrorCode, string> = {
+    PASSWORD_REUSE: "Choose a new password that differs from your current password. This link can still be used.",
     INVALID_CREDENTIALS: "The email address or password is incorrect.",
     CURRENT_PASSWORD_INCORRECT: "The current password is incorrect. Try again with the same email link.",
     LINK_INVALID_OR_EXPIRED: "Link is invalid or expired. Request another verification email or recover your password.",

@@ -3,10 +3,10 @@ import { authBackendOrigin } from "./src/lib/auth/backend-origin";
 
 const nextConfig: NextConfig = {
   async headers() {
-    return [{ source: "/verify-email", headers: [
+    return ["/verify-email", "/reset-password"].map(source => ({ source, headers: [
       { key: "Cache-Control", value: "no-store" },
       { key: "Referrer-Policy", value: "no-referrer" },
-    ] }];
+    ] }));
   },
   // Frontend transport proxy only; Moyamoy owns the Better Auth handler.
   async rewrites() {

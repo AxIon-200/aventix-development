@@ -3,7 +3,7 @@ import { isObject } from "./profile";
 
 const publicCodes: AuthErrorCode[] = ["INVALID_CREDENTIALS", "ACCOUNT_DISABLED", "EMAIL_VERIFICATION_REQUIRED",
   "TERMS_ACCEPTANCE_REQUIRED", "PASSWORD_RESET_REQUIRED", "AUTHENTICATION_REQUIRED", "VALIDATION_ERROR", "RATE_LIMITED",
-  "EMAIL_ALREADY_REGISTERED", "ACCOUNT_CREATED_EMAIL_FAILED", "TERMS_VERSION_OUTDATED", "CURRENT_PASSWORD_INCORRECT", "LINK_INVALID_OR_EXPIRED"];
+  "EMAIL_ALREADY_REGISTERED", "ACCOUNT_CREATED_EMAIL_FAILED", "TERMS_VERSION_OUTDATED", "CURRENT_PASSWORD_INCORRECT", "LINK_INVALID_OR_EXPIRED", "PASSWORD_REUSE"];
 
 /** Decode only public envelopes. Provider messages and unknown field values never reach the UI. */
 export async function accountRequest(transport: typeof fetch, url: string, body?: Record<string, unknown>, cookie?: string): Promise<unknown> {

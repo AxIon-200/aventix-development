@@ -20,12 +20,15 @@ mock.timers.enable({ apis: ["Date"], now: start });
 let time = new Date(start);
 let failDelivery = false;
 const messages: AuthEmailMessage[] = [];
+const recoveryMessages: AuthEmailMessage[] = [];
 const emails: string[] = [];
 const password = " exact browser verification e\u0301 ";
 const app = createApp({ terms: { version: "verification-browser-fixture", documentUrl: `${env.FRONTEND_URL}/legal/terms` },
   now: () => time, aggregateLimit: 10000, registrationLimit: 10000, loginLimit: 10000,
   verificationLimit: 10000, verificationResendLimit: 10000,
+  recoveryLimit: 10000, resetLimit: 10000,
   sendVerificationEmail: async message => { if (failDelivery) throw Error("Controlled delivery failure"); messages.push(message); },
+  sendPasswordResetEmail: async message => { if (failDelivery) throw Error("Controlled delivery failure"); recoveryMessages.push(message); },
 });
 const server = app.listen(0, "127.0.0.1", () => {
   const address = server.address();
@@ -49,6 +52,7 @@ async function command(input: { action: string; milliseconds?: number; enabled?:
   }
   if (input.action === "delivery") { failDelivery = input.enabled === false; return {}; }
   if (input.action === "messages") return messages.filter(message => message.to === input.email);
+  if (input.action === "recoveryMessages") return recoveryMessages.filter(message => message.to === input.email);
   if (input.action === "legacy") {
     assert.ok(input.email && emails.includes(input.email));
     const user = await prisma.user.findUniqueOrThrow({ where: { email: input.email } });
@@ -56,6 +60,8 @@ async function command(input: { action: string; milliseconds?: number; enabled?:
     return {};
   }
   if (input.action === "cleanup") {
+    const users = await prisma.user.findMany({ where: { email: { in: emails } }, select: { id: true } });
+    await prisma.activityLog.deleteMany({ where: { userId: { in: users.map(user => user.id) } } });
     await prisma.user.deleteMany({ where: { email: { in: emails } } });
     await prisma.emailCooldown.deleteMany({ where: { email: { in: emails } } });
     await prisma.authRateLimit.deleteMany({ where: { expiresAt: { gte: start, lte: new Date(time.getTime() + 900000) } } });
