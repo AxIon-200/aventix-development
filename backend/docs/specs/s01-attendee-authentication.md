@@ -1,14 +1,19 @@
 # S01 attendee authentication integration
 
 Implementation specification: [S01 attendee authentication spec](s01-attendee-authentication-spec.md).
-The specification is being prepared for a new GitHub issue; this design record
-retains the confirmed planning decisions below.
+This design record retains the planning decisions confirmed on 2026-10-21.
 
-Status: planning confirmed; interview complete on 2026-10-21.
-This document records frontend integration and
-slice-boundary decisions for [S01 in the project plan](../../../project-plan.md).
-It does not authorize application implementation, configuration changes,
-database operations, or publication.
+Status: technical integration verified on 2026-10-22 for
+[parent issue #115](https://github.com/AxIon-200/aventix-development/issues/115).
+All eight child issues (#107-#114) are closed. The
+[joined localhost evidence](s01-joined-localhost-evidence.md) records passing
+frontend contracts, typecheck, production build, browser checks, backend
+typecheck, and the full guarded backend suite. Earlier intermittent backend
+timeouts remain documented and unexplained. Genuine terms, real email delivery,
+actual-account recovery readiness, and production HTTPS/cookie/proxy checks
+remain separate real-user activation requirements. This document records
+frontend integration and slice-boundary decisions for
+[S01 in the project plan](../../../project-plan.md).
 
 The [Phase 1 requirements](../../documents/phases/phase-1-authentication.md),
 [backend integration contract](phase-1-integration-contract.md), and
@@ -21,12 +26,12 @@ they do not change token validation, session issuance, or callback restrictions.
 
 The user accepted recommendations Q1-Q4 in the first round, Q5-Q11 in the
 second round, and Q12-Q19 in the third round on 2026-10-21. The resulting design
-tree has no remaining product-decision frontier; implementation checks and
-real-user activation evidence remain separate work.
+tree had no remaining product-decision frontier. Implementation checks followed
+in the eight child tickets; real-user activation evidence remains separate work.
 
 The user then explicitly confirmed the consolidated understanding and closed
-the planning interview on 2026-10-21. This confirms the full synthesis below;
-it does not authorize implementation or publication.
+the planning interview on 2026-10-21. That confirmation alone did not authorize
+implementation or publication; those were authorized subsequently.
 
 1. New verification emails open the fixed frontend `/verify-email` page with
    the token in the URL fragment. The attendee explicitly submits the token
@@ -152,11 +157,13 @@ account workspaces without claiming public event integration is complete.
 Use the [account glossary](../../GLOSSARY.md) to distinguish the three identity
 kinds. Their fixed-role policy remains in the existing requirements and ADR.
 
-## Verification evidence required for implementation
+## Verification evidence identified during planning
 
 No application tests, browser walkthrough, migrations, database operations, or
-provider delivery were performed during this interview. The checks below are
-requirements for subsequent implementation, not passing results.
+provider delivery were performed during the planning interview. The checks
+below were requirements for implementation. Their technical results are in the
+[joined localhost evidence](s01-joined-localhost-evidence.md); its controlled
+fixtures do not establish real-user activation.
 
 | Boundary | Required evidence |
 | --- | --- |
@@ -186,6 +193,6 @@ requires resolution before activation rather than weakening the contract.
   Workspace protection therefore needs checks at protected page/data boundaries,
   in addition to layout navigation and Express authorization. Per-account reads
   must not share cached identity between requests.
-- All nineteen recommendations and the consolidated understanding are
-  confirmed. The interview is complete; implementation and publication remain
-  separately authorized work.
+- All nineteen recommendations and the consolidated understanding were
+  confirmed in the planning interview. Implementation and publication received
+  subsequent authorization; real-user activation remains gated.

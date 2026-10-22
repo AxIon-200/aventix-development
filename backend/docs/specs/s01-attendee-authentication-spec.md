@@ -1,10 +1,15 @@
 # S01 — Attendee authentication integration
 
-Status: ticket breakdown and public HTTP test seam approved on 2026-10-21;
-eight GitHub tickets published with native blocking relationships under
-[S01 parent #115](https://github.com/AxIon-200/aventix-development/issues/115).
-Source decisions: confirmed on 2026-10-21. This specification synthesizes those
-decisions for a new GitHub issue; it does not start application implementation.
+Status: S01 technical integration implemented and verified on 2026-10-22.
+All eight child tickets under [S01 parent #115](https://github.com/AxIon-200/aventix-development/issues/115)
+are closed. The [joined localhost evidence](s01-joined-localhost-evidence.md)
+records the complete frontend and backend checks, browser observations, and
+intermittent backend test timeouts. Real-user activation remains pending as
+described there.
+
+Source decisions were confirmed on 2026-10-21. The problem and solution below
+retain the approved pre-implementation specification; the subsequent child
+tickets authorized and delivered the technical work.
 
 ## Problem Statement
 
@@ -357,9 +362,9 @@ gates for genuine terms, actual email delivery, and public deployment.
   performed for this documentation-only specification.
 - On 2026-10-21, the user approved the eight-ticket `to-tickets` breakdown,
   blocking edges, and public HTTP test seam, then authorized publication.
-  All eight tickets have `ready-for-agent` and native GitHub blocking
-  relationships. Historical tickets remain unchanged. Publication does not
-  authorize starting application implementation or bypassing activation gates.
+  The tickets were published with `ready-for-agent` and native GitHub blocking
+  relationships. Historical tickets remained unchanged. Publication alone did
+  not authorize application implementation or bypass activation gates.
 - The approved specification snapshot is included in the first ticket so its
   requirements are readable before the local source documents are committed.
 
@@ -380,6 +385,6 @@ relationships remain unchanged. The user requested this parent on 2026-10-21.
 | [#113](https://github.com/AxIon-200/aventix-development/issues/113) | Missing legacy consent | #110, #112 |
 | [#114](https://github.com/AxIon-200/aventix-development/issues/114) | Joined localhost acceptance evidence | #108, #109, #111, #113 |
 
-Work the frontier: #107 can start immediately; subsequent tickets become
-available when their blockers are complete. Each feature owns its own checks;
-#114 verifies the joined journey and retains separate activation gates.
+The dependency frontier began at #107; subsequent tickets became available as
+their blockers completed. Each feature owned its checks, and #114 verified the
+joined journey while retaining separate activation gates.

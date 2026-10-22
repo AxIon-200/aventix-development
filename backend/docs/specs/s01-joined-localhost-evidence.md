@@ -27,6 +27,27 @@ The frontend contracts use injected fetch at the public HTTP boundary. The brows
 
 The first backend registration attempt ran inside the default sandbox and received `EACCES` from Prisma when contacting the guarded test database. The test database identity check succeeded before that connection attempt. Rerunning with database network access passed all 49 registration tests. The first two full backend runs failed at different tests despite clean focused reruns; the third full run passed at the unchanged 15-second timeout. The earlier timeouts were intermittent, and their cause remains unexplained. One password-change case in the passing run took 14.4 seconds, close to that timeout. The passing run establishes a complete suite result, not a fix for the timing variability; no activation claim depends on it.
 
+## Parent #115 revalidation on 2026-10-22
+
+All eight S01 child issues (#107-#114) are closed. Revalidation on the parent
+branch produced these results without application-code changes:
+
+| Working directory | Command | Result |
+| --- | --- | --- |
+| Repository root | `node --test tests/auth-integration.test.mjs tests/registration.test.mjs tests/consent.test.mjs tests/recovery.test.mjs tests/verification.test.mjs` | 22/22 frontend account contracts passed. |
+| Repository root | `node node_modules/typescript/bin/tsc --noEmit` | Passed. |
+| Repository root | `npm.cmd run build` | Passed with Next 16.3.8. |
+| Repository root | `node --test --test-concurrency=1 tests/*.test.mjs` | 90/90 frontend tests passed, including both browser suites. |
+| Backend | `npm.cmd run typecheck` | Passed. |
+| Backend | `npm.cmd test -- --reporter=verbose` | Failed: 258/259 tests passed across 12 files; one profile test timed out. Duration: 785.12 seconds. |
+| Backend | `npm.cmd test -- --run test/profile.test.ts --reporter=verbose` | All 16 profile tests passed, including the timed-out case. Duration: 93.52 seconds. |
+| Backend | `npm.cmd test -- --reporter=dot` | All 259 tests passed across 12 files. Duration: 581.76 seconds. |
+
+The failed full-run profile case took 19.1 seconds in the focused file before
+the complete rerun passed. The full-run timeout remains intermittent and its
+cause is not established. The tests used the same guarded dedicated database;
+these results do not change the activation requirements below.
+
 ## Browser observations
 
 The new joined browser path submits registration from the attendee form after loading the current fixture terms and checking that its same-origin document returns HTTP 200. It observes account creation without a cookie and one captured verification message. The email opens in a fresh browser tab: the fragment is immediately stripped, explicit password-gated verification issues no cookie, and separate login issues the persistent Better Auth cookie and reaches `/events`. The proxy records the original browser Origin on the registration, verification, and login mutations. A second browser path observes account creation despite failed controlled delivery, rejection of duplicate registration, and a fresh captured link after explicit resend. Reloading the authenticated page retains the original cookie and expiry. A separate Chrome restart with the same browser profile also retains that cookie and expiry and renders the protected attendee unavailable screen with that account's real fixture identity.
