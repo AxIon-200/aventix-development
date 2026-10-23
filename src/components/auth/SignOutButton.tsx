@@ -5,16 +5,16 @@ import { authErrorMessage, publicAuthClient } from "@/lib/auth/client";
 import { authHref } from "@/lib/auth/destination";
 
 /** Shared-auth integration only; the surrounding teammate page retains its layout. */
-export default function SignOutButton({ children, className, title, switchAccount = false, returnTo, onStart, onFailure }: {
+export default function SignOutButton({ children, className, title, switchAccount = false, returnTo, onStart, onFailure, onBeforeSignOut }: {
   children: ReactNode; className?: string; title?: string; switchAccount?: boolean; returnTo?: string;
-  onStart?: () => void; onFailure?: () => void;
+  onStart?: () => void; onFailure?: () => void; onBeforeSignOut?: () => boolean;
 }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const busy = useRef(false);
   const router = useRouter();
   async function signOut() {
-    if (busy.current || !publicAuthClient.logout) return;
+    if (busy.current || !publicAuthClient.logout || onBeforeSignOut?.() === false) return;
     busy.current = true; setPending(true); setError("");
     onStart?.();
     try {

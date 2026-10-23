@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { publicAuthClient, type AccountRole } from "@/lib/auth/client";
@@ -9,16 +9,25 @@ import { workspaceNavigation } from "@/lib/auth/workspace";
 import { useAccountSession, type AccountState } from "./useAccountSession";
 import AccountGate from "./AccountGate";
 import SignOutButton from "./SignOutButton";
-import AttendeeProfile from "./AttendeeProfile";
+import AttendeeProfile, { hasUnsavedProfileChanges, type ProfileDraftState } from "./AttendeeProfile";
+import ChangePasswordForm from "./ChangePasswordForm";
 
 /** No protected children or sample records are serialized behind this guard. */
-export default function WorkspaceScreen({ role, title, returnTo, initial, attendeeProfile }: {
-  role: AccountRole; title: string; returnTo?: string; initial: AccountState; attendeeProfile?: boolean;
+export default function WorkspaceScreen({ role, title, returnTo, initial, accountScreen }: {
+  role: AccountRole; title: string; returnTo?: string; initial: AccountState; accountScreen?: "profile" | "settings";
 }) {
   const route = `${usePathname()}?${useSearchParams().toString()}`;
   const account = useAccountSession(publicAuthClient, initial, route);
   const router = useRouter();
   const signingOut = useRef(false);
+  const [profileState, setProfileState] = useState<ProfileDraftState | null>(null);
+  const currentUserId = account.session?.userId;
+  const hasDraft = useCallback(() => accountScreen === "profile" && (!currentUserId || currentUserId === profileState?.userId)
+    && hasUnsavedProfileChanges(profileState), [accountScreen, currentUserId, profileState]);
+  const confirmLeave = useCallback(() => !hasDraft() || window.confirm("You have unsaved personal account changes. Discard them and leave this page?"), [hasDraft]);
+  const confirmNavigation = (destination: string, event: { preventDefault: () => void }) => {
+    if (destination !== window.location.pathname && !confirmLeave()) event.preventDefault();
+  };
   const signOutCallbacks = {
     onStart: () => { signingOut.current = true; },
     onFailure: () => { signingOut.current = false; },
@@ -28,10 +37,34 @@ export default function WorkspaceScreen({ role, title, returnTo, initial, attend
       router.replace(authHref("/login", returnTo));
     }
   }, [account.loading, account.unavailable, account.session, router, returnTo]);
+  useEffect(() => {
+    if (accountScreen !== "profile") return;
+    const warn = (event: BeforeUnloadEvent) => {
+      if (!hasDraft()) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [accountScreen, hasDraft]);
+  useEffect(() => {
+    if (accountScreen !== "profile") return;
+    const navigation = (window as Window & { navigation?: EventTarget }).navigation;
+    if (!navigation) return;
+    const currentPath = new URL(route, window.location.origin).pathname;
+    const onBackOrForward = (event: Event) => {
+      const traverse = event as Event & { navigationType?: string; destination?: { url: string } };
+      if (traverse.navigationType !== "traverse" || !traverse.destination || !event.cancelable
+        || new URL(traverse.destination.url).pathname === currentPath || !hasDraft()) return;
+      if (!confirmLeave()) event.preventDefault();
+    };
+    navigation.addEventListener("navigate", onBackOrForward);
+    return () => navigation.removeEventListener("navigate", onBackOrForward);
+  }, [accountScreen, hasDraft, confirmLeave, route]);
 
   const session = account.session;
   return <main id="main-content" className="mx-auto min-h-screen max-w-4xl space-y-6 px-6 py-16">
-    <Link href="/events" className="inline-block text-[#66fcf1] underline">Browse public events</Link>
+    <Link href="/events" onNavigate={event => confirmNavigation("/events", event)} className="inline-block text-[#66fcf1] underline">Browse public events</Link>
     {account.loading ? <p role="status">Checking your current account…</p>
       : account.unavailable ? <section className="space-y-4">
         <h1 className="text-3xl font-semibold">Workspace unavailable</h1>
@@ -52,16 +85,25 @@ export default function WorkspaceScreen({ role, title, returnTo, initial, attend
       : <>
         <header className="space-y-2">
           <h1 className="text-3xl font-semibold">{title}</h1>
-          {!attendeeProfile && <p>Signed in as {session.displayName} · {session.email}</p>}
+          {accountScreen !== "profile" && <p>Signed in as {session.displayName} · {session.email}</p>}
         </header>
         <nav aria-label="Workspace" className="flex flex-wrap gap-4 border-y border-slate-700 py-4">
-          {workspaceNavigation[role].map(item => <Link key={item.href} href={item.href} prefetch={false} className="text-[#66fcf1] underline">{item.label}</Link>)}
+          {workspaceNavigation[role].map(item => <Link key={item.href} href={item.href} onNavigate={event => confirmNavigation(item.href, event)} prefetch={false} className="text-[#66fcf1] underline">{item.label}</Link>)}
         </nav>
-        {attendeeProfile ? <AttendeeProfile key={session.userId} session={session} onAccessRejected={account.rejectAccess} /> : <section className="rounded-2xl border border-slate-700 bg-[#151b23] p-6">
+        {accountScreen === "profile" ? <div className="space-y-6">
+          <AttendeeProfile key={session.userId} session={session} returnTo={role === "ATTENDEE" ? "/dashboard/profile" : "/admin/profile"} onAccessRejected={account.rejectAccess} retainedProfile={profileState} onProfileChange={setProfileState} />
+          <ChangePasswordForm key={`password-${session.userId}`} session={session} returnTo={role === "ATTENDEE" ? "/dashboard/profile" : "/admin/profile"} onAccessRejected={account.rejectAccess} />
+        </div> : accountScreen === "settings" ? <div className="space-y-6">
+          <ChangePasswordForm key={session.userId} session={session} returnTo="/admin/settings" onAccessRejected={account.rejectAccess} />
+          <section className="rounded-2xl border border-slate-700 bg-[#151b23] p-6">
+            <h2 className="text-xl font-semibold">Other settings are unavailable</h2>
+            <p className="mt-3 text-slate-300">Additional preferences and security controls are still being built.</p>
+          </section>
+        </div> : <section className="rounded-2xl border border-slate-700 bg-[#151b23] p-6">
           <h2 className="text-xl font-semibold">This feature is unavailable</h2>
           <p className="mt-3 text-slate-300">This workspace is still being built. Account information comes from your current account; tickets, bookings, payments, and workspace tools are not available yet.</p>
         </section>}
       </>}
-    {!account.loading && session && <SignOutButton {...signOutCallbacks} className="inline-block text-[#66fcf1] underline">Sign Out</SignOutButton>}
+    {!account.loading && session && <SignOutButton {...signOutCallbacks} onBeforeSignOut={confirmLeave} className="inline-block text-[#66fcf1] underline">Sign Out</SignOutButton>}
   </main>;
 }

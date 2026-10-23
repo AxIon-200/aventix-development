@@ -10,8 +10,8 @@ import WorkspaceScreen from "./WorkspaceScreen";
  * WorkspaceScreen checks the exact role during SSR and again on browser refresh.
  * Future data access must independently authorize through Express.
  */
-export default async function WorkspacePage({ role, title, returnTo, attendeeProfile = false }: {
-  role: AccountRole; title: string; returnTo?: string; attendeeProfile?: boolean;
+export default async function WorkspacePage({ role, title, returnTo, accountScreen }: {
+  role: AccountRole; title: string; returnTo?: string; accountScreen?: "profile" | "settings";
 }) {
   let initial: AccountState;
   try {
@@ -22,6 +22,6 @@ export default async function WorkspacePage({ role, title, returnTo, attendeePro
   }
   if (!initial.unavailable && !initial.session) redirect(authHref("/login", returnTo));
   return <Suspense fallback={<main id="main-content" className="px-6 py-16"><p role="status">Checking your current account…</p></main>}>
-    <WorkspaceScreen role={role} title={title} returnTo={returnTo} initial={initial} attendeeProfile={attendeeProfile} />
+    <WorkspaceScreen role={role} title={title} returnTo={returnTo} initial={initial} accountScreen={accountScreen} />
   </Suspense>;
 }

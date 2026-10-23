@@ -30,6 +30,7 @@ export async function accountRequest(transport: typeof fetch, url: string, body?
       if (Object.hasOwn(supplied, "email")) fields.email = "Enter a valid email address.";
       if (Object.hasOwn(supplied, "password")) fields.password = "Enter your password using at most 128 characters.";
       if (Object.hasOwn(supplied, "currentPassword")) fields.currentPassword = "Enter your current password using at most 128 Unicode characters.";
+      if (Object.hasOwn(supplied, "newPassword")) fields.newPassword = "Use 15–128 Unicode characters. Spaces are allowed.";
       if (Object.hasOwn(supplied, "firstName")) fields.firstName = "Use 1–100 Unicode characters for your first name.";
       if (Object.hasOwn(supplied, "lastName")) fields.lastName = "Use 1–100 Unicode characters for your last name.";
       if (Object.hasOwn(supplied, "phoneNumber")) fields.phoneNumber = "Use 09 plus nine digits or +639 plus nine digits, without spaces or hyphens.";

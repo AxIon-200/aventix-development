@@ -32,6 +32,7 @@ export interface PublicAuthClient {
   getSession?: () => Promise<AccountSession | null>;
   getProfile?: () => Promise<PersonalAccountProfile>;
   updateProfile?: (changes: ProfileChanges) => Promise<PersonalAccountProfile>;
+  changePassword?: (data: { currentPassword: string; newPassword: string }) => Promise<void>;
   logout?: () => Promise<void>;
   passwordRules?: { description: string; validate: (password: string) => string | undefined };
   login?: (data: { email: string; password: string }) => Promise<AuthResult>;
@@ -51,7 +52,7 @@ export function authErrorMessage(error: unknown): string {
   const messages: Record<AuthErrorCode, string> = {
     PASSWORD_REUSE: "Choose a new password that differs from your current password. This link can still be used.",
     INVALID_CREDENTIALS: "The email address or password is incorrect.",
-    CURRENT_PASSWORD_INCORRECT: "The current password is incorrect. Try again with the same email link.",
+    CURRENT_PASSWORD_INCORRECT: "The current password is incorrect. Check it and try again.",
     LINK_INVALID_OR_EXPIRED: "Link is invalid or expired. Request another verification email or recover your password.",
     ACCOUNT_DISABLED: "This account cannot sign in. Please contact support.",
     DUPLICATE_EMAIL: "This email is already registered. Log in or reset your password.",

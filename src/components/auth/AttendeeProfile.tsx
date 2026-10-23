@@ -6,8 +6,8 @@ import { nameError, validPhone } from "@/lib/auth/validation";
 import AccountGate from "./AccountGate";
 import FormField, { submitClass } from "./FormField";
 
-const returnTo = "/dashboard/profile";
 type Draft = { firstName: string; lastName: string; phoneNumber: string };
+export type ProfileDraftState = { userId: string; saved: PersonalAccountProfile; draft: Draft };
 const fromProfile = (profile: PersonalAccountProfile): Draft => ({
   firstName: profile.firstName, lastName: profile.lastName, phoneNumber: profile.phoneNumber ?? "",
 });
@@ -16,14 +16,24 @@ const changedFields = (saved: PersonalAccountProfile, draft: Draft): ProfileChan
   ...(draft.lastName.trim() !== saved.lastName ? { lastName: draft.lastName.trim() } : {}),
   ...(draft.phoneNumber !== (saved.phoneNumber ?? "") ? { phoneNumber: draft.phoneNumber === "" ? null : draft.phoneNumber } : {}),
 });
+export const hasUnsavedProfileChanges = (state: ProfileDraftState | null) =>
+  state !== null && Object.keys(changedFields(state.saved, state.draft)).length > 0;
 
-export default function AttendeeProfile({ session, onAccessRejected }: {
+const canonicalValue = (field: keyof ProfileChanges, value: string | null) =>
+  field === "phoneNumber" && typeof value === "string" && value.startsWith("09") ? `+63${value.slice(1)}` : value;
+const matchesSubmitted = (profile: PersonalAccountProfile, changes: ProfileChanges) =>
+  (Object.keys(changes) as (keyof ProfileChanges)[]).every(field => profile[field] === canonicalValue(field, changes[field] ?? null));
+
+export default function AttendeeProfile({ session, returnTo, onAccessRejected, retainedProfile, onProfileChange }: {
   session: AccountSession; onAccessRejected: (code: AuthErrorCode, expectedUserId: string) => void;
+  returnTo: string;
+  retainedProfile: ProfileDraftState | null; onProfileChange: (state: ProfileDraftState) => void;
 }) {
-  const [saved, setSaved] = useState<PersonalAccountProfile | null>(null);
-  const [draft, setDraft] = useState<Draft | null>(null);
-  const draftRef = useRef<Draft | null>(null);
-  const savedRef = useRef<PersonalAccountProfile | null>(null);
+  const retained = retainedProfile?.userId === session.userId ? retainedProfile : null;
+  const [saved, setSaved] = useState<PersonalAccountProfile | null>(retained?.saved ?? null);
+  const [draft, setDraft] = useState<Draft | null>(retained?.draft ?? null);
+  const draftRef = useRef<Draft | null>(retained?.draft ?? null);
+  const savedRef = useRef<PersonalAccountProfile | null>(retained?.saved ?? null);
   const [error, setError] = useState<AuthClientError | null>(null);
   const [saveError, setSaveError] = useState<AuthClientError | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -39,18 +49,22 @@ export default function AttendeeProfile({ session, onAccessRejected }: {
       try {
         if (!publicAuthClient.getProfile) throw new AuthClientError("UNAVAILABLE");
         const current = await publicAuthClient.getProfile();
-        if (current.id !== session.userId || current.role !== "ATTENDEE") throw new AuthClientError("INVALID_RESPONSE");
+        if (current.id !== session.userId || current.role !== session.role) throw new AuthClientError("INVALID_RESPONSE");
         if (active) {
           const previous = savedRef.current;
           const currentDraft = draftRef.current;
-          const dirty = previous && currentDraft && Object.keys(changedFields(previous, currentDraft)).length > 0;
+          const next = fromProfile(current);
+          if (previous && currentDraft) {
+            const edited = changedFields(previous, currentDraft);
+            if ("firstName" in edited) next.firstName = currentDraft.firstName;
+            if ("lastName" in edited) next.lastName = currentDraft.lastName;
+            if ("phoneNumber" in edited) next.phoneNumber = currentDraft.phoneNumber;
+          }
           savedRef.current = current;
           setSaved(current);
-          if (!dirty) {
-            const next = fromProfile(current);
-            draftRef.current = next;
-            setDraft(next);
-          }
+          draftRef.current = next;
+          setDraft(next);
+          onProfileChange({ userId: session.userId, saved: current, draft: next });
           setError(null);
         }
       } catch (cause) {
@@ -66,7 +80,7 @@ export default function AttendeeProfile({ session, onAccessRejected }: {
       }
     })();
     return () => { active = false; };
-  }, [session.userId, onAccessRejected, revision]);
+  }, [session.userId, onAccessRejected, onProfileChange, revision]);
 
   const refresh = () => {
     setError(null);
@@ -74,12 +88,11 @@ export default function AttendeeProfile({ session, onAccessRejected }: {
     setRevision(value => value + 1);
   };
   const edit = (field: keyof Draft, value: string) => {
-    setDraft(previous => {
-      if (!previous) return previous;
-      const next = { ...previous, [field]: value };
-      draftRef.current = next;
-      return next;
-    });
+    if (!draftRef.current) return;
+    const next = { ...draftRef.current, [field]: value };
+    draftRef.current = next;
+    if (savedRef.current) onProfileChange({ userId: session.userId, saved: savedRef.current, draft: next });
+    setDraft(next);
     setFieldErrors(previous => ({ ...previous, [field]: "" }));
     setSaveError(null);
     setMessage("");
@@ -88,6 +101,7 @@ export default function AttendeeProfile({ session, onAccessRejected }: {
     if (!saved || busy) return;
     const next = fromProfile(saved);
     draftRef.current = next;
+    onProfileChange({ userId: session.userId, saved, draft: next });
     setDraft(next);
     setFieldErrors({});
     setSaveError(null);
@@ -125,10 +139,36 @@ export default function AttendeeProfile({ session, onAccessRejected }: {
       setSaved(current);
       const accepted = fromProfile(current);
       draftRef.current = accepted;
+      onProfileChange({ userId: session.userId, saved: current, draft: accepted });
       setDraft(accepted);
       setMessage("Your personal account profile was saved.");
     } catch (cause) {
       const issue = cause instanceof AuthClientError ? cause : new AuthClientError("REQUEST_UNCERTAIN");
+      if (issue.code === "REQUEST_UNCERTAIN") {
+        try {
+          if (!publicAuthClient.getProfile) throw new AuthClientError("UNAVAILABLE");
+          const observed = await publicAuthClient.getProfile();
+          if (observed.id === saved.id && observed.role === saved.role && observed.email === saved.email
+            && matchesSubmitted(observed, changes)) {
+            savedRef.current = observed;
+            setSaved(observed);
+            const accepted = fromProfile(observed);
+            draftRef.current = accepted;
+            onProfileChange({ userId: session.userId, saved: observed, draft: accepted });
+            setDraft(accepted);
+            setMessage("Your personal account profile was saved and confirmed by a fresh account check.");
+            return;
+          }
+        } catch (readError) {
+          if (readError instanceof AuthClientError && ["AUTHENTICATION_REQUIRED", "ACCOUNT_DISABLED",
+            "EMAIL_VERIFICATION_REQUIRED", "TERMS_ACCEPTANCE_REQUIRED", "PASSWORD_RESET_REQUIRED"].includes(readError.code)) {
+            onAccessRejected(readError.code, session.userId);
+          }
+        }
+      } else if (["AUTHENTICATION_REQUIRED", "ACCOUNT_DISABLED", "EMAIL_VERIFICATION_REQUIRED",
+        "TERMS_ACCEPTANCE_REQUIRED", "PASSWORD_RESET_REQUIRED"].includes(issue.code)) {
+        onAccessRejected(issue.code, session.userId);
+      }
       setFieldErrors(issue.fieldErrors);
       setSaveError(issue);
     } finally {
@@ -141,7 +181,7 @@ export default function AttendeeProfile({ session, onAccessRejected }: {
     <div className="flex flex-wrap items-start justify-between gap-4">
       <div>
         <h2 id="personal-profile-title" className="text-xl font-semibold sm:text-2xl">Personal account profile</h2>
-        <p className="mt-2 text-sm text-slate-300">Details for the attendee account you are using now.</p>
+        <p className="mt-2 text-sm text-slate-300">Details for the {session.role === "ATTENDEE" ? "attendee" : "administrator"} account you are using now.</p>
       </div>
       {!loading && <button type="button" onClick={refresh} disabled={busy} className="rounded-lg border border-[#66fcf1] px-4 py-2 text-sm font-medium text-[#66fcf1] hover:bg-[#66fcf1]/10 disabled:opacity-50">Refresh details</button>}
     </div>

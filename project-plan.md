@@ -109,6 +109,8 @@ These are proposed conventions for new business APIs; existing approved auth con
 
 ### S02 — Edit the current account and change its password
 
+Design decisions: [S02 current-account profile and password](backend/docs/specs/s02-current-account-profile-and-password.md).
+
 **Outcome:** A user updates allowed personal fields and changes a known password. Recovery request/reset integration now belongs to S01; this slice reuses that flow. **Dependencies:** S01.
 
 **Backend/API:** Reuse `GET/PATCH /me` and `POST /api/auth/change-password`, plus S01's recovery flow; existing lifecycle/session invalidation code and audits.

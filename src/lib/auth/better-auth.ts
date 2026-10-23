@@ -86,6 +86,12 @@ export function createBetterAuthClient(transport: typeof fetch = (...args) => fe
         throw new AuthClientError("REQUEST_UNCERTAIN");
       }
     },
+    changePassword: async ({ currentPassword, newPassword }) => {
+      if (logoutBlocked) throw new AuthClientError("LOGOUT_UNCERTAIN");
+      const result = await requestCompletion("/api/auth/change-password", { currentPassword, newPassword });
+      if (!isObject(result) || !isObject(result.data) || result.data.passwordChanged !== true) throw new AuthClientError("REQUEST_UNCERTAIN");
+      if (logoutBlocked) throw new AuthClientError("LOGOUT_UNCERTAIN");
+    },
     requestPasswordReset: async ({ email }) => {
       const result = await requestCompletion("/api/auth/request-password-reset", { email: email.trim().toLowerCase() });
       if (!isObject(result) || !isObject(result.data) || result.data.message !== "If an account exists for this address, a password-reset email will be sent.") throw new AuthClientError("REQUEST_UNCERTAIN");

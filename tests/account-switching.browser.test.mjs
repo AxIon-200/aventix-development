@@ -27,6 +27,8 @@ test('account identity stays current and account switching preserves safe bookin
   const savedProfiles = new Map();
   const profilePatches = [];
   let profilePatchMode = 'confirmed';
+  const passwordChanges = [];
+  let passwordMode = 'confirmed';
   let logoutMode = 'confirmed';
   let loginRole = 'ATTENDEE';
   let currentRole = 'ATTENDEE';
@@ -48,12 +50,13 @@ test('account identity stays current and account switching preserves safe bookin
         for await (const chunk of request) body += chunk;
         const changes = JSON.parse(body);
         profilePatches.push(changes);
+        if (profilePatchMode === 'lost-not-applied') { request.socket.destroy(); return; }
         if (profilePatchMode === 'rejected') {
           response.statusCode = 400;
           response.end(JSON.stringify({ error: { code: 'VALIDATION_ERROR', fields: { phoneNumber: 'private' } } }));
           return;
         }
-        const previous = profile(account);
+        const previous = profile(account, account === 'new' ? loginRole : currentRole);
         const next = { ...previous, ...changes,
           firstName: changes.firstName ?? previous.firstName,
           lastName: changes.lastName ?? previous.lastName,
@@ -74,6 +77,17 @@ test('account identity stays current and account switching preserves safe bookin
       };
       if (holdAccountReads && request.headers['sec-fetch-site']) delayedAccountReads.push(complete);
       else complete();
+    } else if (request.url === '/api/auth/change-password' && request.method === 'POST') {
+      let body = '';
+      for await (const chunk of request) body += chunk;
+      passwordChanges.push(JSON.parse(body));
+      if (passwordMode === 'lost') { request.socket.destroy(); return; }
+      if (passwordMode === 'wrong' || passwordMode === 'reused') {
+        response.statusCode = passwordMode === 'wrong' ? 401 : 400;
+        response.end(JSON.stringify({ error: { code: passwordMode === 'wrong' ? 'CURRENT_PASSWORD_INCORRECT' : 'PASSWORD_REUSE' } }));
+        return;
+      }
+      response.end(JSON.stringify({ data: { passwordChanged: true } }));
     } else if (request.url === '/api/auth/logout' && request.method === 'POST') {
       logoutRequests++;
       if (logoutMode === 'uncertain') { request.socket.destroy(); return; }
@@ -192,6 +206,19 @@ test('account identity stays current and account switching preserves safe bookin
     await until(() => evaluate(`Boolean(${expression})`), label);
     await evaluate(`${expression}.click()`);
   };
+  const typeField = async (name, value) => {
+    await until(() => evaluate(`(() => {
+      const input = document.querySelector('input[name=${JSON.stringify(name)}]');
+      if (!input || !input.isConnected) return false;
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, ${JSON.stringify(value)});
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      return true;
+    })()`), `${name} input`);
+  };
+  const setConfirmResult = async accept => {
+    await evaluate(`window.profilePrompts = [];
+      window.confirm = message => { window.profilePrompts.push(message); return ${accept}; }`);
+  };
   const openAccount = async (screen, returnTo) => {
     logoutMode = 'confirmed';
     logoutRequests = 0;
@@ -284,14 +311,6 @@ test('account identity stays current and account switching preserves safe bookin
     await cdp.send('Network.setCookie', { name: 'fixture-account', value: 'old', url: origin, httpOnly: true, path: '/' });
     await cdp.send('Page.navigate', { url: `${origin}/dashboard/profile` });
     await until(() => evaluate(`document.querySelector('input[name="firstName"]')?.value === 'Fixture'`), 'editable profile');
-    const typeField = async (name, value) => {
-      await evaluate(`(() => {
-        const input = document.querySelector('input[name=${JSON.stringify(name)}]');
-        const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
-        setter.call(input, ${JSON.stringify(value)});
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-      })()`);
-    };
     await cdp.send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: 1, mobile: false });
     assert.equal(await evaluate(`document.querySelector('[aria-labelledby="personal-profile-title"]').scrollWidth <= document.querySelector('[aria-labelledby="personal-profile-title"]').clientWidth + 1`), true);
     await typeField('firstName', '  Éloïse  ');
@@ -342,11 +361,153 @@ test('account identity stays current and account switching preserves safe bookin
     profilePatchMode = 'lost';
     await typeField('phoneNumber', '09179998888');
     await click('Save changes');
-    await until(() => evaluate(`(document.body?.innerText ?? '').includes('could not confirm whether your changes were saved')`), 'uncertain edit');
-    assert.equal(await evaluate(`document.querySelector('input[name="phoneNumber"]').value`), '09179998888');
+    await until(() => evaluate(`(document.body?.innerText ?? '').includes('saved and confirmed by a fresh account check')`), 'reconciled edit');
+    assert.equal(await evaluate(`document.querySelector('input[name="phoneNumber"]').value`), '+639179998888');
     assert.equal(profile('old').phoneNumber, '+639179998888');
     assert.deepEqual(profilePatches.at(-1), { phoneNumber: '09179998888' });
+    profilePatchMode = 'lost-not-applied';
+    await typeField('lastName', 'Still a draft');
+    await click('Save changes');
+    await until(() => evaluate(`(document.body?.innerText ?? '').includes('could not confirm whether your changes were saved')`), 'unconfirmed edit');
+    assert.equal(await evaluate(`document.querySelector('input[name="lastName"]').value`), 'Still a draft');
+    assert.deepEqual(profilePatches.at(-1), { lastName: 'Still a draft' });
     profilePatchMode = 'confirmed';
+    savedProfiles.clear();
+  });
+
+  await scenario('attendee draft survives account refresh and Discard uses the latest saved profile', async () => {
+    await cdp.send('Network.clearBrowserCookies');
+    await cdp.send('Network.setCookie', { name: 'fixture-account', value: 'old', url: origin, httpOnly: true, path: '/' });
+    await cdp.send('Page.navigate', { url: `${origin}/dashboard/profile` });
+    await until(() => evaluate(`document.querySelector('input[name="firstName"]')?.value === 'Fixture'`), 'profile before draft');
+    await typeField('firstName', 'Draft');
+    await until(() => evaluate(`!Array.from(document.querySelectorAll('button')).find(button => button.textContent.trim() === 'Discard changes').disabled`), 'dirty draft');
+    savedProfiles.set('old', { firstName: 'Fresh', lastName: 'Saved', name: 'Fresh Saved', phoneNumber: '+639179991111' });
+    await evaluate(`window.dispatchEvent(new Event('focus'))`);
+    await until(() => evaluate(`document.querySelector('input[name="firstName"]')?.value === 'Draft'
+      && (document.body?.innerText ?? '').includes('Saved name: Fresh Saved')`), 'draft and accepted refresh');
+    assert.equal(await evaluate(`document.querySelector('input[name="phoneNumber"]').value`), '+639179991111');
+    savedProfiles.set('old', { firstName: 'Newest', lastName: 'Saved', name: 'Newest Saved', phoneNumber: '+639179992222' });
+    await click('Refresh details');
+    await until(() => evaluate(`document.querySelector('input[name="firstName"]')?.value === 'Draft'
+      && (document.body?.innerText ?? '').includes('Saved name: Newest Saved')`), 'draft after explicit refresh');
+    await click('Discard changes');
+    assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('input[name="firstName"], input[name="lastName"], input[name="phoneNumber"]')).map(input => input.value)`),
+      ['Newest', 'Saved', '+639179992222']);
+    await typeField('phoneNumber', '09178887777');
+    savedProfiles.set('old', { firstName: 'Latest', lastName: 'Account', name: 'Latest Account', phoneNumber: '+639179993333' });
+    await click('Refresh details');
+    await until(() => evaluate(`document.querySelector('input[name="phoneNumber"]')?.value === '09178887777'
+      && document.querySelector('input[name="firstName"]')?.value === 'Latest'`), 'phone draft and fresh name');
+    await click('Discard changes');
+    assert.equal(await evaluate(`document.querySelector('input[name="phoneNumber"]').value`), '+639179993333');
+    savedProfiles.clear();
+  });
+
+  await scenario('dirty attendee navigation asks to leave while clean and saved forms leave directly', async () => {
+    await cdp.send('Page.navigate', { url: `${origin}/dashboard/profile` });
+    await until(() => evaluate(`document.querySelector('input[name="firstName"]')?.value === 'Fixture'`), 'clean profile');
+    assert.equal(await evaluate(`window.dispatchEvent(new Event('beforeunload', { cancelable: true }))`), true);
+    await setConfirmResult(false);
+    await typeField('firstName', 'Leaving');
+    await until(() => evaluate(`!Array.from(document.querySelectorAll('button')).find(button => button.textContent.trim() === 'Save changes').disabled`), 'dirty form');
+    assert.equal(await evaluate(`window.dispatchEvent(new Event('beforeunload', { cancelable: true }))`), false);
+    await evaluate(`document.querySelector('nav[aria-label="Workspace"] a[href="/dashboard/tickets"]').click()`);
+    await until(() => evaluate(`window.profilePrompts.length === 1`), 'navigation confirmation');
+    assert.equal(await evaluate(`location.pathname`), '/dashboard/profile');
+    assert.equal(await evaluate(`document.querySelector('input[name="firstName"]').value`), 'Leaving');
+    const signOutsBeforeDraft = logoutRequests;
+    await click('Sign Out');
+    await until(() => evaluate(`window.profilePrompts.length === 2`), 'sign-out confirmation');
+    assert.equal(logoutRequests, signOutsBeforeDraft);
+    assert.equal(await evaluate(`document.querySelector('input[name="firstName"]').value`), 'Leaving');
+    await click('Discard changes');
+    assert.equal(await evaluate(`window.dispatchEvent(new Event('beforeunload', { cancelable: true }))`), true);
+    await evaluate(`document.querySelector('nav[aria-label="Workspace"] a[href="/dashboard/tickets"]').click()`);
+    await until(() => evaluate(`location.pathname === '/dashboard/tickets'`), 'clean navigation');
+    assert.equal(await evaluate(`window.profilePrompts.length`), 2);
+
+    await until(() => evaluate(`Boolean(document.querySelector('nav[aria-label="Workspace"] a[href="/dashboard/profile"]'))`), 'ticket workspace navigation');
+    await evaluate(`document.querySelector('nav[aria-label="Workspace"] a[href="/dashboard/profile"]').click()`);
+    await until(() => evaluate(`document.querySelector('input[name="firstName"]')?.value === 'Fixture'`), 'profile through app navigation');
+    await setConfirmResult(false);
+    await typeField('firstName', 'Back draft');
+    await until(() => evaluate(`!Array.from(document.querySelectorAll('button')).find(button => button.textContent.trim() === 'Discard changes').disabled`), 'dirty form before Back');
+    assert.equal(await evaluate(`window.dispatchEvent(new Event('beforeunload', { cancelable: true }))`), false);
+    await evaluate(`history.back()`);
+    await until(() => evaluate(`window.profilePrompts.length > 0 || location.pathname === '/dashboard/tickets'`), 'back navigation decision');
+    assert.equal(await evaluate(`location.pathname`), '/dashboard/profile');
+    assert.equal(await evaluate(`document.querySelector('input[name="firstName"]')?.value`), 'Back draft');
+    await click('Discard changes');
+    await evaluate(`history.back()`);
+    await until(() => evaluate(`location.pathname === '/dashboard/tickets'`), 'clean browser back');
+
+    await cdp.send('Page.navigate', { url: `${origin}/dashboard/profile` });
+    await until(() => evaluate(`document.querySelector('input[name="firstName"]')?.value === 'Fixture'`), 'profile after clean navigation');
+    await setConfirmResult(true);
+    await typeField('firstName', 'Saved');
+    await until(() => evaluate(`!Array.from(document.querySelectorAll('button')).find(button => button.textContent.trim() === 'Save changes').disabled`), 'save ready');
+    await click('Save changes');
+    await until(() => evaluate(`(document.body?.innerText ?? '').includes('Your personal account profile was saved.')`), 'confirmed save');
+    assert.equal(await evaluate(`window.dispatchEvent(new Event('beforeunload', { cancelable: true }))`), true);
+    await evaluate(`document.querySelector('nav[aria-label="Workspace"] a[href="/dashboard/tickets"]').click()`);
+    await until(() => evaluate(`location.pathname === '/dashboard/tickets'`), 'navigation after save');
+    assert.equal(await evaluate(`window.profilePrompts.length`), 0);
+    await cdp.send('Page.navigate', { url: `${origin}/dashboard/profile` });
+    await until(() => evaluate(`document.querySelector('input[name="firstName"]')?.value === 'Saved'`), 'profile before confirmed discard');
+    await setConfirmResult(true);
+    await typeField('lastName', 'Abandoned');
+    await until(() => evaluate(`!Array.from(document.querySelectorAll('button')).find(button => button.textContent.trim() === 'Discard changes').disabled`), 'draft before confirmed discard');
+    await evaluate(`document.querySelector('a[href="/events"]').click()`);
+    await until(() => evaluate(`location.pathname === '/events'`), 'confirmed dirty navigation');
+    assert.equal(await evaluate(`window.profilePrompts.length`), 1);
+    savedProfiles.clear();
+  });
+
+  await scenario('administrator profile and settings use the current identity and known-password contract', async () => {
+    await cdp.send('Network.clearBrowserCookies');
+    await cdp.send('Network.setCookie', { name: 'fixture-account', value: 'old', url: origin, httpOnly: true, path: '/' });
+    currentRole = 'ADMINISTRATOR';
+    await cdp.send('Page.navigate', { url: `${origin}/admin/profile` });
+    await until(() => evaluate(`document.querySelector('input[name="firstName"]')?.value === 'Fixture'`), 'administrator profile');
+    assert.equal(await evaluate(`(document.body?.innerText ?? '').includes('old@example.invalid')`), true);
+    assert.equal(await evaluate(`Boolean(document.querySelector('input[name="email"]'))`), false);
+    await typeField('firstName', 'Administrator');
+    await click('Save changes');
+    await until(() => evaluate(`(document.body?.innerText ?? '').includes('Your personal account profile was saved.')`), 'administrator save');
+    assert.deepEqual(profilePatches.at(-1), { firstName: 'Administrator' });
+    await typeField('currentPassword', ' exact old password ');
+    await typeField('newPassword', ' new Unicode password 😀 ');
+    await typeField('confirmPassword', 'mismatch');
+    const changesBeforeMismatch = passwordChanges.length;
+    await click('Change password');
+    await until(() => evaluate(`(document.body?.innerText ?? '').includes('Passwords must match.')`), 'local confirmation');
+    assert.equal(passwordChanges.length, changesBeforeMismatch);
+    await typeField('confirmPassword', ' new Unicode password 😀 ');
+    passwordMode = 'wrong';
+    await click('Change password');
+    await until(() => evaluate(`(document.body?.innerText ?? '').includes('current password is incorrect')`), 'wrong current password');
+    assert.deepEqual(passwordChanges.at(-1), { currentPassword: ' exact old password ', newPassword: ' new Unicode password 😀 ' });
+    passwordMode = 'confirmed';
+    await click('Change password');
+    await until(() => evaluate(`(document.body?.innerText ?? '').includes('Other sessions and outstanding password-reset links were invalidated.')`), 'confirmed password change');
+    assert.equal(await evaluate(`document.querySelector('input[name="newPassword"]').value`), '');
+    assert.equal(await evaluate(`location.pathname`), '/admin/profile');
+    await cdp.send('Page.navigate', { url: `${origin}/admin/settings` });
+    await until(() => evaluate(`Boolean(document.querySelector('input[name="currentPassword"]'))`), 'settings password entry');
+    assert.equal(await evaluate(`Boolean(document.querySelector('input[name="firstName"]'))`), false);
+    await typeField('currentPassword', ' exact old password ');
+    await typeField('newPassword', ' another password 😀 ');
+    await typeField('confirmPassword', ' another password 😀 ');
+    passwordMode = 'lost';
+    const changesBeforeLost = passwordChanges.length;
+    await click('Change password');
+    await until(() => evaluate(`(document.body?.innerText ?? '').includes('could not confirm whether your password changed')`), 'uncertain password change');
+    assert.equal(passwordChanges.length, changesBeforeLost + 1);
+    assert.equal(await evaluate(`document.querySelector('input[name="currentPassword"]').value`), '');
+    assert.equal(await evaluate(`document.querySelector('input[name="newPassword"]').value`), '');
+    passwordMode = 'confirmed';
+    currentRole = 'ATTENDEE';
     savedProfiles.clear();
   });
 
@@ -507,7 +668,8 @@ test('account identity stays current and account switching preserves safe bookin
           assert.equal(response.status, 200, `${role} ${route}`);
           noPersonalSamples(body);
           if (role === requiredRole) {
-            assert.match(body, route === '/dashboard/profile' ? /Personal account profile/ : /This feature is unavailable/, `${role} ${route}`);
+            assert.match(body, ['/dashboard/profile', '/admin/profile'].includes(route) ? /Personal account profile/
+              : route === '/admin/settings' ? /Change password/ : /This feature is unavailable/, `${role} ${route}`);
             assert.match(body, /Fixture old/);
           } else {
             assert.match(body, /Access denied/, `${role} ${route}`);
@@ -679,10 +841,21 @@ test('account identity stays current and account switching preserves safe bookin
 
   await scenario('navigation and query-only navigation refresh preserved workspace layouts', async () => {
     await openAccount('/login');
+    holdAccountReads = true;
     await cdp.send('Page.navigate', { url: `${origin}/dashboard` });
+    await until(() => evaluate(`(document.body?.innerText ?? "").includes('Checking your current account')`), 'hydrated workspace check');
+    await until(() => delayedAccountReads.length > 0, 'dashboard browser account read');
+    holdAccountReads = false;
+    delayedAccountReads.splice(0).forEach(complete => complete());
     await until(() => evaluate(`(document.body?.innerText ?? "").includes('This feature is unavailable')`), 'eligible workspace');
+    await until(() => evaluate(`Boolean(document.querySelector('a[href="/dashboard/tickets"]'))`), 'workspace tickets link');
     accountResponse = { status: 403, body: { error: { code: 'ACCOUNT_DISABLED' } } };
-    await evaluate(`document.querySelector('a[href="/dashboard/tickets"]').click()`);
+    await until(() => evaluate(`(() => {
+      const link = document.querySelector('a[href="/dashboard/tickets"]');
+      if (!link) return false;
+      link.click();
+      return true;
+    })()`), 'workspace tickets navigation');
     await until(() => evaluate(`location.pathname === '/dashboard/tickets' && (document.body?.innerText ?? "").includes('This account cannot sign in')`), 'navigation eligibility refresh');
     assert.equal(await evaluate(`(document.body?.innerText ?? "").includes('Sherwin Cruz')`), false);
     accountResponse = { status: 401, body: { error: { code: 'AUTHENTICATION_REQUIRED' } } };

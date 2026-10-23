@@ -50,3 +50,34 @@ test('rejected or lost profile updates never retry and never claim success', asy
     assert.deepEqual(calls.map(call => call.url), ['/api/v1/me']);
   }
 });
+
+test('authenticated password change sends exact passwords and no confirmation', async () => {
+  const calls = [];
+  const client = createBetterAuthClient(async (url, options) => {
+    calls.push({ url, options });
+    return json({ data: { passwordChanged: true } });
+  });
+  await client.changePassword({ currentPassword: ' old Unicode e\u0301 ', newPassword: ' new Unicode 😀 pass ', confirmPassword: 'do not send' });
+  assert.deepEqual(calls.map(call => call.url), ['/api/auth/change-password']);
+  assert.equal(calls[0].options.method, 'POST');
+  assert.equal(calls[0].options.credentials, 'include');
+  assert.deepEqual(JSON.parse(calls[0].options.body), {
+    currentPassword: ' old Unicode e\u0301 ', newPassword: ' new Unicode 😀 pass ',
+  });
+});
+
+test('password rejections stay specific while lost or unusable responses stay uncertain without retry', async () => {
+  for (const [reply, code] of [
+    [() => json({ error: { code: 'CURRENT_PASSWORD_INCORRECT' } }, 401), 'CURRENT_PASSWORD_INCORRECT'],
+    [() => json({ error: { code: 'PASSWORD_REUSE' } }, 400), 'PASSWORD_REUSE'],
+    [() => json({ error: { code: 'VALIDATION_ERROR', fields: { newPassword: 'private' } } }, 400), 'VALIDATION_ERROR'],
+    [() => { throw Error('lost'); }, 'REQUEST_UNCERTAIN'],
+    [() => json({ data: { passwordChanged: false } }), 'REQUEST_UNCERTAIN'],
+  ]) {
+    const calls = [];
+    const client = createBetterAuthClient(async (url, options) => { calls.push({ url, options }); return reply(); });
+    await assert.rejects(client.changePassword({ currentPassword: 'old', newPassword: 'new' }), error =>
+      error.code === code && !JSON.stringify(error).includes('private'));
+    assert.deepEqual(calls.map(call => call.url), ['/api/auth/change-password']);
+  }
+});
