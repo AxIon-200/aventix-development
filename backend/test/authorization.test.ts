@@ -128,12 +128,17 @@ it("keeps unfinished business operations unavailable to guests and every account
     for (const [method, path] of [
       ["get", "/attendee/dashboard"], ["get", "/attendee/tickets"], ["get", "/attendee/bookings"],
       ["get", "/organizer/dashboard"], ["get", "/organizer/events"], ["post", "/organizer/check-in"],
-      ["get", "/admin/dashboard/overview"], ["get", "/admin/users"], ["get", "/admin/organizers"], ["get", "/admin/bookings"],
+      ["get", "/admin/dashboard/overview"], ["get", "/admin/users"], ["get", "/admin/bookings"],
     ] as const) {
       const pending = request(app)[method](`/api/v1${path}`);
       const response = await (cookie ? pending.set("Cookie", cookie) : pending);
       expect(response.status, `${method} ${path}`).toBe(404);
     }
+  }
+  for (const [index, cookie] of cookies.entries()) {
+    const pending = request(app).get("/api/v1/admin/organizers");
+    const response = await (cookie ? pending.set("Cookie", cookie) : pending);
+    expect(response.status).toBe(index === 0 ? 401 : index === roles.indexOf("ADMINISTRATOR") + 1 ? 200 : 403);
   }
 });
 

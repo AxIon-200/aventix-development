@@ -5,6 +5,7 @@ import type { BetterAuthPlugin } from "better-auth";
 import { z } from "zod";
 import type { SendVerificationEmail } from "./verification-email.js";
 import type { SendAuthEmail } from "./auth-email.js";
+import type { SendOrganizerDecisionEmail } from "./organizer-decision-email.js";
 import { env } from "../config/env.js";
 import { Prisma } from "../generated/prisma/client.js";
 import type { CurrentTerms } from "../config/terms.js";
@@ -22,6 +23,7 @@ export interface RegistrationOptions {
   terms?: CurrentTerms;
   sendVerificationEmail: SendVerificationEmail;
   sendPasswordResetEmail?: SendAuthEmail;
+  sendOrganizerDecisionEmail?: SendOrganizerDecisionEmail;
   now: () => Date;
 }
 

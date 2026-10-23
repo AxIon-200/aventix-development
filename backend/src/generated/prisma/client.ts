@@ -83,9 +83,19 @@ export type Verification = Prisma.VerificationModel
 export type OrganizerProfile = Prisma.OrganizerProfileModel
 /**
  * Model OrganizerApplication
- *
+ * 
  */
 export type OrganizerApplication = Prisma.OrganizerApplicationModel
+/**
+ * Model OrganizerDecision
+ * 
+ */
+export type OrganizerDecision = Prisma.OrganizerDecisionModel
+/**
+ * Model OrganizerDecisionNotification
+ * 
+ */
+export type OrganizerDecisionNotification = Prisma.OrganizerDecisionNotificationModel
 /**
  * Model Venue
  * 

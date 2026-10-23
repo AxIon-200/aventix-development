@@ -24,6 +24,7 @@ let failDelivery = false;
 let registrationLimit = 10000;
 const messages: AuthEmailMessage[] = [];
 const recoveryMessages: AuthEmailMessage[] = [];
+const decisionMessages: { to: string; kind: string; reason?: string }[] = [];
 const emails: string[] = [];
 const password = " exact browser verification e\u0301 ";
 const terms = { version: "verification-browser-fixture", documentUrl: `${env.FRONTEND_URL}/legal/aventix-prototype-terms-2026-10-22-v1.html` };
@@ -33,6 +34,7 @@ const createFixtureApp = () => createApp({ terms,
   recoveryLimit: 10000, resetLimit: 10000,
   sendVerificationEmail: async message => { if (failDelivery) throw Error("Controlled delivery failure"); messages.push(message); },
   sendPasswordResetEmail: async message => { if (failDelivery) throw Error("Controlled delivery failure"); recoveryMessages.push(message); },
+  sendOrganizerDecisionEmail: async message => { if (failDelivery) throw Error("Controlled delivery failure"); decisionMessages.push(message); },
 });
 let app = createFixtureApp();
 const server = createServer((request, response) => app(request, response));
@@ -52,6 +54,16 @@ async function command(input: { action: string; milliseconds?: number; enabled?:
   if (input.action === "registrationFixture") {
     const email = `joined-browser-${randomUUID()}@example.com`;
     emails.push(email);
+    return { email, password };
+  }
+  if (input.action === "adminFixture") {
+    const id = randomUUID();
+    const email = `review-browser-${id}@example.com`;
+    emails.push(email);
+    await prisma.user.create({ data: { id, email, firstName: "Review", lastName: "Administrator",
+      name: "Review Administrator", role: "ADMINISTRATOR", emailVerified: true,
+      termsVersion: terms.version, termsAcceptedAt: time,
+      accounts: { create: { accountId: id, providerId: "credential", password: await hashExactPassword(password) } } } });
     return { email, password };
   }
   if (input.action === "fixture") {
@@ -92,6 +104,7 @@ async function command(input: { action: string; milliseconds?: number; enabled?:
   if (input.action === "delivery") { failDelivery = input.enabled === false; return {}; }
   if (input.action === "messages") return messages.filter(message => message.to === input.email);
   if (input.action === "recoveryMessages") return recoveryMessages.filter(message => message.to === input.email);
+  if (input.action === "decisionMessages") return decisionMessages.filter(message => message.to === input.email);
   if (input.action === "legacy") {
     assert.ok(input.email && emails.includes(input.email));
     const user = await prisma.user.findUniqueOrThrow({ where: { email: input.email } });
@@ -100,6 +113,10 @@ async function command(input: { action: string; milliseconds?: number; enabled?:
   }
   if (input.action === "cleanup") {
     const users = await prisma.user.findMany({ where: { email: { in: emails } }, select: { id: true } });
+    const profiles = await prisma.organizerProfile.findMany({ where: { userId: { in: users.map(user => user.id) } }, select: { id: true } });
+    const profileIds = profiles.map(profile => profile.id);
+    await prisma.organizerDecisionNotification.deleteMany({ where: { decision: { organizerProfileId: { in: profileIds } } } });
+    await prisma.organizerDecision.deleteMany({ where: { organizerProfileId: { in: profileIds } } });
     await prisma.activityLog.deleteMany({ where: { userId: { in: users.map(user => user.id) } } });
     await prisma.organizerProfile.deleteMany({ where: { userId: { in: users.map(user => user.id) } } });
     await prisma.user.deleteMany({ where: { email: { in: emails } } });

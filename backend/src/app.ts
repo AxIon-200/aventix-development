@@ -7,6 +7,8 @@ import { createAuth } from "./lib/auth.js";
 import { sendVerificationEmail } from "./lib/verification-email.js";
 import type { SendVerificationEmail } from "./lib/verification-email.js";
 import type { SendAuthEmail } from "./lib/auth-email.js";
+import type { SendOrganizerDecisionEmail } from "./lib/organizer-decision-email.js";
+import { organizerReviewRouter } from "./lib/organizer-review.js";
 import apiRouter from "./routes/index.js";
 import { env } from "./config/env.js";
 import { loadCurrentTerms } from "./config/terms.js";
@@ -18,6 +20,7 @@ export interface AppOptions {
   terms?: CurrentTerms;
   sendVerificationEmail?: SendVerificationEmail;
   sendPasswordResetEmail?: SendAuthEmail;
+  sendOrganizerDecisionEmail?: SendOrganizerDecisionEmail;
   now?: () => Date;
   registrationLimit?: number;
   verificationLimit?: number;
@@ -51,6 +54,7 @@ export function createApp(options: AppOptions = {}) {
   };
   const auth = createAuth({ ...(terms ? { terms } : {}),
     ...(options.sendPasswordResetEmail ? { sendPasswordResetEmail: options.sendPasswordResetEmail } : {}),
+    ...(options.sendOrganizerDecisionEmail ? { sendOrganizerDecisionEmail: options.sendOrganizerDecisionEmail } : {}),
     sendVerificationEmail: options.sendVerificationEmail ?? sendVerificationEmail,
     now,
   });
@@ -210,6 +214,12 @@ export function createApp(options: AppOptions = {}) {
   }) satisfies ErrorRequestHandler);
 
   app.use(express.json());
+
+  app.use("/api/v1/admin/organizers", organizerReviewRouter(auth, {
+    ...(terms ? { terms } : {}), now,
+    sendVerificationEmail: options.sendVerificationEmail ?? sendVerificationEmail,
+    ...(options.sendOrganizerDecisionEmail ? { sendOrganizerDecisionEmail: options.sendOrganizerDecisionEmail } : {}),
+  }));
 
   app.use("/api/v1", apiRouter);
 

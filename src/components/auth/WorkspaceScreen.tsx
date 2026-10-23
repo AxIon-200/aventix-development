@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { publicAuthClient, type AccountRole } from "@/lib/auth/client";
@@ -13,8 +13,8 @@ import AttendeeProfile, { hasUnsavedProfileChanges, type ProfileDraftState } fro
 import ChangePasswordForm from "./ChangePasswordForm";
 
 /** No protected children or sample records are serialized behind this guard. */
-export default function WorkspaceScreen({ role, title, returnTo, initial, accountScreen }: {
-  role: AccountRole; title: string; returnTo?: string; initial: AccountState; accountScreen?: "profile" | "settings";
+export default function WorkspaceScreen({ role, title, returnTo, initial, accountScreen, children }: {
+  role: AccountRole; title: string; returnTo?: string; initial: AccountState; accountScreen?: "profile" | "settings"; children?: ReactNode;
 }) {
   const route = `${usePathname()}?${useSearchParams().toString()}`;
   const account = useAccountSession(publicAuthClient, initial, route);
@@ -109,7 +109,7 @@ export default function WorkspaceScreen({ role, title, returnTo, initial, accoun
             <h2 className="text-xl font-semibold">Other settings are unavailable</h2>
             <p className="mt-3 text-slate-300">Additional preferences and security controls are still being built.</p>
           </section>
-        </div> : <section className="rounded-2xl border border-slate-700 bg-[#151b23] p-6">
+        </div> : children ? <div key={session.userId}>{children}</div> : <section className="rounded-2xl border border-slate-700 bg-[#151b23] p-6">
           <h2 className="text-xl font-semibold">This feature is unavailable</h2>
           <p className="mt-3 text-slate-300">This workspace is still being built. Account information comes from your current account; tickets, bookings, payments, and workspace tools are not available yet.</p>
         </section>}

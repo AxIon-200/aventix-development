@@ -133,7 +133,7 @@ test('verification and recovery work in the localhost browser with real backend 
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
   const evaluate = async expression => {
     const result = await cdp.send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
-    if (result.exceptionDetails) throw Error('Browser evaluation failed');
+    if (result.exceptionDetails) throw Error(`Browser evaluation failed: ${result.exceptionDetails.exception?.description ?? result.exceptionDetails.text}`);
     return result.result.value;
   };
   const navigate = url => cdp.send('Page.navigate', { url });
@@ -144,7 +144,11 @@ test('verification and recovery work in the localhost browser with real backend 
       throw error;
     }
   };
-  const click = label => evaluate(`Array.from(document.querySelectorAll('button')).find(button => button.textContent.trim() === ${JSON.stringify(label)}).click()`);
+  const click = async label => {
+    const expression = `Array.from(document.querySelectorAll('button')).find(button => button.textContent.trim() === ${JSON.stringify(label)})`;
+    await until(() => evaluate(`Boolean(${expression})`), label);
+    await evaluate(`${expression}.click()`);
+  };
   const clickLink = label => until(() => evaluate(`(() => { const link = Array.from(document.querySelectorAll('a')).find(a => a.textContent.trim() === ${JSON.stringify(label)}); if (!link) return false; link.click(); return true; })()`), label);
   const fill = (name, value) => evaluate(`document.querySelector('[name="${name}"]').value = ${JSON.stringify(value)}`);
   const submit = async password => { await fill('currentPassword', password); await click('Verify email'); };
@@ -282,6 +286,114 @@ test('verification and recovery work in the localhost browser with real backend 
     await text('The email address or password is incorrect.');
     await fill('password', fixture.password); await click('Login');
     await text('awaiting administrator approval');
+    assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);
+  });
+
+  let reviewAdministrator;
+  await scenario('administrator finds a verified application, approves it, and sees durable history', async () => {
+    const applicant = await command('registrationFixture');
+    await applyAsOrganizer(applicant);
+    await text('Your organizer application was saved');
+    const verification = await command('messages', { email: applicant.email });
+    await navigate(verification[0].url);
+    await text('Current password');
+    await submit(applicant.password);
+    await text('Your email has been verified');
+    const administrator = await command('adminFixture');
+    reviewAdministrator = administrator;
+    await navigate(`${origin}/login`);
+    await text('Welcome back');
+    await fill('email', administrator.email);
+    await fill('password', administrator.password);
+    await click('Login');
+    await until(() => evaluate('location.pathname === "/admin/dashboard"'), 'administrator login');
+    await navigate(`${origin}/admin/organizers`);
+    await text('Organizer applications');
+    await until(() => evaluate('Boolean(document.querySelector("#organizer-search"))'), 'review search');
+    await until(() => evaluate('document.querySelectorAll("tbody tr").length > 0'), 'loaded review rows');
+    await fill('search', applicant.email);
+    try {
+      await until(() => evaluate(`document.querySelector('#organizer-search')?.value === ${JSON.stringify(applicant.email)}
+        && Array.from(document.querySelectorAll('button')).some(button => button.textContent.trim() === 'Search')`), 'organizer search input', 5000);
+    } catch (error) {
+      console.error('Review search state:', await evaluate('JSON.stringify({path:location.pathname,searchLength:document.querySelector("#organizer-search")?.value.length,buttons:Array.from(document.querySelectorAll("button")).map(button=>button.textContent.trim()).slice(0,20)})'));
+      throw error;
+    }
+    await click('Search');
+    await text(applicant.email);
+    await until(() => evaluate('document.querySelectorAll("tbody tr").length === 1'), 'matching organizer');
+    await click('View details');
+    await text('Submitted application');
+    await text('We organize live music events around Manila.');
+    await click('Approve');
+    await text('Approve this application?');
+    await click('Confirm decision');
+    await text('Decision saved and email accepted by the provider.');
+    await text('Decision history');
+    await until(() => evaluate('(document.body?.innerText ?? "").includes("PENDING → APPROVED")'), 'approved decision history');
+    assert.deepEqual((await command('decisionMessages', { email: applicant.email })).map(message => message.kind), ['APPROVED']);
+    await click('Suspend');
+    await text('Suspend organizer access?');
+    await evaluate(`(() => { const input = document.querySelector('#decision-reason');
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(input, 'Access paused for review');
+      input.dispatchEvent(new Event('input', { bubbles: true })); })()`);
+    await until(() => evaluate('!Array.from(document.querySelectorAll("button")).find(button => button.textContent.trim() === "Confirm decision").disabled'), 'suspension reason');
+    await click('Confirm decision');
+    await until(() => evaluate('(document.body?.innerText ?? "").includes("APPROVED → SUSPENDED")'), 'suspension history');
+    await click('Reinstate');
+    await text('A fresh login will be required.');
+    await click('Confirm decision');
+    await until(() => evaluate('(document.body?.innerText ?? "").includes("SUSPENDED → APPROVED")'), 'reinstatement history');
+    assert.deepEqual((await command('decisionMessages', { email: applicant.email })).map(message => message.kind), ['APPROVED', 'SUSPENDED', 'REINSTATED']);
+    await cdp.send('Network.clearBrowserCookies');
+    await navigate(`${origin}/login`);
+    await text('Welcome back');
+    await fill('email', applicant.email);
+    await fill('password', applicant.password);
+    await click('Login');
+    await until(() => evaluate('location.pathname === "/organizer/dashboard"'), 'approved organizer login');
+    await cdp.send('Network.clearBrowserCookies');
+  });
+
+  await scenario('administrator rejects another verified application with a final reason', async () => {
+    const applicant = await command('registrationFixture');
+    await applyAsOrganizer(applicant);
+    await text('Your organizer application was saved');
+    const verification = await command('messages', { email: applicant.email });
+    await navigate(verification[0].url);
+    await text('Current password');
+    await submit(applicant.password);
+    await text('Your email has been verified');
+    await navigate(`${origin}/login`);
+    await text('Welcome back');
+    await fill('email', reviewAdministrator.email);
+    await fill('password', reviewAdministrator.password);
+    await click('Login');
+    await until(() => evaluate('location.pathname === "/admin/dashboard"'), 'administrator login for rejection');
+    await navigate(`${origin}/admin/organizers`);
+    await until(() => evaluate('document.querySelectorAll("tbody tr").length > 0'), 'review rows for rejection');
+    await fill('search', applicant.email);
+    await click('Search');
+    await until(() => evaluate('document.querySelectorAll("tbody tr").length === 1'), 'matching rejection applicant');
+    await click('View details');
+    await text('Submitted application');
+    await click('Reject');
+    await text('Reject this application permanently?');
+    await evaluate(`(() => { const input = document.querySelector('#decision-reason');
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(input, 'The music event plan is incomplete');
+      input.dispatchEvent(new Event('input', { bubbles: true })); })()`);
+    await until(() => evaluate('!Array.from(document.querySelectorAll("button")).find(button => button.textContent.trim() === "Confirm decision").disabled'), 'rejection reason');
+    await click('Confirm decision');
+    await until(() => evaluate('(document.body?.innerText ?? "").includes("PENDING → REJECTED")'), 'rejection history');
+    assert.deepEqual((await command('decisionMessages', { email: applicant.email })).map(message => ({ kind: message.kind, reason: message.reason })),
+      [{ kind: 'REJECTED', reason: 'The music event plan is incomplete' }]);
+    await cdp.send('Network.clearBrowserCookies');
+    await navigate(`${origin}/login`);
+    await text('Welcome back');
+    await fill('email', applicant.email);
+    await fill('password', applicant.password);
+    await click('Login');
+    await text('This decision is final for this account');
     assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);
   });
 

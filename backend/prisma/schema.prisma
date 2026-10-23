@@ -40,6 +40,7 @@ model User {
   organizerProfile   OrganizerProfile?  @relation("OrganizerOwner")
   organizerApplication OrganizerApplication?
   approvedOrganizers OrganizerProfile[] @relation("OrganizerApprover")
+  organizerDecisions OrganizerDecision[] @relation("OrganizerDecisionActor")
 
   uploadedEventMedia EventMedia[]
   bookings           Booking[]
@@ -153,6 +154,7 @@ model OrganizerProfile {
   organizationName String
   description      String?
   approvalStatus   OrganizerStatus @default(PENDING)
+  decisionVersion  Int             @default(0)
   approvedAt       DateTime?
   approvedById     String?         @db.Uuid
   createdAt        DateTime        @default(now())
@@ -163,6 +165,7 @@ model OrganizerProfile {
 
   events Event[]
   application OrganizerApplication?
+  decisions OrganizerDecision[]
 
   @@index([approvalStatus])
 }
@@ -184,6 +187,46 @@ model OrganizerApplication {
 
   user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   organizerProfile OrganizerProfile @relation(fields: [organizerProfileId], references: [id], onDelete: Cascade)
+}
+
+enum OrganizerEmailStatus {
+  PENDING
+  SENDING
+  ACCEPTED
+  FAILED
+  UNCERTAIN
+  SUPERSEDED
+}
+
+model OrganizerDecision {
+  id                 String          @id @default(uuid()) @db.Uuid
+  organizerProfileId String          @db.Uuid
+  actorId            String          @db.Uuid
+  previousStatus     OrganizerStatus
+  resultingStatus    OrganizerStatus
+  reason             String?
+  version            Int
+  decidedAt          DateTime
+
+  organizerProfile OrganizerProfile @relation(fields: [organizerProfileId], references: [id], onDelete: Restrict)
+  actor            User             @relation("OrganizerDecisionActor", fields: [actorId], references: [id], onDelete: Restrict)
+  notification     OrganizerDecisionNotification?
+
+  @@unique([organizerProfileId, version])
+  @@index([actorId])
+  @@index([decidedAt])
+}
+
+model OrganizerDecisionNotification {
+  id           String               @id @default(uuid()) @db.Uuid
+  decisionId   String               @unique @db.Uuid
+  status       OrganizerEmailStatus @default(PENDING)
+  attempts     Int                  @default(0)
+  claimedAt    DateTime?
+  attemptedAt  DateTime?
+  updatedAt    DateTime             @updatedAt
+
+  decision OrganizerDecision @relation(fields: [decisionId], references: [id], onDelete: Restrict)
 }
 
 model Venue {

@@ -36,6 +36,18 @@ export const OrganizerStatus = {
 export type OrganizerStatus = (typeof OrganizerStatus)[keyof typeof OrganizerStatus]
 
 
+export const OrganizerEmailStatus = {
+  PENDING: 'PENDING',
+  SENDING: 'SENDING',
+  ACCEPTED: 'ACCEPTED',
+  FAILED: 'FAILED',
+  UNCERTAIN: 'UNCERTAIN',
+  SUPERSEDED: 'SUPERSEDED'
+} as const
+
+export type OrganizerEmailStatus = (typeof OrganizerEmailStatus)[keyof typeof OrganizerEmailStatus]
+
+
 export const EventType = {
   CONCERT: 'CONCERT',
   GIG: 'GIG',

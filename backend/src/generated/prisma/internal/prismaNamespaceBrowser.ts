@@ -60,6 +60,8 @@ export const ModelName = {
   Verification: 'Verification',
   OrganizerProfile: 'OrganizerProfile',
   OrganizerApplication: 'OrganizerApplication',
+  OrganizerDecision: 'OrganizerDecision',
+  OrganizerDecisionNotification: 'OrganizerDecisionNotification',
   Venue: 'Venue',
   Event: 'Event',
   EventMedia: 'EventMedia',
@@ -194,6 +196,7 @@ export const OrganizerProfileScalarFieldEnum = {
   organizationName: 'organizationName',
   description: 'description',
   approvalStatus: 'approvalStatus',
+  decisionVersion: 'decisionVersion',
   approvedAt: 'approvedAt',
   approvedById: 'approvedById',
   createdAt: 'createdAt',
@@ -219,6 +222,33 @@ export const OrganizerApplicationScalarFieldEnum = {
 } as const
 
 export type OrganizerApplicationScalarFieldEnum = (typeof OrganizerApplicationScalarFieldEnum)[keyof typeof OrganizerApplicationScalarFieldEnum]
+
+
+export const OrganizerDecisionScalarFieldEnum = {
+  id: 'id',
+  organizerProfileId: 'organizerProfileId',
+  actorId: 'actorId',
+  previousStatus: 'previousStatus',
+  resultingStatus: 'resultingStatus',
+  reason: 'reason',
+  version: 'version',
+  decidedAt: 'decidedAt'
+} as const
+
+export type OrganizerDecisionScalarFieldEnum = (typeof OrganizerDecisionScalarFieldEnum)[keyof typeof OrganizerDecisionScalarFieldEnum]
+
+
+export const OrganizerDecisionNotificationScalarFieldEnum = {
+  id: 'id',
+  decisionId: 'decisionId',
+  status: 'status',
+  attempts: 'attempts',
+  claimedAt: 'claimedAt',
+  attemptedAt: 'attemptedAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type OrganizerDecisionNotificationScalarFieldEnum = (typeof OrganizerDecisionNotificationScalarFieldEnum)[keyof typeof OrganizerDecisionNotificationScalarFieldEnum]
 
 
 export const VenueScalarFieldEnum = {

@@ -63,7 +63,7 @@ export function authErrorMessage(error: unknown): string {
     EMAIL_ALREADY_REGISTERED: "This email is already registered. The existing account has not been changed. Log in or recover your password.",
     ACCOUNT_CREATED_EMAIL_FAILED: "Your unverified attendee account and terms acceptance were saved, but the verification email could not be sent. Request another verification email, then verify before logging in separately.",
     ORGANIZATION_PENDING: "Your email is verified, but your organization is still awaiting administrator approval. No session was created.",
-    ORGANIZATION_REJECTED: "Your organization application was rejected. No session was created. Contact support if you need help.",
+    ORGANIZATION_REJECTED: "Your organization application was rejected. This decision is final for this account; you cannot revise or resubmit it or register again with the same email. No session was created.",
     ORGANIZATION_SUSPENDED: "Your organization access is suspended. No session was created. Contact support if you need help.",
     ORGANIZATION_UNAVAILABLE: "This organizer account has no eligible organization profile. No session was created. Contact support.",
     TERMS_VERSION_OUTDATED: "The terms have changed. Read the current document and explicitly accept it before submitting again.",
