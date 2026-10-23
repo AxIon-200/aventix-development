@@ -1,29 +1,36 @@
 # Prototype terms: owner review and local activation
 
-Status: owner-approved and activated for the local school demonstration on
-2026-10-22. Public-service activation is not asserted.
+Status: version 1 was owner-approved and activated for the local school
+demonstration on 2026-10-22. The owner approved version 2 on 2026-10-24 for
+attendee and concert organizer registration, and it is now active locally.
+Public-service activation is not asserted.
 
-The project owner explicitly approved the linked document in this session with
+The project owner explicitly approved version 1 in the earlier session with
 “i approve it”. Approval covers the invited school-project demonstration,
 operation by the Aventix student project team, and contact through the member
 who invited each participant. No commercial operator or unverified support
 email address has been invented. This is project-owner approval, not a legal
 opinion or regulatory certification.
 
-The [prototype terms](../../../public/legal/aventix-prototype-terms-2026-10-22-v1.html)
-are served by the frontend at:
+The original [version 1 terms](../../../public/legal/aventix-prototype-terms-2026-10-22-v1.html)
+remain available for historical acceptance records. The owner approved the
+[version 2 terms](../../../public/legal/aventix-prototype-terms-2026-10-24-v2.html)
+in response to the 2026-10-24 request to implement basic concert organizer
+terms. Version 2 adds organizer authority, accurate listings, rights and
+permissions, safety responsibilities, and the prototype's no-sales boundary.
+The current document is served by the frontend at:
 
-<http://localhost:3000/legal/aventix-prototype-terms-2026-10-22-v1.html>
+<http://localhost:3000/legal/aventix-prototype-terms-2026-10-24-v2.html>
 
 The authoritative [Phase 1 requirements](../../documents/phases/phase-1-authentication.md)
 identify Aventix as a school project. These terms therefore cover a controlled
-demonstration, excludes real ticket sales, and does not invent refund policies
+demonstration, exclude real ticket sales, and do not invent refund policies
 or a commercial operator. They are original text, not a claim of legal
 approval or a complete privacy notice.
 
 ## Approved scope and remaining participant-readiness work
 
-The approved document addresses:
+The approved versions address:
 
 - The school-project scope and the restriction against real payments and real
   admission tickets.
@@ -35,6 +42,8 @@ The approved document addresses:
   schedule, and deletion arrangements before inviting participants to submit
   personal information. No automated retention cleanup is claimed or added.
 - The rules for participation, restrictions, submissions, and version changes.
+- For version 2, concert organizer authority, rights and permissions, truthful
+  event information, and the no-sales boundary.
 
 The [integration contract](../specs/phase-1-integration-contract.md) requires:
 “Do not enable fixture terms outside tests.” It also requires an owner-reviewed
@@ -51,33 +60,33 @@ existing backend launch uses `.env.test` for its test environment and database;
 that environment source and its credentials were preserved:
 
 ```dotenv
-CURRENT_TERMS_VERSION=aventix-prototype-2026-10-22-v1
-CURRENT_TERMS_DOCUMENT_URL=http://localhost:3000/legal/aventix-prototype-terms-2026-10-22-v1.html
+CURRENT_TERMS_VERSION=aventix-prototype-2026-10-24-v2
+CURRENT_TERMS_DOCUMENT_URL=http://localhost:3000/legal/aventix-prototype-terms-2026-10-24-v2.html
 ```
 
 Do not replace an existing environment file or copy database or email secrets
 into this document. Set both values together in the environment used to launch
 the backend. Restart that backend: it loads one immutable terms snapshot when
-the application is created. No frontend code change is needed; registration
-already reads the version and URL from the terms endpoint. The running backend
-was restarted using its existing command from `backend/`:
+the application is created. Registration reads the version and URL from the
+terms endpoint. The running backend uses its existing watch-mode command from
+`backend/` and was reloaded after the version 2 configuration was added:
 
 ```powershell
-node --env-file=.env.test --import tsx src/server.ts
+npm run dev
 ```
 
 The backend's existing `dotenv/config` import also loads the terms-only `.env`.
 This does not switch database targets or enable a fixture terms fallback.
 
 Verify that the document URL loads, and that both of these return HTTP 200 with
-the exact approved `data.version` and `data.documentUrl`:
+the exact approved version 2 `data.version` and `data.documentUrl`:
 
 ```powershell
 curl.exe -i http://localhost:5000/api/v1/terms
 curl.exe -i http://localhost:3000/api/v1/terms
 ```
 
-Retry current terms on attendee registration. Confirm the document opens in a
+On attendee and organizer registration, confirm the document opens in a
 separate tab, returning preserves the form, the checkbox starts unchecked, and
 submission requires explicit acceptance. Do not submit a real registration
 merely to test document delivery. Verify transactional email configuration
@@ -90,10 +99,10 @@ do not carry it into a public deployment.
 
 ## Verification evidence
 
-Verified against the running local application on 2026-10-22:
+Version 1 was verified against the running local application on 2026-10-22:
 
 - Both the direct backend and frontend-proxied `GET /api/v1/terms` returned HTTP
-  200 with the exact approved version and document URL above.
+  200 with the exact approved version 1 and its document URL.
 - The document URL returned HTTP 200 and the finalized HTML, with the effective
   date and owner-approved status instead of a draft banner.
 - A fresh headless Chrome session loaded attendee registration with no terms
@@ -109,6 +118,13 @@ configuration before an end-to-end participant registration demonstration.
 The separate privacy notice and participant-readiness work described in the
 approved document also remain applicable.
 
+Version 2 activation was verified on 2026-10-24: the direct backend and
+frontend-proxied terms endpoints returned the exact version 2 identifier and
+document URL, and the document URL returned HTTP 200. The organizer form's
+summary renders locally; its consent control requires version 2. Frontend
+TypeScript and ESLint checks passed. No application was submitted and no
+participant acceptance record was created by these checks.
+
 ## Drafting references
 
 Consulted on 2026-10-22:
@@ -121,3 +137,11 @@ Consulted on 2026-10-22:
 - [Republic Act No. 11967, Senate legislative record](https://issuances-library.senate.gov.ph/legislative-issuance/republic-act-no-11967)
   as a reference for future commercial internet transactions. These terms do
   not claim commercial launch readiness or determine statutory applicability.
+
+Consulted for version 2 on 2026-10-24:
+
+- [Intellectual Property Office of the Philippines: copyright](https://www.ipophil.gov.ph/copyright/)
+  for the music, image, and public-performance rights reminder.
+- [Bureau of Fire Protection: occupancy safety guidelines](https://bfp.gov.ph/wp-content/uploads/2023/07/Fire-Safety-Guidelines-on-Different-Types-of-Occupancy-Volume-2.pdf)
+  for the general venue-safety reminder. The terms do not specify a permit
+  checklist for any particular event or venue.

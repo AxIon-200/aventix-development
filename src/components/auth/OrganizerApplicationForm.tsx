@@ -9,6 +9,7 @@ import FormField, { fieldClass, submitClass } from "./FormField";
 import styles from "./AuthShell.module.css";
 
 type Outcome = "created" | "delivery-failed" | "duplicate" | "uncertain";
+const organizerTermsVersion = "aventix-prototype-2026-10-24-v2";
 const invalidText = (value: string, min: number, max: number) => {
   const trimmed = value.trim();
   return !trimmed.isWellFormed() || trimmed.includes("\u0000") || [...trimmed].length < min || [...trimmed].length > max;
@@ -26,6 +27,7 @@ export default function OrganizerApplicationForm({ returnTo, client = publicAuth
   const [outcome, setOutcome] = useState<Outcome>();
   const [busy, setBusy] = useState(false);
   const submitting = useRef(false);
+  const organizerTermsReady = terms?.version === organizerTermsVersion;
 
   function reloadTerms() {
     setAccepted(false);
@@ -51,7 +53,7 @@ export default function OrganizerApplicationForm({ returnTo, client = publicAuth
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submitting.current || outcome || !terms || termsLoading) return;
+    if (submitting.current || outcome || !terms || !organizerTermsReady || termsLoading) return;
     const form = event.currentTarget;
     const data = new FormData(form);
     const get = (name: string) => String(data.get(name) ?? "");
@@ -146,19 +148,29 @@ export default function OrganizerApplicationForm({ returnTo, client = publicAuth
           </label>
           <FormField name="password" label="Password" type="password" autoComplete="new-password" hint="15–128 Unicode characters, including spaces. Your password is kept exactly as entered." error={errors.password} required />
           <FormField name="confirmPassword" label="Confirm Password" type="password" autoComplete="new-password" error={errors.confirmPassword} required />
+          <section aria-labelledby="organizer-conditions-heading" className="sm:col-span-2 rounded-lg border border-[#35404b] bg-[#181f27] p-4 text-xs leading-5 text-[#c5c6c7]">
+            <h2 id="organizer-conditions-heading" className="text-sm font-semibold text-white">Concert organizer conditions</h2>
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              <li>Apply only if you are authorized to represent the organization, and provide accurate details.</li>
+              <li>Obtain the necessary venue, performer, content, and safety permissions before any real event.</li>
+              <li>Keep event dates, locations, lineups, prices, and changes truthful and clear.</li>
+              <li>Do not sell tickets, collect payments, or promise admission through this school-project prototype.</li>
+            </ul>
+            <p className="mt-2">Email verification and administrator approval are separate steps. The full conditions are in the linked current terms.</p>
+          </section>
           <div className="sm:col-span-2" aria-live="polite">
-            {termsLoading ? <p role="status" className="text-sm">Loading current terms…</p> : terms ? <>
+            {termsLoading ? <p role="status" className="text-sm">Loading current terms…</p> : terms && organizerTermsReady ? <>
               <label className="flex items-start gap-2 text-xs leading-5 text-[#c5c6c7]">
                 <input name="terms" type="checkbox" checked={accepted} onChange={event => setAccepted(event.target.checked)} required aria-invalid={!!errors.terms} className="mt-1 h-4 w-4 shrink-0 accent-[#66fcf1]" />
-                <span>I explicitly accept the <a href={terms.documentUrl} target="_blank" rel="noopener noreferrer" className="text-[#66fcf1] underline">current terms (version {terms.version})</a>.</span>
+                <span>I explicitly accept the <a href={terms.documentUrl} target="_blank" rel="noopener noreferrer" className="text-[#66fcf1] underline">current terms, including the concert organizer conditions (version {terms.version})</a>.</span>
               </label>
               {errors.terms && <p className="mt-2 text-xs text-red-300">{errors.terms}</p>}
-            </> : <div role="alert" className="space-y-2 text-sm text-amber-200">
+            </> : terms ? <p role="alert" className="text-sm text-amber-200">Organizer applications require the updated concert organizer terms. The current version is not ready yet.</p> : <div role="alert" className="space-y-2 text-sm text-amber-200">
               <p>{termsMessage}</p><button type="button" onClick={reloadTerms} className="text-[#66fcf1] underline">Retry current terms</button>
             </div>}
           </div>
           {message && <p role="alert" className="sm:col-span-2 rounded-lg border border-red-400/30 p-3 text-sm text-red-200">{message}</p>}
-          <button type="submit" disabled={busy || !!outcome || !terms || termsLoading || !accepted || !client.registerOrganizer} className={`${submitClass} sm:col-span-2`}>{busy ? "Please wait…" : "Submit Organizer Application"}</button>
+          <button type="submit" disabled={busy || !!outcome || !organizerTermsReady || termsLoading || !accepted || !client.registerOrganizer} className={`${submitClass} sm:col-span-2`}>{busy ? "Please wait…" : "Submit Organizer Application"}</button>
         </fieldset>
       </form>
     </>}

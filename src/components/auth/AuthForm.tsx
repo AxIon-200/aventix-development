@@ -89,7 +89,7 @@ export default function AuthForm({ mode, returnTo, client = publicAuthClient }: 
     {!connected && <div className={`${styles.notice} rounded-lg border border-amber-400/25 bg-amber-400/5 text-xs leading-5 text-amber-200`}>
       <p role="status">This account service is not available yet. No details will be submitted.</p>
     </div>}
-    {process.env.NODE_ENV === "development" && <p className="mt-3 text-center text-xs text-[#9fa3a8]"><Link href="/preview/booking" className="text-[#66fcf1] underline">Preview booking screens with sample data</Link></p>}
+    {process.env.NODE_ENV === "development" && mode === "forgot" && <p className="mt-3 text-center text-xs text-[#9fa3a8]"><Link href="/preview/booking" className="text-[#66fcf1] underline">Preview booking screens with sample data</Link></p>}
     {success ? <div className="mt-8 space-y-6"><p role="status" className="text-sm leading-6 text-[#66fcf1]">{message}</p><Link href={authHref("/login", destination)} className={submitClass}>Return to Login</Link></div> : <form onSubmit={submit} noValidate aria-busy={busy} className={styles.form}>
       <FormField name="email" label="Email Address" type="email" autoComplete="email" placeholder="Enter your email" maxLength={254} error={errors.email} disabled={busy} required />
       {mode === "login" && <FormField name="password" label="Password" type="password" autoComplete="current-password" placeholder="Enter your password" error={errors.password} disabled={busy} required />}
