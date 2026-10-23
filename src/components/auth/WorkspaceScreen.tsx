@@ -9,10 +9,11 @@ import { workspaceNavigation } from "@/lib/auth/workspace";
 import { useAccountSession, type AccountState } from "./useAccountSession";
 import AccountGate from "./AccountGate";
 import SignOutButton from "./SignOutButton";
+import AttendeeProfile from "./AttendeeProfile";
 
 /** No protected children or sample records are serialized behind this guard. */
-export default function WorkspaceScreen({ role, title, returnTo, initial }: {
-  role: AccountRole; title: string; returnTo?: string; initial: AccountState;
+export default function WorkspaceScreen({ role, title, returnTo, initial, attendeeProfile }: {
+  role: AccountRole; title: string; returnTo?: string; initial: AccountState; attendeeProfile?: boolean;
 }) {
   const route = `${usePathname()}?${useSearchParams().toString()}`;
   const account = useAccountSession(publicAuthClient, initial, route);
@@ -51,15 +52,15 @@ export default function WorkspaceScreen({ role, title, returnTo, initial }: {
       : <>
         <header className="space-y-2">
           <h1 className="text-3xl font-semibold">{title}</h1>
-          <p>Signed in as {session.displayName} · {session.email}</p>
+          {!attendeeProfile && <p>Signed in as {session.displayName} · {session.email}</p>}
         </header>
         <nav aria-label="Workspace" className="flex flex-wrap gap-4 border-y border-slate-700 py-4">
           {workspaceNavigation[role].map(item => <Link key={item.href} href={item.href} prefetch={false} className="text-[#66fcf1] underline">{item.label}</Link>)}
         </nav>
-        <section className="rounded-2xl border border-slate-700 bg-[#151b23] p-6">
+        {attendeeProfile ? <AttendeeProfile key={session.userId} session={session} onAccessRejected={account.rejectAccess} /> : <section className="rounded-2xl border border-slate-700 bg-[#151b23] p-6">
           <h2 className="text-xl font-semibold">This feature is unavailable</h2>
           <p className="mt-3 text-slate-300">This workspace is still being built. Account information comes from your current account; tickets, bookings, payments, and workspace tools are not available yet.</p>
-        </section>
+        </section>}
       </>}
     {!account.loading && session && <SignOutButton {...signOutCallbacks} className="inline-block text-[#66fcf1] underline">Sign Out</SignOutButton>}
   </main>;

@@ -12,6 +12,10 @@ export type CurrentTerms = { version: string; documentUrl: string };
 export type TermsAcceptance = { email: string; currentPassword: string; termsAccepted: boolean; termsVersion: string };
 export type AuthResult = { destination?: string; allowBookingReturn?: boolean };
 export type AccountRole = "ATTENDEE" | "ORGANIZER" | "ADMINISTRATOR";
+export type PersonalAccountProfile = {
+  id: string; firstName: string; lastName: string; name: string;
+  email: string; phoneNumber: string | null; role: AccountRole;
+};
 export interface AccountSession {
   userId: string;
   role: AccountRole;
@@ -25,6 +29,7 @@ export { AuthClientError } from "./errors";
 export type { AuthErrorCode } from "./errors";
 export interface PublicAuthClient {
   getSession?: () => Promise<AccountSession | null>;
+  getProfile?: () => Promise<PersonalAccountProfile>;
   logout?: () => Promise<void>;
   passwordRules?: { description: string; validate: (password: string) => string | undefined };
   login?: (data: { email: string; password: string }) => Promise<AuthResult>;

@@ -1,5 +1,5 @@
 import { AuthClientError } from "./errors";
-import { accountFromProfile, accountDestination, isObject } from "./profile";
+import { accountFromProfile, accountDestination, isObject, personalProfileFromResponse } from "./profile";
 import type { PublicAuthClient } from "./client";
 import { accountRequest } from "./transport";
 import { notifyAccountChange as notify } from "./session-events";
@@ -58,6 +58,12 @@ export function createBetterAuthClient(transport: typeof fetch = (...args) => fe
   };
   return {
     getSession,
+    getProfile: async () => {
+      if (logoutBlocked) throw new AuthClientError("LOGOUT_UNCERTAIN");
+      const profile = personalProfileFromResponse(await request("/api/v1/me"));
+      if (logoutBlocked) throw new AuthClientError("LOGOUT_UNCERTAIN");
+      return profile;
+    },
     requestPasswordReset: async ({ email }) => {
       const result = await requestCompletion("/api/auth/request-password-reset", { email: email.trim().toLowerCase() });
       if (!isObject(result) || !isObject(result.data) || result.data.message !== "If an account exists for this address, a password-reset email will be sent.") throw new AuthClientError("REQUEST_UNCERTAIN");

@@ -18,7 +18,7 @@ test('account identity stays current and account switching preserves safe bookin
 }, async t => {
   const profile = (id, role = 'ATTENDEE') => ({
     id, name: `Fixture ${id}`, firstName: 'Fixture', lastName: id,
-    email: `${id}@example.invalid`, phoneNumber: null, role, status: 'ACTIVE',
+    email: `${id}@example.invalid`, phoneNumber: id === 'old' ? '+639171234567' : null, role, status: 'ACTIVE',
     emailVerified: true, termsVersion: 'fixture-terms',
     termsAcceptedAt: '2026-01-01T00:00:00.000Z',
     createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z',
@@ -200,6 +200,81 @@ test('account identity stays current and account switching preserves safe bookin
     if (failure) throw failure;
   };
 
+  await scenario('attendee profile loads live details, clears the old identity, and explains service failure', async () => {
+    await cdp.send('Network.clearBrowserCookies');
+    await cdp.send('Network.setCookie', { name: 'fixture-account', value: 'old', url: origin, httpOnly: true, path: '/' });
+    holdAccountReads = true;
+    await cdp.send('Page.navigate', { url: `${origin}/dashboard/profile` });
+    await until(() => delayedAccountReads.length > 0, 'profile account refresh');
+    assert.equal(await evaluate(`(document.body?.innerText ?? '').includes('old@example.invalid')`), false);
+    while (delayedAccountReads.length) delayedAccountReads.shift()();
+    await until(() => evaluate(`(document.body?.innerText ?? '').includes('Loading your personal account profile')`), 'profile loading state');
+    holdAccountReads = false;
+    while (delayedAccountReads.length) delayedAccountReads.shift()();
+    await until(() => evaluate(`(document.body?.innerText ?? '').includes('+639171234567')`), 'live attendee profile');
+    assert.equal(await evaluate(`Array.from(document.querySelectorAll('dt')).map(item => item.textContent.trim()).join('|')`), 'First name|Last name|Email address (read only)|Phone number');
+    assert.equal(await evaluate(`(document.body?.innerText ?? '').includes('old@example.invalid')`), true);
+    assert.equal(await evaluate(`Boolean(document.querySelector('input[name="email"]'))`), false);
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: 1, mobile: true });
+    assert.equal(await evaluate(`document.querySelector('[aria-labelledby="personal-profile-title"]').scrollWidth <= document.querySelector('[aria-labelledby="personal-profile-title"]').clientWidth + 1`), true);
+    await evaluate(`Array.from(document.querySelectorAll('button')).find(button => button.textContent.trim() === 'Refresh details').focus()`);
+    assert.equal(await evaluate(`document.activeElement?.textContent.trim()`), 'Refresh details');
+    holdAccountReads = true;
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+    await until(() => delayedAccountReads.length > 0, 'keyboard profile refresh');
+    assert.equal(await evaluate(`(document.body?.innerText ?? '').includes('old@example.invalid')`), false);
+    holdAccountReads = false;
+    while (delayedAccountReads.length) delayedAccountReads.shift()();
+    await until(() => evaluate(`(document.body?.innerText ?? '').includes('+639171234567')`), 'refreshed profile');
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
+
+    await cdp.send('Network.setCookie', { name: 'fixture-account', value: 'new', url: origin, httpOnly: true, path: '/' });
+    holdAccountReads = true;
+    await evaluate(`window.dispatchEvent(new Event('focus'))`);
+    await until(() => delayedAccountReads.length > 0, 'new identity read');
+    assert.equal(await evaluate(`(document.body?.innerText ?? '').includes('old@example.invalid')`), false);
+    holdAccountReads = false;
+    while (delayedAccountReads.length) delayedAccountReads.shift()();
+    await until(() => evaluate(`(document.body?.innerText ?? '').includes('new@example.invalid') && (document.body?.innerText ?? '').includes('Not provided')`), 'new identity profile');
+    assert.equal(await evaluate(`(document.body?.innerText ?? '').includes('old@example.invalid')`), false);
+
+    accountResponse = { status: 503, body: { error: { code: 'INTERNAL_ERROR' } } };
+    await click('Refresh details');
+    await until(() => evaluate(`(document.body?.innerText ?? '').includes('account service is unavailable')`), 'profile details unavailable');
+    assert.equal(await evaluate(`(document.body?.innerText ?? '').includes('new@example.invalid')`), false);
+    accountResponse = undefined;
+    await click('Refresh details');
+    await until(() => evaluate(`(document.body?.innerText ?? '').includes('new@example.invalid')`), 'profile details retry');
+
+    accountResponse = { status: 503, body: { error: { code: 'INTERNAL_ERROR' } } };
+    await evaluate(`window.dispatchEvent(new Event('focus'))`);
+    await until(() => evaluate(`(document.body?.innerText ?? '').includes('Workspace unavailable')`), 'profile service failure');
+    assert.equal(await evaluate(`(document.body?.innerText ?? '').includes('new@example.invalid')`), false);
+    accountResponse = undefined;
+  });
+
+  await scenario('a profile read that loses account eligibility follows the workspace gate', async () => {
+    await cdp.send('Network.clearBrowserCookies');
+    await cdp.send('Network.setCookie', { name: 'fixture-account', value: 'old', url: origin, httpOnly: true, path: '/' });
+    await cdp.send('Page.navigate', { url: `${origin}/dashboard/profile` });
+    await until(() => evaluate(`(document.body?.innerText ?? '').includes('old@example.invalid')`), 'eligible profile');
+    accountResponse = { status: 403, body: { error: { code: 'EMAIL_VERIFICATION_REQUIRED' } } };
+    await click('Refresh details');
+    await until(() => evaluate(`(document.body?.innerText ?? '').includes('Workspace unavailable')`), 'profile eligibility gate', 10000);
+    assert.equal(await evaluate(`Boolean(document.querySelector('nav[aria-label="Workspace"]'))`), false);
+    assert.equal(await evaluate(`(document.body?.innerText ?? '').includes('old@example.invalid')`), false);
+    accountResponse = undefined;
+
+    await cdp.send('Page.navigate', { url: `${origin}/dashboard/profile` });
+    await until(() => evaluate(`(document.body?.innerText ?? '').includes('old@example.invalid')`), 'profile before expiry');
+    accountResponse = { status: 401, body: { error: { code: 'AUTHENTICATION_REQUIRED' } } };
+    await click('Refresh details');
+    await until(() => evaluate(`location.pathname === '/login'`), 'expired profile session', 10000);
+    assert.equal(await evaluate(`(document.body?.innerText ?? '').includes('old@example.invalid')`), false);
+    accountResponse = undefined;
+  });
+
   const registrationReturn = '/events/concert/tickets?category=standing';
   const openRegistration = async () => {
     await cdp.send('Network.clearBrowserCookies');
@@ -336,7 +411,7 @@ test('account identity stays current and account switching preserves safe bookin
           assert.equal(response.status, 200, `${role} ${route}`);
           noPersonalSamples(body);
           if (role === requiredRole) {
-            assert.match(body, /This feature is unavailable/, `${role} ${route}`);
+            assert.match(body, route === '/dashboard/profile' ? /Personal account profile/ : /This feature is unavailable/, `${role} ${route}`);
             assert.match(body, /Fixture old/);
           } else {
             assert.match(body, /Access denied/, `${role} ${route}`);

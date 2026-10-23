@@ -10,5 +10,5 @@ export function useAccountSession(client: PublicAuthClient = publicAuthClient, i
   const state = useSyncExternalStore(account.subscribe,
     route === undefined ? account.getSnapshot : () => account.getSnapshotForRoute(route),
     () => initial ?? checkingAccount);
-  return { ...state, retry: account.retry, clearSession: account.clear };
+  return { ...state, retry: account.retry, clearSession: account.clear, rejectAccess: account.rejectAccess };
 }

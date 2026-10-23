@@ -18,6 +18,14 @@ function createAccountSession(client: PublicAuthClient) {
     ++sequence;
     publish({ loading: false, session: null, unavailable: false });
   };
+  const rejectAccess = (code: AuthErrorCode, expectedUserId: string) => {
+    // A profile read may finish after another account check has already begun.
+    if (state.session?.userId !== expectedUserId) return;
+    ++sequence;
+    publish(code === "AUTHENTICATION_REQUIRED"
+      ? { loading: false, session: null, unavailable: false }
+      : { loading: false, session: null, unavailable: true, error: code });
+  };
   const refresh = async () => {
     const current = ++sequence;
     publish(checkingAccount);
@@ -53,6 +61,7 @@ function createAccountSession(client: PublicAuthClient) {
     getSnapshotForRoute: (currentRoute: string) => route === currentRoute ? state : checkingAccount,
     retry,
     clear,
+    rejectAccess,
     navigate: (nextRoute: string) => {
       if (route !== undefined && route !== nextRoute) retry();
       route = nextRoute;
