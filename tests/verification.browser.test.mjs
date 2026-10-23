@@ -78,12 +78,17 @@ test('verification and recovery work in the localhost browser with real backend 
       res.writeHead(503, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: { code: 'INTERNAL_ERROR' } })); return;
     }
-    if ((verifying && verificationMode === 'throttled') || (resending && resendMode === 'throttled') || (recovering && recoveryMode === 'throttled') || (resetting && resetMode === 'throttled') || (accepting && consentMode === 'throttled')) {
+    if ((verifying && verificationMode === 'throttled') || (resending && resendMode === 'throttled') || (recovering && recoveryMode === 'throttled') || (resetting && resetMode === 'throttled') || (accepting && consentMode === 'throttled') || (applying && applicationMode === 'throttled')) {
       res.writeHead(429, { 'Content-Type': 'application/json', 'Retry-After': '37' });
       res.end(JSON.stringify({ error: { code: 'RATE_LIMITED' } })); return;
     }
     const upstream = httpRequest({ hostname: '127.0.0.1', port: ready.port, path: req.url, method: req.method, headers: req.headers }, response => {
       if ((verifying && verificationMode === 'lost') || (resending && resendMode === 'lost') || (recovering && recoveryMode === 'lost') || (resetting && resetMode === 'lost') || (accepting && consentMode === 'lost') || (applying && applicationMode === 'lost')) { response.resume(); response.on('end', () => res.destroy()); return; }
+      if (applying && applicationMode === 'unusable') {
+        response.resume();
+        response.on('end', () => { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ unexpected: true })); });
+        return;
+      }
       res.writeHead(response.statusCode, response.headers); response.pipe(res);
     });
     upstream.on('error', () => res.destroy()); req.pipe(upstream);
@@ -225,6 +230,22 @@ test('verification and recovery work in the localhost browser with real backend 
     await click('Submit Organizer Application');
   };
 
+  await scenario('a rejected organizer submission shows its rate limit without claiming uncertain creation', async () => {
+    const fixture = await command('registrationFixture');
+    const before = applicationRequests;
+    applicationMode = 'throttled';
+    try {
+      await applyAsOrganizer(fixture);
+      await text('Too many attempts. Please wait before trying again. Try again in 37 seconds.');
+      assert.equal(await evaluate('(document.body?.innerText ?? "").includes("We could not confirm whether your application was saved")'), false);
+      assert.equal(await evaluate('document.querySelector("[name=email]").value'), fixture.email);
+      assert.equal(await evaluate('document.querySelector("[name=password]").value'), '');
+      assert.equal(await evaluate('document.querySelector("button[type=submit]").disabled'), false);
+      assert.equal(applicationRequests, before + 1);
+      assert.equal((await command('messages', { email: fixture.email })).length, 0);
+    } finally { applicationMode = 'normal'; }
+  });
+
   await scenario('organizer form explains consent and validates fields on mobile without submitting', async () => {
     await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
     try {
@@ -281,12 +302,29 @@ test('verification and recovery work in the localhost browser with real backend 
     } finally { applicationMode = 'normal'; }
   });
 
+  await scenario('unusable organizer submission response preserves the draft and does not retry', async () => {
+    const fixture = await command('registrationFixture');
+    const before = applicationRequests;
+    applicationMode = 'unusable';
+    try {
+      await applyAsOrganizer(fixture);
+      await text('We could not confirm whether your application was saved');
+      assert.equal(applicationRequests, before + 1);
+      assert.equal(await evaluate('document.querySelector("[name=email]").value'), fixture.email);
+      assert.equal(await evaluate('document.querySelector("[name=organizationName]").value'), 'Manila Live');
+      assert.equal(await evaluate('document.querySelector("[name=password]").value'), '');
+      assert.equal(await evaluate('document.querySelector("[name=confirmPassword]").value'), '');
+      assert.equal((await command('messages', { email: fixture.email })).length, 1);
+    } finally { applicationMode = 'normal'; }
+  });
+
   await scenario('failed organizer verification email leaves a saved application and offers resend', async () => {
     const fixture = await command('registrationFixture');
     await command('delivery', { enabled: false });
     try {
       await applyAsOrganizer(fixture);
       await text('Your organizer application was saved, but the verification email could not be sent');
+      await text('Wait at least one minute after applying');
       await text('Request another verification email');
       assert.equal((await command('messages', { email: fixture.email })).length, 0);
       assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);

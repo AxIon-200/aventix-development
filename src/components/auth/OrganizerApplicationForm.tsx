@@ -101,6 +101,8 @@ export default function OrganizerApplicationForm({ returnTo, client = publicAuth
         clearPasswords(); setOutcome("duplicate");
       } else if (error instanceof AuthClientError && error.code === "ACCOUNT_CREATED_EMAIL_FAILED") {
         clearPasswords(); setOutcome("delivery-failed");
+      } else if (error instanceof AuthClientError && error.code === "RATE_LIMITED") {
+        clearPasswords(); setMessage(authErrorMessage(error));
       } else if (error instanceof AuthClientError && error.code === "VALIDATION_ERROR") {
         setErrors(error.fieldErrors); setMessage(authErrorMessage(error));
       } else { clearPasswords(); setOutcome("uncertain"); }
@@ -115,7 +117,7 @@ export default function OrganizerApplicationForm({ returnTo, client = publicAuth
       <p role="status" className="text-sm leading-6 text-[#66fcf1]">{outcome === "created"
         ? "Your organizer application was saved. Check your inbox for a verification link, open it, and enter your current password. Verification does not approve the organization or sign you in. Wait for administrator approval before logging in."
         : outcome === "delivery-failed"
-          ? "Your organizer application was saved, but the verification email could not be sent. Request another verification email. Administrator approval is still required before login."
+          ? "Your organizer application was saved, but the verification email could not be sent. Wait at least one minute after applying, then request another verification email. Administrator approval is still required before login."
           : "This email is already registered. The existing account and application were not changed. Log in or recover your password."}</p>
       {outcome !== "duplicate" && <Link href="/verify-email" className="block text-[#66fcf1] underline">Request another verification email</Link>}
       <Link href="/forgot-password" className="block text-[#66fcf1] underline">Recover your password</Link>
