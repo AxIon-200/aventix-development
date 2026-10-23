@@ -46,3 +46,16 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Project Guidelines
+
+### Frontend-Driven Backend Development
+Implement backend functionality based on the existing frontend features, pages, and user flows.
+Prioritize making existing frontend features functional before introducing additional features.
+
+### Keep the Project Simple
+This is a school project, not a production-scale commercial application.
+
+Avoid overengineering, unnecessary abstractions, excessive dependencies, and overly complex architectures.
+
+Prefer simple, maintainable, and straightforward solutions that satisfy the project requirements.
