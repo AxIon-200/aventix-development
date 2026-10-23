@@ -2,9 +2,9 @@ import { SELF_SERVICE_ROLES } from "./role-permissions.js";
 import { createAuthEndpoint } from "better-auth/api";
 import { deleteSessionCookie, setSessionCookie } from "better-auth/cookies";
 import { z } from "zod";
-import type { Account, User } from "../generated/prisma/client.js";
+import type { Account, OrganizerProfile, User } from "../generated/prisma/client.js";
 import type { RegistrationOptions } from "./registration.js";
-import { accountAccessError, publicProfile } from "./account-access.js";
+import { accountAccessError, organizationAccessError, publicProfile } from "./account-access.js";
 import { withAccountLock } from "./account-lifecycle.js";
 import { errorResponse } from "./auth-response.js";
 import { readCurrentAccountSession } from "./current-account-session.js";
@@ -49,6 +49,13 @@ export function sessionEndpoints(options: RegistrationOptions) {
             || !await ctx.context.password.verify({ hash: credential.password, password })) return invalidCredentials();
           const denied = accountAccessError(user, credential, { roles: SELF_SERVICE_ROLES });
           if (denied) return denied;
+          if (user.role === "ORGANIZER") {
+            const organization = await tx.findOne<OrganizerProfile>({ model: "organizerProfile", where: [
+              { field: "userId", value: user.id },
+            ] });
+            const organizationDenied = organizationAccessError(organization?.approvalStatus);
+            if (organizationDenied) return organizationDenied;
+          }
           const now = options.now();
           // This version-sensitive Better Auth bridge joins the current transaction.
           const session = await ctx.context.internalAdapter.createSession(user.id, false, {

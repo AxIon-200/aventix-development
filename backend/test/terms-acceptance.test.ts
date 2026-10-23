@@ -30,6 +30,9 @@ async function fixture(role = "ATTENDEE") {
     emailVerified: true, termsVersion: null, termsAcceptedAt: null,
     accounts: { create: { accountId: id, providerId: "credential", password: await hashExactPassword(password) } },
   } });
+  if (role === "ORGANIZER") await prisma.organizerProfile.create({ data: {
+    userId: id, organizationName: "Controlled approved organizer", approvalStatus: "APPROVED",
+  } });
   const messages: VerificationMessage[] = [];
   const options = { terms, now: () => now, registrationLimit: 10000, aggregateLimit: 10000,
     loginLimit: 10000, logoutLimit: 10000, verificationLimit: 10000, termsAcceptanceLimit: 10000,
@@ -39,6 +42,7 @@ async function fixture(role = "ATTENDEE") {
 
 afterEach(() => vi.useRealTimers());
 afterAll(async () => {
+  await prisma.organizerProfile.deleteMany({ where: { user: { email: { in: emails } } } });
   await prisma.user.deleteMany({ where: { email: { in: emails } } });
   await prisma.emailCooldown.deleteMany({ where: { email: { in: emails } } });
   await prisma.authRateLimit.deleteMany({ where: { expiresAt: { gte: new Date("2094-01-01"), lt: new Date("2094-02-01") } } });

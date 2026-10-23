@@ -8,6 +8,9 @@ export type AttendeeRegistration = {
   firstName: string; lastName: string; email: string; phoneNumber?: string;
   password: string; termsAccepted: boolean; termsVersion: string;
 };
+export type OrganizerRegistration = AttendeeRegistration & {
+  organizationName: string; organizationDescription: string;
+};
 export type CurrentTerms = { version: string; documentUrl: string };
 export type TermsAcceptance = { email: string; currentPassword: string; termsAccepted: boolean; termsVersion: string };
 export type AuthResult = { destination?: string; allowBookingReturn?: boolean };
@@ -39,6 +42,7 @@ export interface PublicAuthClient {
   getTerms?: () => Promise<CurrentTerms>;
   acceptTerms?: (data: TermsAcceptance) => Promise<void>;
   registerAttendee?: (data: AttendeeRegistration) => Promise<void>;
+  registerOrganizer?: (data: OrganizerRegistration) => Promise<void>;
   verifyEmail?: (data: { token: string; currentPassword: string }) => Promise<void>;
   resendVerification?: (data: { email: string }) => Promise<void>;
   requestPasswordReset?: (data: { email: string }) => Promise<void>;
@@ -58,6 +62,10 @@ export function authErrorMessage(error: unknown): string {
     DUPLICATE_EMAIL: "This email is already registered. Log in or reset your password.",
     EMAIL_ALREADY_REGISTERED: "This email is already registered. The existing account has not been changed. Log in or recover your password.",
     ACCOUNT_CREATED_EMAIL_FAILED: "Your unverified attendee account and terms acceptance were saved, but the verification email could not be sent. Request another verification email, then verify before logging in separately.",
+    ORGANIZATION_PENDING: "Your email is verified, but your organization is still awaiting administrator approval. No session was created.",
+    ORGANIZATION_REJECTED: "Your organization application was rejected. No session was created. Contact support if you need help.",
+    ORGANIZATION_SUSPENDED: "Your organization access is suspended. No session was created. Contact support if you need help.",
+    ORGANIZATION_UNAVAILABLE: "This organizer account has no eligible organization profile. No session was created. Contact support.",
     TERMS_VERSION_OUTDATED: "The terms have changed. Read the current document and explicitly accept it before submitting again.",
     INVALID_RECOVERY_LINK: "This recovery link is invalid. Request a new link.",
     EXPIRED_RECOVERY_LINK: "This recovery link has expired. Request a new link.",

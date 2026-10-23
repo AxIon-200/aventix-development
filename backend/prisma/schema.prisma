@@ -38,6 +38,7 @@ model User {
 
   // Aventix organizer relationships
   organizerProfile   OrganizerProfile?  @relation("OrganizerOwner")
+  organizerApplication OrganizerApplication?
   approvedOrganizers OrganizerProfile[] @relation("OrganizerApprover")
 
   uploadedEventMedia EventMedia[]
@@ -161,8 +162,28 @@ model OrganizerProfile {
   approvedBy User? @relation("OrganizerApprover", fields: [approvedById], references: [id])
 
   events Event[]
+  application OrganizerApplication?
 
   @@index([approvalStatus])
+}
+
+// Legacy organizer profiles have no submitted application evidence.
+model OrganizerApplication {
+  id                 String   @id @default(uuid()) @db.Uuid
+  userId             String   @unique @db.Uuid
+  organizerProfileId String   @unique @db.Uuid
+  firstName          String
+  lastName           String
+  email              String
+  phoneNumber       String?
+  organizationName   String
+  organizationDescription String
+  termsVersion       String
+  termsAcceptedAt    DateTime
+  submittedAt        DateTime
+
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizerProfile OrganizerProfile @relation(fields: [organizerProfileId], references: [id], onDelete: Cascade)
 }
 
 model Venue {

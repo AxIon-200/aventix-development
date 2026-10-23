@@ -50,11 +50,13 @@ test('verification and recovery work in the localhost browser with real backend 
   let resetMode = 'normal';
   let termsMode = 'normal';
   let consentMode = 'normal';
+  let applicationMode = 'normal';
   let verifyRequests = 0;
   let resendRequests = 0;
   let recoveryRequests = 0;
   let resetRequests = 0;
   let consentRequests = 0;
+  let applicationRequests = 0;
   const requestPaths = [];
   const mutationOrigins = [];
   const proxy = createServer((req, res) => {
@@ -65,11 +67,13 @@ test('verification and recovery work in the localhost browser with real backend 
     const recovering = req.url === '/api/auth/request-password-reset';
     const resetting = req.url === '/api/auth/reset-password';
     const accepting = req.url === '/api/auth/accept-terms';
+    const applying = req.url === '/api/v1/organizer-applications';
     if (verifying) verifyRequests++;
     if (resending) resendRequests++;
     if (recovering) recoveryRequests++;
     if (resetting) resetRequests++;
     if (accepting) consentRequests++;
+    if (applying) applicationRequests++;
     if (req.url === '/api/v1/terms' && termsMode === 'unavailable') {
       res.writeHead(503, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: { code: 'INTERNAL_ERROR' } })); return;
@@ -79,7 +83,7 @@ test('verification and recovery work in the localhost browser with real backend 
       res.end(JSON.stringify({ error: { code: 'RATE_LIMITED' } })); return;
     }
     const upstream = httpRequest({ hostname: '127.0.0.1', port: ready.port, path: req.url, method: req.method, headers: req.headers }, response => {
-      if ((verifying && verificationMode === 'lost') || (resending && resendMode === 'lost') || (recovering && recoveryMode === 'lost') || (resetting && resetMode === 'lost') || (accepting && consentMode === 'lost')) { response.resume(); response.on('end', () => res.destroy()); return; }
+      if ((verifying && verificationMode === 'lost') || (resending && resendMode === 'lost') || (recovering && recoveryMode === 'lost') || (resetting && resetMode === 'lost') || (accepting && consentMode === 'lost') || (applying && applicationMode === 'lost')) { response.resume(); response.on('end', () => res.destroy()); return; }
       res.writeHead(response.statusCode, response.headers); response.pipe(res);
     });
     upstream.on('error', () => res.destroy()); req.pipe(upstream);
@@ -208,6 +212,91 @@ test('verification and recovery work in the localhost browser with real backend 
     } finally { cdp = registrationTab; await emailBrowser.send('Page.close').catch(() => {}); emailBrowser.close(); }
     assert.ok(mutationOrigins.length >= 3 && mutationOrigins.every(value => value === origin));
     await cdp.send('Network.clearBrowserCookies');
+  });
+
+  const applyAsOrganizer = async fixture => {
+    await navigate(`${origin}/register/organizer`);
+    await text('Apply as an Organizer');
+    await checkTerms();
+    for (const [name, value] of Object.entries({ firstName: 'Browser', lastName: 'Organizer',
+      email: fixture.email, organizationName: 'Manila Live',
+      organizationDescription: 'We organize live music events around Manila.',
+      password: fixture.password, confirmPassword: fixture.password })) await fill(name, value);
+    await click('Submit Organizer Application');
+  };
+
+  await scenario('organizer form explains consent and validates fields on mobile without submitting', async () => {
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+    try {
+      await navigate(`${origin}/register/organizer`);
+      await text('Apply as an Organizer');
+      await text('current terms (version');
+      assert.equal(await evaluate('document.querySelector("button[type=submit]").disabled'), true);
+      assert.equal(await evaluate('document.documentElement.scrollWidth <= window.innerWidth + 1'), true);
+      await checkTerms();
+      for (const [name, value] of Object.entries({ firstName: 'Browser', lastName: 'Organizer',
+        email: 'mobile-organizer@example.com', organizationName: 'X', organizationDescription: 'short',
+        password: 'long organizer passphrase', confirmPassword: 'long organizer passphrase' })) await fill(name, value);
+      const before = applicationRequests;
+      await click('Submit Organizer Application');
+      await text('Use 2–150 Unicode characters.');
+      await text('Use 20–2,000 Unicode characters.');
+      assert.equal(applicationRequests, before);
+    } finally {
+      await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
+    }
+  });
+
+  await scenario('organizer applies, verifies, and sees pending review without a login session', async () => {
+    const fixture = await command('registrationFixture');
+    await applyAsOrganizer(fixture);
+    await text('Your organizer application was saved');
+    assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);
+    const mail = await command('messages', { email: fixture.email });
+    assert.equal(mail.length, 1);
+    await navigate(mail[0].url); await text('Current password');
+    await submit(fixture.password); await text('Your email has been verified');
+    await navigate(`${origin}/login`); await text('Welcome back');
+    await fill('email', fixture.email); await fill('password', 'incorrect password'); await click('Login');
+    await text('The email address or password is incorrect.');
+    await fill('password', fixture.password); await click('Login');
+    await text('awaiting administrator approval');
+    assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);
+  });
+
+  await scenario('lost organizer submission response preserves the non-password draft and does not retry', async () => {
+    const fixture = await command('registrationFixture');
+    const before = applicationRequests;
+    applicationMode = 'lost';
+    try {
+      await applyAsOrganizer(fixture);
+      await text('We could not confirm whether your application was saved');
+      assert.equal(applicationRequests, before + 1);
+      assert.equal(await evaluate('document.querySelector("[name=email]").value'), fixture.email);
+      assert.equal(await evaluate('document.querySelector("[name=organizationName]").value'), 'Manila Live');
+      assert.equal(await evaluate('document.querySelector("[name=password]").value'), '');
+      assert.equal(await evaluate('document.querySelector("[name=confirmPassword]").value'), '');
+      await text('Request another verification email');
+      assert.equal((await command('messages', { email: fixture.email })).length, 1);
+    } finally { applicationMode = 'normal'; }
+  });
+
+  await scenario('failed organizer verification email leaves a saved application and offers resend', async () => {
+    const fixture = await command('registrationFixture');
+    await command('delivery', { enabled: false });
+    try {
+      await applyAsOrganizer(fixture);
+      await text('Your organizer application was saved, but the verification email could not be sent');
+      await text('Request another verification email');
+      assert.equal((await command('messages', { email: fixture.email })).length, 0);
+      assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);
+    } finally { await command('delivery', { enabled: true }); }
+    await command('advance', { milliseconds: 60000 });
+    await clickLink('Request another verification email');
+    await text('Email for verification');
+    await fill('resendEmail', fixture.email); await click('Request verification email');
+    await text('If this address is eligible, a verification email will be sent.');
+    assert.equal((await command('messages', { email: fixture.email })).length, 1);
   });
 
   await scenario('failed initial delivery keeps the account, duplicate registration is rejected, and resend supplies a link', async () => {

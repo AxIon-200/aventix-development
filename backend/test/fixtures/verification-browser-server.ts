@@ -101,6 +101,7 @@ async function command(input: { action: string; milliseconds?: number; enabled?:
   if (input.action === "cleanup") {
     const users = await prisma.user.findMany({ where: { email: { in: emails } }, select: { id: true } });
     await prisma.activityLog.deleteMany({ where: { userId: { in: users.map(user => user.id) } } });
+    await prisma.organizerProfile.deleteMany({ where: { userId: { in: users.map(user => user.id) } } });
     await prisma.user.deleteMany({ where: { email: { in: emails } } });
     await prisma.emailCooldown.deleteMany({ where: { email: { in: emails } } });
     await prisma.authRateLimit.deleteMany({ where: { expiresAt: { gte: start, lte: new Date(time.getTime() + 900000) } } });

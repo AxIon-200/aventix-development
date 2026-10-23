@@ -141,6 +141,22 @@ export function createBetterAuthClient(transport: typeof fetch = (...args) => fe
       }
       if (!isObject(result) || !isObject(result.data) || result.data.verificationRequired !== true) throw new AuthClientError("REQUEST_UNCERTAIN");
     },
+    registerOrganizer: async data => {
+      let result: unknown;
+      try {
+        result = await request("/api/v1/organizer-applications", {
+          firstName: data.firstName.trim(), lastName: data.lastName.trim(), email: data.email.trim().toLowerCase(),
+          password: data.password, ...(data.phoneNumber === "" || data.phoneNumber === undefined ? {} : { phoneNumber: data.phoneNumber }),
+          organizationName: data.organizationName.trim(), organizationDescription: data.organizationDescription.trim(),
+          termsAccepted: data.termsAccepted, termsVersion: data.termsVersion,
+        });
+      } catch (error) {
+        if (error instanceof AuthClientError && ["UNAVAILABLE", "INVALID_RESPONSE"].includes(error.code)) throw new AuthClientError("REQUEST_UNCERTAIN", error.retryAfter);
+        throw error;
+      }
+      if (!isObject(result) || !isObject(result.data) || result.data.verificationRequired !== true
+        || result.data.administratorApprovalRequired !== true) throw new AuthClientError("REQUEST_UNCERTAIN");
+    },
     login: async data => {
       const email = data.email.trim().toLowerCase();
       const loggedIn = accountFromProfile(await request("/api/auth/login", { email, password: data.password }));

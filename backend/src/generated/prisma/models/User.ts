@@ -268,6 +268,7 @@ export type UserWhereInput = {
   ticketVerifications?: Prisma.TicketVerificationListRelationFilter
   activityLogs?: Prisma.ActivityLogListRelationFilter
   organizerProfile?: Prisma.XOR<Prisma.OrganizerProfileNullableScalarRelationFilter, Prisma.OrganizerProfileWhereInput> | null
+  organizerApplication?: Prisma.XOR<Prisma.OrganizerApplicationNullableScalarRelationFilter, Prisma.OrganizerApplicationWhereInput> | null
   approvedOrganizers?: Prisma.OrganizerProfileListRelationFilter
   uploadedEventMedia?: Prisma.EventMediaListRelationFilter
   bookings?: Prisma.BookingListRelationFilter
@@ -295,6 +296,7 @@ export type UserOrderByWithRelationInput = {
   ticketVerifications?: Prisma.TicketVerificationOrderByRelationAggregateInput
   activityLogs?: Prisma.ActivityLogOrderByRelationAggregateInput
   organizerProfile?: Prisma.OrganizerProfileOrderByWithRelationInput
+  organizerApplication?: Prisma.OrganizerApplicationOrderByWithRelationInput
   approvedOrganizers?: Prisma.OrganizerProfileOrderByRelationAggregateInput
   uploadedEventMedia?: Prisma.EventMediaOrderByRelationAggregateInput
   bookings?: Prisma.BookingOrderByRelationAggregateInput
@@ -325,6 +327,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   ticketVerifications?: Prisma.TicketVerificationListRelationFilter
   activityLogs?: Prisma.ActivityLogListRelationFilter
   organizerProfile?: Prisma.XOR<Prisma.OrganizerProfileNullableScalarRelationFilter, Prisma.OrganizerProfileWhereInput> | null
+  organizerApplication?: Prisma.XOR<Prisma.OrganizerApplicationNullableScalarRelationFilter, Prisma.OrganizerApplicationWhereInput> | null
   approvedOrganizers?: Prisma.OrganizerProfileListRelationFilter
   uploadedEventMedia?: Prisma.EventMediaListRelationFilter
   bookings?: Prisma.BookingListRelationFilter
@@ -394,6 +397,7 @@ export type UserCreateInput = {
   ticketVerifications?: Prisma.TicketVerificationCreateNestedManyWithoutVerifiedByInput
   activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutUserInput
   organizerProfile?: Prisma.OrganizerProfileCreateNestedOneWithoutUserInput
+  organizerApplication?: Prisma.OrganizerApplicationCreateNestedOneWithoutUserInput
   approvedOrganizers?: Prisma.OrganizerProfileCreateNestedManyWithoutApprovedByInput
   uploadedEventMedia?: Prisma.EventMediaCreateNestedManyWithoutUploadedByInput
   bookings?: Prisma.BookingCreateNestedManyWithoutUserInput
@@ -421,6 +425,7 @@ export type UserUncheckedCreateInput = {
   ticketVerifications?: Prisma.TicketVerificationUncheckedCreateNestedManyWithoutVerifiedByInput
   activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutUserInput
   organizerProfile?: Prisma.OrganizerProfileUncheckedCreateNestedOneWithoutUserInput
+  organizerApplication?: Prisma.OrganizerApplicationUncheckedCreateNestedOneWithoutUserInput
   approvedOrganizers?: Prisma.OrganizerProfileUncheckedCreateNestedManyWithoutApprovedByInput
   uploadedEventMedia?: Prisma.EventMediaUncheckedCreateNestedManyWithoutUploadedByInput
   bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutUserInput
@@ -448,6 +453,7 @@ export type UserUpdateInput = {
   ticketVerifications?: Prisma.TicketVerificationUpdateManyWithoutVerifiedByNestedInput
   activityLogs?: Prisma.ActivityLogUpdateManyWithoutUserNestedInput
   organizerProfile?: Prisma.OrganizerProfileUpdateOneWithoutUserNestedInput
+  organizerApplication?: Prisma.OrganizerApplicationUpdateOneWithoutUserNestedInput
   approvedOrganizers?: Prisma.OrganizerProfileUpdateManyWithoutApprovedByNestedInput
   uploadedEventMedia?: Prisma.EventMediaUpdateManyWithoutUploadedByNestedInput
   bookings?: Prisma.BookingUpdateManyWithoutUserNestedInput
@@ -475,6 +481,7 @@ export type UserUncheckedUpdateInput = {
   ticketVerifications?: Prisma.TicketVerificationUncheckedUpdateManyWithoutVerifiedByNestedInput
   activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutUserNestedInput
   organizerProfile?: Prisma.OrganizerProfileUncheckedUpdateOneWithoutUserNestedInput
+  organizerApplication?: Prisma.OrganizerApplicationUncheckedUpdateOneWithoutUserNestedInput
   approvedOrganizers?: Prisma.OrganizerProfileUncheckedUpdateManyWithoutApprovedByNestedInput
   uploadedEventMedia?: Prisma.EventMediaUncheckedUpdateManyWithoutUploadedByNestedInput
   bookings?: Prisma.BookingUncheckedUpdateManyWithoutUserNestedInput
@@ -690,6 +697,20 @@ export type UserUpdateOneWithoutApprovedOrganizersNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutApprovedOrganizersInput, Prisma.UserUpdateWithoutApprovedOrganizersInput>, Prisma.UserUncheckedUpdateWithoutApprovedOrganizersInput>
 }
 
+export type UserCreateNestedOneWithoutOrganizerApplicationInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutOrganizerApplicationInput, Prisma.UserUncheckedCreateWithoutOrganizerApplicationInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutOrganizerApplicationInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutOrganizerApplicationNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutOrganizerApplicationInput, Prisma.UserUncheckedCreateWithoutOrganizerApplicationInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutOrganizerApplicationInput
+  upsert?: Prisma.UserUpsertWithoutOrganizerApplicationInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutOrganizerApplicationInput, Prisma.UserUpdateWithoutOrganizerApplicationInput>, Prisma.UserUncheckedUpdateWithoutOrganizerApplicationInput>
+}
+
 export type UserCreateNestedOneWithoutUploadedEventMediaInput = {
   create?: Prisma.XOR<Prisma.UserCreateWithoutUploadedEventMediaInput, Prisma.UserUncheckedCreateWithoutUploadedEventMediaInput>
   connectOrCreate?: Prisma.UserCreateOrConnectWithoutUploadedEventMediaInput
@@ -769,6 +790,7 @@ export type UserCreateWithoutAuthLinksInput = {
   ticketVerifications?: Prisma.TicketVerificationCreateNestedManyWithoutVerifiedByInput
   activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutUserInput
   organizerProfile?: Prisma.OrganizerProfileCreateNestedOneWithoutUserInput
+  organizerApplication?: Prisma.OrganizerApplicationCreateNestedOneWithoutUserInput
   approvedOrganizers?: Prisma.OrganizerProfileCreateNestedManyWithoutApprovedByInput
   uploadedEventMedia?: Prisma.EventMediaCreateNestedManyWithoutUploadedByInput
   bookings?: Prisma.BookingCreateNestedManyWithoutUserInput
@@ -795,6 +817,7 @@ export type UserUncheckedCreateWithoutAuthLinksInput = {
   ticketVerifications?: Prisma.TicketVerificationUncheckedCreateNestedManyWithoutVerifiedByInput
   activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutUserInput
   organizerProfile?: Prisma.OrganizerProfileUncheckedCreateNestedOneWithoutUserInput
+  organizerApplication?: Prisma.OrganizerApplicationUncheckedCreateNestedOneWithoutUserInput
   approvedOrganizers?: Prisma.OrganizerProfileUncheckedCreateNestedManyWithoutApprovedByInput
   uploadedEventMedia?: Prisma.EventMediaUncheckedCreateNestedManyWithoutUploadedByInput
   bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutUserInput
@@ -837,6 +860,7 @@ export type UserUpdateWithoutAuthLinksInput = {
   ticketVerifications?: Prisma.TicketVerificationUpdateManyWithoutVerifiedByNestedInput
   activityLogs?: Prisma.ActivityLogUpdateManyWithoutUserNestedInput
   organizerProfile?: Prisma.OrganizerProfileUpdateOneWithoutUserNestedInput
+  organizerApplication?: Prisma.OrganizerApplicationUpdateOneWithoutUserNestedInput
   approvedOrganizers?: Prisma.OrganizerProfileUpdateManyWithoutApprovedByNestedInput
   uploadedEventMedia?: Prisma.EventMediaUpdateManyWithoutUploadedByNestedInput
   bookings?: Prisma.BookingUpdateManyWithoutUserNestedInput
@@ -863,6 +887,7 @@ export type UserUncheckedUpdateWithoutAuthLinksInput = {
   ticketVerifications?: Prisma.TicketVerificationUncheckedUpdateManyWithoutVerifiedByNestedInput
   activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutUserNestedInput
   organizerProfile?: Prisma.OrganizerProfileUncheckedUpdateOneWithoutUserNestedInput
+  organizerApplication?: Prisma.OrganizerApplicationUncheckedUpdateOneWithoutUserNestedInput
   approvedOrganizers?: Prisma.OrganizerProfileUncheckedUpdateManyWithoutApprovedByNestedInput
   uploadedEventMedia?: Prisma.EventMediaUncheckedUpdateManyWithoutUploadedByNestedInput
   bookings?: Prisma.BookingUncheckedUpdateManyWithoutUserNestedInput
@@ -889,6 +914,7 @@ export type UserCreateWithoutSessionsInput = {
   ticketVerifications?: Prisma.TicketVerificationCreateNestedManyWithoutVerifiedByInput
   activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutUserInput
   organizerProfile?: Prisma.OrganizerProfileCreateNestedOneWithoutUserInput
+  organizerApplication?: Prisma.OrganizerApplicationCreateNestedOneWithoutUserInput
   approvedOrganizers?: Prisma.OrganizerProfileCreateNestedManyWithoutApprovedByInput
   uploadedEventMedia?: Prisma.EventMediaCreateNestedManyWithoutUploadedByInput
   bookings?: Prisma.BookingCreateNestedManyWithoutUserInput
@@ -915,6 +941,7 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   ticketVerifications?: Prisma.TicketVerificationUncheckedCreateNestedManyWithoutVerifiedByInput
   activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutUserInput
   organizerProfile?: Prisma.OrganizerProfileUncheckedCreateNestedOneWithoutUserInput
+  organizerApplication?: Prisma.OrganizerApplicationUncheckedCreateNestedOneWithoutUserInput
   approvedOrganizers?: Prisma.OrganizerProfileUncheckedCreateNestedManyWithoutApprovedByInput
   uploadedEventMedia?: Prisma.EventMediaUncheckedCreateNestedManyWithoutUploadedByInput
   bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutUserInput
@@ -957,6 +984,7 @@ export type UserUpdateWithoutSessionsInput = {
   ticketVerifications?: Prisma.TicketVerificationUpdateManyWithoutVerifiedByNestedInput
   activityLogs?: Prisma.ActivityLogUpdateManyWithoutUserNestedInput
   organizerProfile?: Prisma.OrganizerProfileUpdateOneWithoutUserNestedInput
+  organizerApplication?: Prisma.OrganizerApplicationUpdateOneWithoutUserNestedInput
   approvedOrganizers?: Prisma.OrganizerProfileUpdateManyWithoutApprovedByNestedInput
   uploadedEventMedia?: Prisma.EventMediaUpdateManyWithoutUploadedByNestedInput
   bookings?: Prisma.BookingUpdateManyWithoutUserNestedInput
@@ -983,6 +1011,7 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   ticketVerifications?: Prisma.TicketVerificationUncheckedUpdateManyWithoutVerifiedByNestedInput
   activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutUserNestedInput
   organizerProfile?: Prisma.OrganizerProfileUncheckedUpdateOneWithoutUserNestedInput
+  organizerApplication?: Prisma.OrganizerApplicationUncheckedUpdateOneWithoutUserNestedInput
   approvedOrganizers?: Prisma.OrganizerProfileUncheckedUpdateManyWithoutApprovedByNestedInput
   uploadedEventMedia?: Prisma.EventMediaUncheckedUpdateManyWithoutUploadedByNestedInput
   bookings?: Prisma.BookingUncheckedUpdateManyWithoutUserNestedInput
@@ -1009,6 +1038,7 @@ export type UserCreateWithoutAccountsInput = {
   ticketVerifications?: Prisma.TicketVerificationCreateNestedManyWithoutVerifiedByInput
   activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutUserInput
   organizerProfile?: Prisma.OrganizerProfileCreateNestedOneWithoutUserInput
+  organizerApplication?: Prisma.OrganizerApplicationCreateNestedOneWithoutUserInput
   approvedOrganizers?: Prisma.OrganizerProfileCreateNestedManyWithoutApprovedByInput
   uploadedEventMedia?: Prisma.EventMediaCreateNestedManyWithoutUploadedByInput
   bookings?: Prisma.BookingCreateNestedManyWithoutUserInput
@@ -1035,6 +1065,7 @@ export type UserUncheckedCreateWithoutAccountsInput = {
   ticketVerifications?: Prisma.TicketVerificationUncheckedCreateNestedManyWithoutVerifiedByInput
   activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutUserInput
   organizerProfile?: Prisma.OrganizerProfileUncheckedCreateNestedOneWithoutUserInput
+  organizerApplication?: Prisma.OrganizerApplicationUncheckedCreateNestedOneWithoutUserInput
   approvedOrganizers?: Prisma.OrganizerProfileUncheckedCreateNestedManyWithoutApprovedByInput
   uploadedEventMedia?: Prisma.EventMediaUncheckedCreateNestedManyWithoutUploadedByInput
   bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutUserInput
@@ -1077,6 +1108,7 @@ export type UserUpdateWithoutAccountsInput = {
   ticketVerifications?: Prisma.TicketVerificationUpdateManyWithoutVerifiedByNestedInput
   activityLogs?: Prisma.ActivityLogUpdateManyWithoutUserNestedInput
   organizerProfile?: Prisma.OrganizerProfileUpdateOneWithoutUserNestedInput
+  organizerApplication?: Prisma.OrganizerApplicationUpdateOneWithoutUserNestedInput
   approvedOrganizers?: Prisma.OrganizerProfileUpdateManyWithoutApprovedByNestedInput
   uploadedEventMedia?: Prisma.EventMediaUpdateManyWithoutUploadedByNestedInput
   bookings?: Prisma.BookingUpdateManyWithoutUserNestedInput
@@ -1103,6 +1135,7 @@ export type UserUncheckedUpdateWithoutAccountsInput = {
   ticketVerifications?: Prisma.TicketVerificationUncheckedUpdateManyWithoutVerifiedByNestedInput
   activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutUserNestedInput
   organizerProfile?: Prisma.OrganizerProfileUncheckedUpdateOneWithoutUserNestedInput
+  organizerApplication?: Prisma.OrganizerApplicationUncheckedUpdateOneWithoutUserNestedInput
   approvedOrganizers?: Prisma.OrganizerProfileUncheckedUpdateManyWithoutApprovedByNestedInput
   uploadedEventMedia?: Prisma.EventMediaUncheckedUpdateManyWithoutUploadedByNestedInput
   bookings?: Prisma.BookingUncheckedUpdateManyWithoutUserNestedInput
@@ -1129,6 +1162,7 @@ export type UserCreateWithoutOrganizerProfileInput = {
   authLinks?: Prisma.AuthLinkCreateNestedManyWithoutUserInput
   ticketVerifications?: Prisma.TicketVerificationCreateNestedManyWithoutVerifiedByInput
   activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutUserInput
+  organizerApplication?: Prisma.OrganizerApplicationCreateNestedOneWithoutUserInput
   approvedOrganizers?: Prisma.OrganizerProfileCreateNestedManyWithoutApprovedByInput
   uploadedEventMedia?: Prisma.EventMediaCreateNestedManyWithoutUploadedByInput
   bookings?: Prisma.BookingCreateNestedManyWithoutUserInput
@@ -1155,6 +1189,7 @@ export type UserUncheckedCreateWithoutOrganizerProfileInput = {
   authLinks?: Prisma.AuthLinkUncheckedCreateNestedManyWithoutUserInput
   ticketVerifications?: Prisma.TicketVerificationUncheckedCreateNestedManyWithoutVerifiedByInput
   activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutUserInput
+  organizerApplication?: Prisma.OrganizerApplicationUncheckedCreateNestedOneWithoutUserInput
   approvedOrganizers?: Prisma.OrganizerProfileUncheckedCreateNestedManyWithoutApprovedByInput
   uploadedEventMedia?: Prisma.EventMediaUncheckedCreateNestedManyWithoutUploadedByInput
   bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutUserInput
@@ -1187,6 +1222,7 @@ export type UserCreateWithoutApprovedOrganizersInput = {
   ticketVerifications?: Prisma.TicketVerificationCreateNestedManyWithoutVerifiedByInput
   activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutUserInput
   organizerProfile?: Prisma.OrganizerProfileCreateNestedOneWithoutUserInput
+  organizerApplication?: Prisma.OrganizerApplicationCreateNestedOneWithoutUserInput
   uploadedEventMedia?: Prisma.EventMediaCreateNestedManyWithoutUploadedByInput
   bookings?: Prisma.BookingCreateNestedManyWithoutUserInput
 }
@@ -1213,6 +1249,7 @@ export type UserUncheckedCreateWithoutApprovedOrganizersInput = {
   ticketVerifications?: Prisma.TicketVerificationUncheckedCreateNestedManyWithoutVerifiedByInput
   activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutUserInput
   organizerProfile?: Prisma.OrganizerProfileUncheckedCreateNestedOneWithoutUserInput
+  organizerApplication?: Prisma.OrganizerApplicationUncheckedCreateNestedOneWithoutUserInput
   uploadedEventMedia?: Prisma.EventMediaUncheckedCreateNestedManyWithoutUploadedByInput
   bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutUserInput
 }
@@ -1254,6 +1291,7 @@ export type UserUpdateWithoutOrganizerProfileInput = {
   authLinks?: Prisma.AuthLinkUpdateManyWithoutUserNestedInput
   ticketVerifications?: Prisma.TicketVerificationUpdateManyWithoutVerifiedByNestedInput
   activityLogs?: Prisma.ActivityLogUpdateManyWithoutUserNestedInput
+  organizerApplication?: Prisma.OrganizerApplicationUpdateOneWithoutUserNestedInput
   approvedOrganizers?: Prisma.OrganizerProfileUpdateManyWithoutApprovedByNestedInput
   uploadedEventMedia?: Prisma.EventMediaUpdateManyWithoutUploadedByNestedInput
   bookings?: Prisma.BookingUpdateManyWithoutUserNestedInput
@@ -1280,6 +1318,7 @@ export type UserUncheckedUpdateWithoutOrganizerProfileInput = {
   authLinks?: Prisma.AuthLinkUncheckedUpdateManyWithoutUserNestedInput
   ticketVerifications?: Prisma.TicketVerificationUncheckedUpdateManyWithoutVerifiedByNestedInput
   activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutUserNestedInput
+  organizerApplication?: Prisma.OrganizerApplicationUncheckedUpdateOneWithoutUserNestedInput
   approvedOrganizers?: Prisma.OrganizerProfileUncheckedUpdateManyWithoutApprovedByNestedInput
   uploadedEventMedia?: Prisma.EventMediaUncheckedUpdateManyWithoutUploadedByNestedInput
   bookings?: Prisma.BookingUncheckedUpdateManyWithoutUserNestedInput
@@ -1318,6 +1357,7 @@ export type UserUpdateWithoutApprovedOrganizersInput = {
   ticketVerifications?: Prisma.TicketVerificationUpdateManyWithoutVerifiedByNestedInput
   activityLogs?: Prisma.ActivityLogUpdateManyWithoutUserNestedInput
   organizerProfile?: Prisma.OrganizerProfileUpdateOneWithoutUserNestedInput
+  organizerApplication?: Prisma.OrganizerApplicationUpdateOneWithoutUserNestedInput
   uploadedEventMedia?: Prisma.EventMediaUpdateManyWithoutUploadedByNestedInput
   bookings?: Prisma.BookingUpdateManyWithoutUserNestedInput
 }
@@ -1344,6 +1384,131 @@ export type UserUncheckedUpdateWithoutApprovedOrganizersInput = {
   ticketVerifications?: Prisma.TicketVerificationUncheckedUpdateManyWithoutVerifiedByNestedInput
   activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutUserNestedInput
   organizerProfile?: Prisma.OrganizerProfileUncheckedUpdateOneWithoutUserNestedInput
+  organizerApplication?: Prisma.OrganizerApplicationUncheckedUpdateOneWithoutUserNestedInput
+  uploadedEventMedia?: Prisma.EventMediaUncheckedUpdateManyWithoutUploadedByNestedInput
+  bookings?: Prisma.BookingUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutOrganizerApplicationInput = {
+  id?: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  firstName: string
+  lastName: string
+  phoneNumber?: string | null
+  role?: string
+  status?: string
+  termsAcceptedAt?: Date | string | null
+  termsVersion?: string | null
+  lifecycleLock?: string
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  authLinks?: Prisma.AuthLinkCreateNestedManyWithoutUserInput
+  ticketVerifications?: Prisma.TicketVerificationCreateNestedManyWithoutVerifiedByInput
+  activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutUserInput
+  organizerProfile?: Prisma.OrganizerProfileCreateNestedOneWithoutUserInput
+  approvedOrganizers?: Prisma.OrganizerProfileCreateNestedManyWithoutApprovedByInput
+  uploadedEventMedia?: Prisma.EventMediaCreateNestedManyWithoutUploadedByInput
+  bookings?: Prisma.BookingCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutOrganizerApplicationInput = {
+  id?: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  firstName: string
+  lastName: string
+  phoneNumber?: string | null
+  role?: string
+  status?: string
+  termsAcceptedAt?: Date | string | null
+  termsVersion?: string | null
+  lifecycleLock?: string
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  authLinks?: Prisma.AuthLinkUncheckedCreateNestedManyWithoutUserInput
+  ticketVerifications?: Prisma.TicketVerificationUncheckedCreateNestedManyWithoutVerifiedByInput
+  activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutUserInput
+  organizerProfile?: Prisma.OrganizerProfileUncheckedCreateNestedOneWithoutUserInput
+  approvedOrganizers?: Prisma.OrganizerProfileUncheckedCreateNestedManyWithoutApprovedByInput
+  uploadedEventMedia?: Prisma.EventMediaUncheckedCreateNestedManyWithoutUploadedByInput
+  bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutOrganizerApplicationInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutOrganizerApplicationInput, Prisma.UserUncheckedCreateWithoutOrganizerApplicationInput>
+}
+
+export type UserUpsertWithoutOrganizerApplicationInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutOrganizerApplicationInput, Prisma.UserUncheckedUpdateWithoutOrganizerApplicationInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutOrganizerApplicationInput, Prisma.UserUncheckedCreateWithoutOrganizerApplicationInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutOrganizerApplicationInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutOrganizerApplicationInput, Prisma.UserUncheckedUpdateWithoutOrganizerApplicationInput>
+}
+
+export type UserUpdateWithoutOrganizerApplicationInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  firstName?: Prisma.StringFieldUpdateOperationsInput | string
+  lastName?: Prisma.StringFieldUpdateOperationsInput | string
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  termsAcceptedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  termsVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lifecycleLock?: Prisma.StringFieldUpdateOperationsInput | string
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  authLinks?: Prisma.AuthLinkUpdateManyWithoutUserNestedInput
+  ticketVerifications?: Prisma.TicketVerificationUpdateManyWithoutVerifiedByNestedInput
+  activityLogs?: Prisma.ActivityLogUpdateManyWithoutUserNestedInput
+  organizerProfile?: Prisma.OrganizerProfileUpdateOneWithoutUserNestedInput
+  approvedOrganizers?: Prisma.OrganizerProfileUpdateManyWithoutApprovedByNestedInput
+  uploadedEventMedia?: Prisma.EventMediaUpdateManyWithoutUploadedByNestedInput
+  bookings?: Prisma.BookingUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutOrganizerApplicationInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  firstName?: Prisma.StringFieldUpdateOperationsInput | string
+  lastName?: Prisma.StringFieldUpdateOperationsInput | string
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  termsAcceptedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  termsVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lifecycleLock?: Prisma.StringFieldUpdateOperationsInput | string
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  authLinks?: Prisma.AuthLinkUncheckedUpdateManyWithoutUserNestedInput
+  ticketVerifications?: Prisma.TicketVerificationUncheckedUpdateManyWithoutVerifiedByNestedInput
+  activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutUserNestedInput
+  organizerProfile?: Prisma.OrganizerProfileUncheckedUpdateOneWithoutUserNestedInput
+  approvedOrganizers?: Prisma.OrganizerProfileUncheckedUpdateManyWithoutApprovedByNestedInput
   uploadedEventMedia?: Prisma.EventMediaUncheckedUpdateManyWithoutUploadedByNestedInput
   bookings?: Prisma.BookingUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -1370,6 +1535,7 @@ export type UserCreateWithoutUploadedEventMediaInput = {
   ticketVerifications?: Prisma.TicketVerificationCreateNestedManyWithoutVerifiedByInput
   activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutUserInput
   organizerProfile?: Prisma.OrganizerProfileCreateNestedOneWithoutUserInput
+  organizerApplication?: Prisma.OrganizerApplicationCreateNestedOneWithoutUserInput
   approvedOrganizers?: Prisma.OrganizerProfileCreateNestedManyWithoutApprovedByInput
   bookings?: Prisma.BookingCreateNestedManyWithoutUserInput
 }
@@ -1396,6 +1562,7 @@ export type UserUncheckedCreateWithoutUploadedEventMediaInput = {
   ticketVerifications?: Prisma.TicketVerificationUncheckedCreateNestedManyWithoutVerifiedByInput
   activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutUserInput
   organizerProfile?: Prisma.OrganizerProfileUncheckedCreateNestedOneWithoutUserInput
+  organizerApplication?: Prisma.OrganizerApplicationUncheckedCreateNestedOneWithoutUserInput
   approvedOrganizers?: Prisma.OrganizerProfileUncheckedCreateNestedManyWithoutApprovedByInput
   bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutUserInput
 }
@@ -1438,6 +1605,7 @@ export type UserUpdateWithoutUploadedEventMediaInput = {
   ticketVerifications?: Prisma.TicketVerificationUpdateManyWithoutVerifiedByNestedInput
   activityLogs?: Prisma.ActivityLogUpdateManyWithoutUserNestedInput
   organizerProfile?: Prisma.OrganizerProfileUpdateOneWithoutUserNestedInput
+  organizerApplication?: Prisma.OrganizerApplicationUpdateOneWithoutUserNestedInput
   approvedOrganizers?: Prisma.OrganizerProfileUpdateManyWithoutApprovedByNestedInput
   bookings?: Prisma.BookingUpdateManyWithoutUserNestedInput
 }
@@ -1464,6 +1632,7 @@ export type UserUncheckedUpdateWithoutUploadedEventMediaInput = {
   ticketVerifications?: Prisma.TicketVerificationUncheckedUpdateManyWithoutVerifiedByNestedInput
   activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutUserNestedInput
   organizerProfile?: Prisma.OrganizerProfileUncheckedUpdateOneWithoutUserNestedInput
+  organizerApplication?: Prisma.OrganizerApplicationUncheckedUpdateOneWithoutUserNestedInput
   approvedOrganizers?: Prisma.OrganizerProfileUncheckedUpdateManyWithoutApprovedByNestedInput
   bookings?: Prisma.BookingUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -1490,6 +1659,7 @@ export type UserCreateWithoutBookingsInput = {
   ticketVerifications?: Prisma.TicketVerificationCreateNestedManyWithoutVerifiedByInput
   activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutUserInput
   organizerProfile?: Prisma.OrganizerProfileCreateNestedOneWithoutUserInput
+  organizerApplication?: Prisma.OrganizerApplicationCreateNestedOneWithoutUserInput
   approvedOrganizers?: Prisma.OrganizerProfileCreateNestedManyWithoutApprovedByInput
   uploadedEventMedia?: Prisma.EventMediaCreateNestedManyWithoutUploadedByInput
 }
@@ -1516,6 +1686,7 @@ export type UserUncheckedCreateWithoutBookingsInput = {
   ticketVerifications?: Prisma.TicketVerificationUncheckedCreateNestedManyWithoutVerifiedByInput
   activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutUserInput
   organizerProfile?: Prisma.OrganizerProfileUncheckedCreateNestedOneWithoutUserInput
+  organizerApplication?: Prisma.OrganizerApplicationUncheckedCreateNestedOneWithoutUserInput
   approvedOrganizers?: Prisma.OrganizerProfileUncheckedCreateNestedManyWithoutApprovedByInput
   uploadedEventMedia?: Prisma.EventMediaUncheckedCreateNestedManyWithoutUploadedByInput
 }
@@ -1558,6 +1729,7 @@ export type UserUpdateWithoutBookingsInput = {
   ticketVerifications?: Prisma.TicketVerificationUpdateManyWithoutVerifiedByNestedInput
   activityLogs?: Prisma.ActivityLogUpdateManyWithoutUserNestedInput
   organizerProfile?: Prisma.OrganizerProfileUpdateOneWithoutUserNestedInput
+  organizerApplication?: Prisma.OrganizerApplicationUpdateOneWithoutUserNestedInput
   approvedOrganizers?: Prisma.OrganizerProfileUpdateManyWithoutApprovedByNestedInput
   uploadedEventMedia?: Prisma.EventMediaUpdateManyWithoutUploadedByNestedInput
 }
@@ -1584,6 +1756,7 @@ export type UserUncheckedUpdateWithoutBookingsInput = {
   ticketVerifications?: Prisma.TicketVerificationUncheckedUpdateManyWithoutVerifiedByNestedInput
   activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutUserNestedInput
   organizerProfile?: Prisma.OrganizerProfileUncheckedUpdateOneWithoutUserNestedInput
+  organizerApplication?: Prisma.OrganizerApplicationUncheckedUpdateOneWithoutUserNestedInput
   approvedOrganizers?: Prisma.OrganizerProfileUncheckedUpdateManyWithoutApprovedByNestedInput
   uploadedEventMedia?: Prisma.EventMediaUncheckedUpdateManyWithoutUploadedByNestedInput
 }
@@ -1609,6 +1782,7 @@ export type UserCreateWithoutTicketVerificationsInput = {
   authLinks?: Prisma.AuthLinkCreateNestedManyWithoutUserInput
   activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutUserInput
   organizerProfile?: Prisma.OrganizerProfileCreateNestedOneWithoutUserInput
+  organizerApplication?: Prisma.OrganizerApplicationCreateNestedOneWithoutUserInput
   approvedOrganizers?: Prisma.OrganizerProfileCreateNestedManyWithoutApprovedByInput
   uploadedEventMedia?: Prisma.EventMediaCreateNestedManyWithoutUploadedByInput
   bookings?: Prisma.BookingCreateNestedManyWithoutUserInput
@@ -1635,6 +1809,7 @@ export type UserUncheckedCreateWithoutTicketVerificationsInput = {
   authLinks?: Prisma.AuthLinkUncheckedCreateNestedManyWithoutUserInput
   activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutUserInput
   organizerProfile?: Prisma.OrganizerProfileUncheckedCreateNestedOneWithoutUserInput
+  organizerApplication?: Prisma.OrganizerApplicationUncheckedCreateNestedOneWithoutUserInput
   approvedOrganizers?: Prisma.OrganizerProfileUncheckedCreateNestedManyWithoutApprovedByInput
   uploadedEventMedia?: Prisma.EventMediaUncheckedCreateNestedManyWithoutUploadedByInput
   bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutUserInput
@@ -1677,6 +1852,7 @@ export type UserUpdateWithoutTicketVerificationsInput = {
   authLinks?: Prisma.AuthLinkUpdateManyWithoutUserNestedInput
   activityLogs?: Prisma.ActivityLogUpdateManyWithoutUserNestedInput
   organizerProfile?: Prisma.OrganizerProfileUpdateOneWithoutUserNestedInput
+  organizerApplication?: Prisma.OrganizerApplicationUpdateOneWithoutUserNestedInput
   approvedOrganizers?: Prisma.OrganizerProfileUpdateManyWithoutApprovedByNestedInput
   uploadedEventMedia?: Prisma.EventMediaUpdateManyWithoutUploadedByNestedInput
   bookings?: Prisma.BookingUpdateManyWithoutUserNestedInput
@@ -1703,6 +1879,7 @@ export type UserUncheckedUpdateWithoutTicketVerificationsInput = {
   authLinks?: Prisma.AuthLinkUncheckedUpdateManyWithoutUserNestedInput
   activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutUserNestedInput
   organizerProfile?: Prisma.OrganizerProfileUncheckedUpdateOneWithoutUserNestedInput
+  organizerApplication?: Prisma.OrganizerApplicationUncheckedUpdateOneWithoutUserNestedInput
   approvedOrganizers?: Prisma.OrganizerProfileUncheckedUpdateManyWithoutApprovedByNestedInput
   uploadedEventMedia?: Prisma.EventMediaUncheckedUpdateManyWithoutUploadedByNestedInput
   bookings?: Prisma.BookingUncheckedUpdateManyWithoutUserNestedInput
@@ -1729,6 +1906,7 @@ export type UserCreateWithoutActivityLogsInput = {
   authLinks?: Prisma.AuthLinkCreateNestedManyWithoutUserInput
   ticketVerifications?: Prisma.TicketVerificationCreateNestedManyWithoutVerifiedByInput
   organizerProfile?: Prisma.OrganizerProfileCreateNestedOneWithoutUserInput
+  organizerApplication?: Prisma.OrganizerApplicationCreateNestedOneWithoutUserInput
   approvedOrganizers?: Prisma.OrganizerProfileCreateNestedManyWithoutApprovedByInput
   uploadedEventMedia?: Prisma.EventMediaCreateNestedManyWithoutUploadedByInput
   bookings?: Prisma.BookingCreateNestedManyWithoutUserInput
@@ -1755,6 +1933,7 @@ export type UserUncheckedCreateWithoutActivityLogsInput = {
   authLinks?: Prisma.AuthLinkUncheckedCreateNestedManyWithoutUserInput
   ticketVerifications?: Prisma.TicketVerificationUncheckedCreateNestedManyWithoutVerifiedByInput
   organizerProfile?: Prisma.OrganizerProfileUncheckedCreateNestedOneWithoutUserInput
+  organizerApplication?: Prisma.OrganizerApplicationUncheckedCreateNestedOneWithoutUserInput
   approvedOrganizers?: Prisma.OrganizerProfileUncheckedCreateNestedManyWithoutApprovedByInput
   uploadedEventMedia?: Prisma.EventMediaUncheckedCreateNestedManyWithoutUploadedByInput
   bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutUserInput
@@ -1797,6 +1976,7 @@ export type UserUpdateWithoutActivityLogsInput = {
   authLinks?: Prisma.AuthLinkUpdateManyWithoutUserNestedInput
   ticketVerifications?: Prisma.TicketVerificationUpdateManyWithoutVerifiedByNestedInput
   organizerProfile?: Prisma.OrganizerProfileUpdateOneWithoutUserNestedInput
+  organizerApplication?: Prisma.OrganizerApplicationUpdateOneWithoutUserNestedInput
   approvedOrganizers?: Prisma.OrganizerProfileUpdateManyWithoutApprovedByNestedInput
   uploadedEventMedia?: Prisma.EventMediaUpdateManyWithoutUploadedByNestedInput
   bookings?: Prisma.BookingUpdateManyWithoutUserNestedInput
@@ -1823,6 +2003,7 @@ export type UserUncheckedUpdateWithoutActivityLogsInput = {
   authLinks?: Prisma.AuthLinkUncheckedUpdateManyWithoutUserNestedInput
   ticketVerifications?: Prisma.TicketVerificationUncheckedUpdateManyWithoutVerifiedByNestedInput
   organizerProfile?: Prisma.OrganizerProfileUncheckedUpdateOneWithoutUserNestedInput
+  organizerApplication?: Prisma.OrganizerApplicationUncheckedUpdateOneWithoutUserNestedInput
   approvedOrganizers?: Prisma.OrganizerProfileUncheckedUpdateManyWithoutApprovedByNestedInput
   uploadedEventMedia?: Prisma.EventMediaUncheckedUpdateManyWithoutUploadedByNestedInput
   bookings?: Prisma.BookingUncheckedUpdateManyWithoutUserNestedInput
@@ -1944,6 +2125,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   ticketVerifications?: boolean | Prisma.User$ticketVerificationsArgs<ExtArgs>
   activityLogs?: boolean | Prisma.User$activityLogsArgs<ExtArgs>
   organizerProfile?: boolean | Prisma.User$organizerProfileArgs<ExtArgs>
+  organizerApplication?: boolean | Prisma.User$organizerApplicationArgs<ExtArgs>
   approvedOrganizers?: boolean | Prisma.User$approvedOrganizersArgs<ExtArgs>
   uploadedEventMedia?: boolean | Prisma.User$uploadedEventMediaArgs<ExtArgs>
   bookings?: boolean | Prisma.User$bookingsArgs<ExtArgs>
@@ -2012,6 +2194,7 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   ticketVerifications?: boolean | Prisma.User$ticketVerificationsArgs<ExtArgs>
   activityLogs?: boolean | Prisma.User$activityLogsArgs<ExtArgs>
   organizerProfile?: boolean | Prisma.User$organizerProfileArgs<ExtArgs>
+  organizerApplication?: boolean | Prisma.User$organizerApplicationArgs<ExtArgs>
   approvedOrganizers?: boolean | Prisma.User$approvedOrganizersArgs<ExtArgs>
   uploadedEventMedia?: boolean | Prisma.User$uploadedEventMediaArgs<ExtArgs>
   bookings?: boolean | Prisma.User$bookingsArgs<ExtArgs>
@@ -2029,6 +2212,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     ticketVerifications: Prisma.$TicketVerificationPayload<ExtArgs>[]
     activityLogs: Prisma.$ActivityLogPayload<ExtArgs>[]
     organizerProfile: Prisma.$OrganizerProfilePayload<ExtArgs> | null
+    organizerApplication: Prisma.$OrganizerApplicationPayload<ExtArgs> | null
     approvedOrganizers: Prisma.$OrganizerProfilePayload<ExtArgs>[]
     uploadedEventMedia: Prisma.$EventMediaPayload<ExtArgs>[]
     bookings: Prisma.$BookingPayload<ExtArgs>[]
@@ -2449,6 +2633,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   ticketVerifications<T extends Prisma.User$ticketVerificationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$ticketVerificationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TicketVerificationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   activityLogs<T extends Prisma.User$activityLogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$activityLogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ActivityLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   organizerProfile<T extends Prisma.User$organizerProfileArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$organizerProfileArgs<ExtArgs>>): Prisma.Prisma__OrganizerProfileClient<runtime.Types.Result.GetResult<Prisma.$OrganizerProfilePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  organizerApplication<T extends Prisma.User$organizerApplicationArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$organizerApplicationArgs<ExtArgs>>): Prisma.Prisma__OrganizerApplicationClient<runtime.Types.Result.GetResult<Prisma.$OrganizerApplicationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   approvedOrganizers<T extends Prisma.User$approvedOrganizersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$approvedOrganizersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrganizerProfilePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   uploadedEventMedia<T extends Prisma.User$uploadedEventMediaArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$uploadedEventMediaArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EventMediaPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   bookings<T extends Prisma.User$bookingsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$bookingsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -3025,6 +3210,25 @@ export type User$organizerProfileArgs<ExtArgs extends runtime.Types.Extensions.I
    */
   include?: Prisma.OrganizerProfileInclude<ExtArgs> | null
   where?: Prisma.OrganizerProfileWhereInput
+}
+
+/**
+ * User.organizerApplication
+ */
+export type User$organizerApplicationArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the OrganizerApplication
+   */
+  select?: Prisma.OrganizerApplicationSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the OrganizerApplication
+   */
+  omit?: Prisma.OrganizerApplicationOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.OrganizerApplicationInclude<ExtArgs> | null
+  where?: Prisma.OrganizerApplicationWhereInput
 }
 
 /**

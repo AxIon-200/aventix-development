@@ -3,7 +3,8 @@ import { isObject } from "./profile";
 
 const publicCodes: AuthErrorCode[] = ["INVALID_CREDENTIALS", "ACCOUNT_DISABLED", "EMAIL_VERIFICATION_REQUIRED",
   "TERMS_ACCEPTANCE_REQUIRED", "PASSWORD_RESET_REQUIRED", "AUTHENTICATION_REQUIRED", "VALIDATION_ERROR", "RATE_LIMITED",
-  "EMAIL_ALREADY_REGISTERED", "ACCOUNT_CREATED_EMAIL_FAILED", "TERMS_VERSION_OUTDATED", "CURRENT_PASSWORD_INCORRECT", "LINK_INVALID_OR_EXPIRED", "PASSWORD_REUSE"];
+  "EMAIL_ALREADY_REGISTERED", "ACCOUNT_CREATED_EMAIL_FAILED", "TERMS_VERSION_OUTDATED", "CURRENT_PASSWORD_INCORRECT", "LINK_INVALID_OR_EXPIRED", "PASSWORD_REUSE",
+  "ORGANIZATION_PENDING", "ORGANIZATION_REJECTED", "ORGANIZATION_SUSPENDED", "ORGANIZATION_UNAVAILABLE"];
 
 /** Decode only public envelopes. Provider messages and unknown field values never reach the UI. */
 export async function accountRequest(transport: typeof fetch, url: string, body?: Record<string, unknown>, cookie?: string, method: "POST" | "PATCH" = "POST"): Promise<unknown> {
@@ -33,6 +34,8 @@ export async function accountRequest(transport: typeof fetch, url: string, body?
       if (Object.hasOwn(supplied, "newPassword")) fields.newPassword = "Use 15–128 Unicode characters. Spaces are allowed.";
       if (Object.hasOwn(supplied, "firstName")) fields.firstName = "Use 1–100 Unicode characters for your first name.";
       if (Object.hasOwn(supplied, "lastName")) fields.lastName = "Use 1–100 Unicode characters for your last name.";
+      if (Object.hasOwn(supplied, "organizationName")) fields.organizationName = "Use 2–150 Unicode characters for the organization name.";
+      if (Object.hasOwn(supplied, "organizationDescription")) fields.organizationDescription = "Use 20–2,000 Unicode characters for the description.";
       if (Object.hasOwn(supplied, "phoneNumber")) fields.phoneNumber = "Use 09 plus nine digits or +639 plus nine digits, without spaces or hyphens.";
       if (Object.hasOwn(supplied, "termsAccepted") || Object.hasOwn(supplied, "termsVersion")) fields.terms = "Read and explicitly accept the current terms.";
     }

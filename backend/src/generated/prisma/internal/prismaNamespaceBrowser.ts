@@ -59,6 +59,7 @@ export const ModelName = {
   Account: 'Account',
   Verification: 'Verification',
   OrganizerProfile: 'OrganizerProfile',
+  OrganizerApplication: 'OrganizerApplication',
   Venue: 'Venue',
   Event: 'Event',
   EventMedia: 'EventMedia',
@@ -200,6 +201,24 @@ export const OrganizerProfileScalarFieldEnum = {
 } as const
 
 export type OrganizerProfileScalarFieldEnum = (typeof OrganizerProfileScalarFieldEnum)[keyof typeof OrganizerProfileScalarFieldEnum]
+
+
+export const OrganizerApplicationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  organizerProfileId: 'organizerProfileId',
+  firstName: 'firstName',
+  lastName: 'lastName',
+  email: 'email',
+  phoneNumber: 'phoneNumber',
+  organizationName: 'organizationName',
+  organizationDescription: 'organizationDescription',
+  termsVersion: 'termsVersion',
+  termsAcceptedAt: 'termsAcceptedAt',
+  submittedAt: 'submittedAt'
+} as const
+
+export type OrganizerApplicationScalarFieldEnum = (typeof OrganizerApplicationScalarFieldEnum)[keyof typeof OrganizerApplicationScalarFieldEnum]
 
 
 export const VenueScalarFieldEnum = {

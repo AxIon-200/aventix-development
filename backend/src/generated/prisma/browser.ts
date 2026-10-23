@@ -58,6 +58,11 @@ export type Verification = Prisma.VerificationModel
  */
 export type OrganizerProfile = Prisma.OrganizerProfileModel
 /**
+ * Model OrganizerApplication
+ *
+ */
+export type OrganizerApplication = Prisma.OrganizerApplicationModel
+/**
  * Model Venue
  * 
  */

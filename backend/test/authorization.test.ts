@@ -37,6 +37,9 @@ async function identity(role: typeof roles[number]) {
   await prisma.user.create({ data: { id, email, name: "Role Owner", firstName: "Role", lastName: "Owner",
     role, emailVerified: true, termsVersion: terms.version, termsAcceptedAt: options.now(),
     accounts: { create: { accountId: id, providerId: "credential", password: await hashExactPassword(password) } } } });
+  if (role === "ORGANIZER") await prisma.organizerProfile.create({ data: {
+    userId: id, organizationName: "Controlled approved organizer", approvalStatus: "APPROVED",
+  } });
   return { id, email };
 }
 
@@ -49,8 +52,19 @@ async function login(app: ReturnType<typeof createApp>, email: string) {
 
 afterEach(() => vi.useRealTimers());
 afterAll(async () => {
+  await prisma.organizerProfile.deleteMany({ where: { user: { email: { in: emails } } } });
   await prisma.user.deleteMany({ where: { email: { in: emails } } });
   await prisma.authRateLimit.deleteMany({ where: { expiresAt: { gte: new Date("2098-01-01"), lt: new Date("2098-02-01") } } });
+});
+
+it("fails closed when an organizer has no organization profile", async () => {
+  const app = fixtureApp();
+  const owner = await identity("ORGANIZER");
+  await prisma.organizerProfile.delete({ where: { userId: owner.id } });
+  const denied = await post(app, "/login", { email: owner.email, password });
+  expect(denied.status).toBe(403);
+  expect(denied.body.error.code).toBe("ORGANIZATION_UNAVAILABLE");
+  expect(denied.headers["set-cookie"]).toBeUndefined();
 });
 
 it.each(roles)("enforces every explicit role pair and shared self-service for %s", async role => {
