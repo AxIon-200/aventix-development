@@ -6,7 +6,7 @@ export default function ConnectionTestPage() {
   const [result, setResult] = useState("Connecting...");
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/v1/health")
+    fetch("/api/v1/health", { credentials: "include", cache: "no-store" })
       .then(async (response) => {
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);

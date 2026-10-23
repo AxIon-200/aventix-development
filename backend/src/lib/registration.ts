@@ -143,7 +143,7 @@ export function registrationPlugin(options: RegistrationOptions) {
           return errorResponse(500, "INTERNAL_ERROR", "Request could not be completed");
         }
         try {
-          await options.sendVerificationEmail({ to: body.email, url: verificationUrl(ctx.context.options.baseURL as string, token) });
+          await options.sendVerificationEmail({ to: body.email, url: verificationUrl(token) });
         } catch {
           console.error("Verification email delivery failed", { correlationId: randomUUID() });
           return errorResponse(503, "ACCOUNT_CREATED_EMAIL_FAILED",

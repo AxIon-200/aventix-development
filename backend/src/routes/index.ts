@@ -1,19 +1,15 @@
 import { Router } from "express";
 import healthRouter from "./health.routes.js";
 import guestRouter from "./guest.routes.js";
-import attendeeRouter from "./attendee.routes.js";
-import organizerRouter from "./organizer.routes.js";
-import adminRouter from "./admin.routes.js";
 
 const router = Router();
 
 // Health check
 router.use("/health", healthRouter);
 
-// Role-based API routing
+// Public browsing remains separate from the account integration.
 router.use("/guest", guestRouter);
-router.use("/attendee", attendeeRouter);
-router.use("/organizer", organizerRouter);
-router.use("/admin", adminRouter);
+// Business routers are unfinished stubs. Mount them only in their later slices,
+// with live account eligibility, exact roles, and resource ownership checks.
 
 export default router;

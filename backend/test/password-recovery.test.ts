@@ -294,6 +294,23 @@ describe("Password recovery", { timeout: 60_000 }, () => {
     expect((await post(f.app, "/login", { email: f.email, password: replacement })).status).toBe(200);
   });
 
+  it("clears another account's browser cookie without revoking that account's devices", async () => {
+    const target = await fixture(true);
+    const other = await fixture(true);
+    const targetCookie = cookieFrom(await post(target.app, "/login", { email: target.email, password }));
+    const browserCookie = cookieFrom(await post(other.app, "/login", { email: other.email, password }));
+    const otherDevice = cookieFrom(await post(other.app, "/login", { email: other.email, password }));
+    await post(target.app, "/request-password-reset", { email: target.email });
+    const result = await post(target.app, "/reset-password", { token: tokenFrom(target.recovery[0]!), newPassword: replacement }).set("Cookie", browserCookie);
+    expect(result.body).toEqual({ data: { passwordReset: true } });
+    expect(result.headers["set-cookie"]).toContainEqual(expect.stringMatching(/^better-auth\.session_token=;.*Max-Age=0/));
+    expect((await me(target.app, targetCookie)).status).toBe(401);
+    expect((await me(other.app, otherDevice)).body.data.user.id).toBe(other.user.id);
+    // Only the browser cookie is cleared; resetting another identity does not revoke this identity's sessions.
+    expect((await me(other.app, browserCookie)).status).toBe(200);
+    expect((await request(other.app).get("/api/v1/me")).status).toBe(401);
+  });
+
   it("recovers an unverified owner without verifying them and preserves verification with the new password", async () => {
     const f = await fixture();
     const requested = await post(f.app, "/request-password-reset", { email: ` ${f.email.toUpperCase()} ` });
@@ -367,7 +384,7 @@ describe("Recovery HTTP policy", () => {
     expect((await post(app, "/reset-password", {})).status).toBe(429);
   });
 
-  it("uses a fixed read-only landing destination and enforces the replacement through Better Auth's HTTP handler", async () => {
+  it("uses the fixed frontend destination and enforces the replacement through Better Auth's HTTP handler", async () => {
     const f = await fixture();
     const auth = createAuth(f.options);
     const send = (path: string, body: unknown) => auth.handler(new Request(`${process.env.BETTER_AUTH_URL}/api/auth${path}`, {
@@ -379,15 +396,22 @@ describe("Recovery HTTP policy", () => {
     expect(await result.json()).toEqual(generic);
     expect(f.recovery).toHaveLength(1);
     const destination = new URL(f.recovery[0]!.url);
-    expect(destination.origin).toBe(new URL(process.env.BETTER_AUTH_URL!).origin);
-    expect(destination.pathname).toBe("/api/auth/password-reset");
+    expect(destination.origin).toBe(new URL(process.env.FRONTEND_URL!).origin);
+    expect(destination.pathname).toBe("/reset-password");
     expect(destination.search).toBe("");
-    const landing = await request(f.app).get(destination.pathname);
+    const landing = await request(f.app).get("/api/auth/password-reset?callbackURL=https://evil.example");
     expect(landing.status).toBe(200);
     expect(landing.headers["cache-control"]).toBe("no-store");
     expect(landing.headers["referrer-policy"]).toBe("no-referrer");
     expect(landing.headers["set-cookie"]).toBeUndefined();
-    expect((await request(f.app).post(destination.pathname).send({})).status).toBe(405);
+    expect(landing.type).toBe("text/html");
+    expect(landing.headers["content-security-policy"]).toContain("default-src 'none'");
+    expect(landing.headers.location).toBeUndefined();
+    expect(landing.text).toContain("Continue to password reset");
+    expect(landing.text).toContain(new URL("/reset-password", process.env.FRONTEND_URL!).href);
+    expect(landing.text).not.toContain("evil.example");
+    expect(landing.text).not.toMatch(/<(?:script|link|img)[^>]+(?:src|href)=/i);
+    expect((await request(f.app).post("/api/auth/password-reset").send({})).status).toBe(405);
     expect((await auth.handler(new Request(`${process.env.BETTER_AUTH_URL}/api/auth/reset-password?token=fixture`))).status).toBe(405);
     const wrongPurpose = await send("/reset-password", { token: tokenFrom(f.verification[0]!), newPassword: replacement });
     expect(await wrongPurpose.json()).toEqual(invalidLink);

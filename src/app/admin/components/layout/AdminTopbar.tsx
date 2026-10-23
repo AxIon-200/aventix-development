@@ -6,7 +6,6 @@ import Link from "next/link";
 import { Search, X, Menu } from "lucide-react";
 import { NotificationBell } from "@/app/admin/components/ui/NotificationBell";
 import { getProfile } from "@/app/admin/services/profileService";
-import RoleDropdownSwitcher from "@/components/shared/RoleDropdownSwitcher";
 
 type AdminTopbarProps = {
   adminName?: string;
@@ -154,7 +153,6 @@ export function AdminTopbar({
       {/* Right Controls */}
       <div className="flex items-center gap-2 sm:gap-3">
         {/* Demo Role Switcher */}
-        <RoleDropdownSwitcher compact />
 
         {/* Expandable Search */}
         <div

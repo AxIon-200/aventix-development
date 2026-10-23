@@ -12,6 +12,7 @@ import { env } from "./config/env.js";
 import { loadCurrentTerms } from "./config/terms.js";
 import type { CurrentTerms } from "./config/terms.js";
 import { claimAuthIp, positiveLimit } from "./lib/auth-rate-limit.js";
+import { verificationLanding, passwordResetLanding } from "./lib/verification-landing.js";
 
 export interface AppOptions {
   terms?: CurrentTerms;
@@ -69,10 +70,9 @@ export function createApp(options: AppOptions = {}) {
         res.set("Allow", "GET").status(405).json({ error: { code: "METHOD_NOT_ALLOWED", message: "Method is not allowed" } });
         return;
       }
-      res.set("Referrer-Policy", "no-referrer").type("text/plain").send(
-        path === "/api/auth/verification"
-          ? "Submit the token from this link's fragment and your currentPassword as JSON to POST /api/auth/verify-email. Verification never signs you in."
-          : "Submit the token from this link's fragment and your newPassword as JSON to POST /api/auth/reset-password. Reset never signs you in.");
+      const landing = path === "/api/auth/verification" ? verificationLanding : passwordResetLanding;
+      res.set({ "Referrer-Policy": "no-referrer", "Content-Security-Policy": landing.policy,
+        "X-Content-Type-Options": "nosniff" }).type("html").send(landing.html);
       return;
     }
     if (!path || !Object.hasOwn(mutationLimits, path)) {

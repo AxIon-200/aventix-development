@@ -1,0 +1,86 @@
+[
+    {
+        "draft":  1,
+        "number":  107,
+        "id":  5946217865,
+        "title":  "S01: Connect sign-in, current-account navigation, and sign-out",
+        "url":  "https://github.com/AxIon-200/aventix-development/issues/107",
+        "blockers":  [
+
+                     ]
+    },
+    {
+        "draft":  2,
+        "number":  108,
+        "id":  5946218745,
+        "title":  "S01: Keep account identity current across navigation and tabs",
+        "url":  "https://github.com/AxIon-200/aventix-development/issues/108",
+        "blockers":  [
+                         1
+                     ]
+    },
+    {
+        "draft":  3,
+        "number":  109,
+        "id":  5946219749,
+        "title":  "S01: Protect all role workspaces and replace personal sample content",
+        "url":  "https://github.com/AxIon-200/aventix-development/issues/109",
+        "blockers":  [
+                         1
+                     ]
+    },
+    {
+        "draft":  4,
+        "number":  110,
+        "id":  5946220985,
+        "title":  "S01: Register an attendee with explicit current terms",
+        "url":  "https://github.com/AxIon-200/aventix-development/issues/110",
+        "blockers":  [
+                         1
+                     ]
+    },
+    {
+        "draft":  5,
+        "number":  111,
+        "id":  5946222122,
+        "title":  "S01: Complete password-gated email verification and resend",
+        "url":  "https://github.com/AxIon-200/aventix-development/issues/111",
+        "blockers":  [
+                         1
+                     ]
+    },
+    {
+        "draft":  6,
+        "number":  112,
+        "id":  5946223347,
+        "title":  "S01: Recover a password and enforce reset sign-out effects",
+        "url":  "https://github.com/AxIon-200/aventix-development/issues/112",
+        "blockers":  [
+                         1
+                     ]
+    },
+    {
+        "draft":  7,
+        "number":  113,
+        "id":  5946224566,
+        "title":  "S01: Complete missing legacy consent through a dedicated terms page",
+        "url":  "https://github.com/AxIon-200/aventix-development/issues/113",
+        "blockers":  [
+                         4,
+                         6
+                     ]
+    },
+    {
+        "draft":  8,
+        "number":  114,
+        "id":  5946225995,
+        "title":  "S01: Verify the joined S01 localhost account journey",
+        "url":  "https://github.com/AxIon-200/aventix-development/issues/114",
+        "blockers":  [
+                         2,
+                         3,
+                         5,
+                         7
+                     ]
+    }
+]

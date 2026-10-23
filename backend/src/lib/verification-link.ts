@@ -1,5 +1,6 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type { DBTransactionAdapter } from "@better-auth/core/db/adapter";
+import { env } from "../config/env.js";
 
 export async function issueVerificationLink(tx: DBTransactionAdapter, userId: string, now: Date) {
   const token = randomBytes(32).toString("base64url");
@@ -11,8 +12,8 @@ export async function issueVerificationLink(tx: DBTransactionAdapter, userId: st
   return token;
 }
 
-export function verificationUrl(baseURL: string, token: string) {
-  const url = new URL("/api/auth/verification", baseURL);
+export function verificationUrl(token: string) {
+  const url = new URL("/verify-email", env.FRONTEND_URL);
   url.hash = new URLSearchParams({ token }).toString();
   return url.href;
 }

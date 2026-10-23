@@ -7,6 +7,7 @@ import type { RegistrationOptions } from "./registration.js";
 import { withAccountLock } from "./account-lifecycle.js";
 import { errorResponse } from "./auth-response.js";
 import { sendPasswordResetEmail } from "./password-reset-email.js";
+import { env } from "../config/env.js";
 
 const requestInput = z.object({ email: z.string().trim().toLowerCase().pipe(z.email()) }).strict();
 const resetInput = z.object({
@@ -56,7 +57,7 @@ export function recoveryEndpoints(options: RegistrationOptions) {
         return errorResponse(500, "INTERNAL_ERROR", "Request could not be completed");
       }
       if (token) {
-        const url = new URL("/api/auth/password-reset", ctx.context.options.baseURL as string);
+        const url = new URL("/reset-password", env.FRONTEND_URL);
         url.hash = new URLSearchParams({ token }).toString();
         try { await (options.sendPasswordResetEmail ?? sendPasswordResetEmail)({ to: email, url: url.href }); }
         catch { console.error("Password reset email delivery failed", { correlationId: randomUUID() }); }

@@ -9,7 +9,8 @@ import AccountMenu from "./auth/AccountMenu";
 import { useAccountSession } from "./auth/useAccountSession";
 import { publicAuthClient } from "@/lib/auth/client";
 import AventixLogo from "./AventixLogo";
-import RoleDropdownSwitcher from "./shared/RoleDropdownSwitcher";
+import AccountGate from "./auth/AccountGate";
+import SignOutButton from "./auth/SignOutButton";
 import { Menu, X } from "lucide-react";
 
 interface NavbarProps {
@@ -35,7 +36,7 @@ const pillButton =
   "inline-flex items-center justify-center rounded-full bg-[#66fcf1] px-5 py-2 text-sm font-semibold text-[#0b0c10] shadow-glow transition hover:bg-[#8afff6] hover:scale-105 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#66fcf1]";
 
 export default function Navbar({ onOpenAuth, onSearch, searchEvents }: NavbarProps) {
-  const { session, clearSession } = useAccountSession();
+  const { session, clearSession, loading, unavailable, error, retry } = useAccountSession();
   const pathname = usePathname() || "";
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
@@ -65,6 +66,12 @@ export default function Navbar({ onOpenAuth, onSearch, searchEvents }: NavbarPro
         {label}
       </Link>
     );
+
+  const accountControls = loading ? <span role="status">Checking account…</span>
+    : unavailable ? <div className="max-w-64 text-xs">
+      <AccountGate code={error ?? "UNAVAILABLE"} />
+      {error === "LOGOUT_UNCERTAIN" ? <SignOutButton>Retry sign-out</SignOutButton> : <button type="button" onClick={retry}>Retry account check</button>}
+    </div> : session ? <AccountMenu session={session} client={publicAuthClient} onLoggedOut={clearSession} /> : null;
 
   return (
     <header
@@ -112,11 +119,8 @@ export default function Navbar({ onOpenAuth, onSearch, searchEvents }: NavbarPro
           })}
         </nav>
 
-        {/* Right Actions: Role Selector, Search, Auth */}
+        {/* Search and account controls */}
         <div className="hidden items-center gap-3 xl:flex">
-          {/* Demo Role Switcher */}
-          <RoleDropdownSwitcher />
-
           {/* Search field */}
           <EventSearchField
             events={searchEvents}
@@ -125,9 +129,7 @@ export default function Navbar({ onOpenAuth, onSearch, searchEvents }: NavbarPro
           />
 
           {/* Auth Controls */}
-          {session ? (
-            <AccountMenu session={session} client={publicAuthClient} onLoggedOut={clearSession} />
-          ) : (
+          {accountControls ?? (
             <div className="flex items-center gap-2">
               {authControl("login", "Log in", pillButton)}
               {authControl("register", "Register", pillButton)}
@@ -137,7 +139,6 @@ export default function Navbar({ onOpenAuth, onSearch, searchEvents }: NavbarPro
 
         {/* Mobile Menu Button */}
         <div className="flex items-center gap-2 xl:hidden">
-          <RoleDropdownSwitcher compact />
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -189,9 +190,7 @@ export default function Navbar({ onOpenAuth, onSearch, searchEvents }: NavbarPro
             })}
           </div>
           <div className="flex gap-2 pt-2 border-t border-white/10">
-            {session ? (
-              <AccountMenu session={session} client={publicAuthClient} onLoggedOut={clearSession} />
-            ) : (
+            {accountControls ?? (
               <>
                 {authControl("login", "Log in", `${pillButton} flex-1`, () =>
                   setMobileMenuOpen(false)

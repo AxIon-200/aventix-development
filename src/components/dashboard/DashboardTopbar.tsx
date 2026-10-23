@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Search, X, Compass, Menu } from "lucide-react";
 import { NotificationBell } from "@/app/admin/components/ui/NotificationBell";
-import RoleDropdownSwitcher from "@/components/shared/RoleDropdownSwitcher";
 
 type DashboardTopbarProps = {
   attendeeName?: string;
@@ -64,7 +63,6 @@ export default function DashboardTopbar({
       {/* Right Controls */}
       <div className="flex items-center gap-2 sm:gap-3">
         {/* Demo Role Switcher */}
-        <RoleDropdownSwitcher compact />
 
         {/* Expandable Search */}
         <div

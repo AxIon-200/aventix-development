@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import { AttendeeService } from "../services/attendee.service.js";
 
 export const getAttendeeDashboard = async (req: Request, res: Response) => {

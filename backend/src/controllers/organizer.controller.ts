@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import { OrganizerService } from "../services/organizer.service.js";
 
 export const getOrganizerDashboard = async (req: Request, res: Response) => {

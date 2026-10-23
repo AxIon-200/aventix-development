@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import { GuestService } from "../services/guest.service.js";
 
 export const getPublicEvents = async (req: Request, res: Response) => {
