@@ -1,17 +1,36 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { authErrorMessage, AuthClientError, publicAuthClient, type AccountSession, type AuthErrorCode, type PersonalAccountProfile } from "@/lib/auth/client";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { authErrorMessage, AuthClientError, publicAuthClient, type AccountSession, type AuthErrorCode, type PersonalAccountProfile, type ProfileChanges } from "@/lib/auth/client";
+import { nameError, validPhone } from "@/lib/auth/validation";
 import AccountGate from "./AccountGate";
+import FormField, { submitClass } from "./FormField";
 
 const returnTo = "/dashboard/profile";
+type Draft = { firstName: string; lastName: string; phoneNumber: string };
+const fromProfile = (profile: PersonalAccountProfile): Draft => ({
+  firstName: profile.firstName, lastName: profile.lastName, phoneNumber: profile.phoneNumber ?? "",
+});
+const changedFields = (saved: PersonalAccountProfile, draft: Draft): ProfileChanges => ({
+  ...(draft.firstName.trim() !== saved.firstName ? { firstName: draft.firstName.trim() } : {}),
+  ...(draft.lastName.trim() !== saved.lastName ? { lastName: draft.lastName.trim() } : {}),
+  ...(draft.phoneNumber !== (saved.phoneNumber ?? "") ? { phoneNumber: draft.phoneNumber === "" ? null : draft.phoneNumber } : {}),
+});
 
 export default function AttendeeProfile({ session, onAccessRejected }: {
   session: AccountSession; onAccessRejected: (code: AuthErrorCode, expectedUserId: string) => void;
 }) {
-  const [profile, setProfile] = useState<PersonalAccountProfile | null>(null);
+  const [saved, setSaved] = useState<PersonalAccountProfile | null>(null);
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const draftRef = useRef<Draft | null>(null);
+  const savedRef = useRef<PersonalAccountProfile | null>(null);
   const [error, setError] = useState<AuthClientError | null>(null);
+  const [saveError, setSaveError] = useState<AuthClientError | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const saving = useRef(false);
   const [revision, setRevision] = useState(0);
 
   useEffect(() => {
@@ -21,7 +40,19 @@ export default function AttendeeProfile({ session, onAccessRejected }: {
         if (!publicAuthClient.getProfile) throw new AuthClientError("UNAVAILABLE");
         const current = await publicAuthClient.getProfile();
         if (current.id !== session.userId || current.role !== "ATTENDEE") throw new AuthClientError("INVALID_RESPONSE");
-        if (active) setProfile(current);
+        if (active) {
+          const previous = savedRef.current;
+          const currentDraft = draftRef.current;
+          const dirty = previous && currentDraft && Object.keys(changedFields(previous, currentDraft)).length > 0;
+          savedRef.current = current;
+          setSaved(current);
+          if (!dirty) {
+            const next = fromProfile(current);
+            draftRef.current = next;
+            setDraft(next);
+          }
+          setError(null);
+        }
       } catch (cause) {
         if (active) {
           const issue = cause instanceof AuthClientError ? cause : new AuthClientError("UNAVAILABLE");
@@ -38,11 +69,73 @@ export default function AttendeeProfile({ session, onAccessRejected }: {
   }, [session.userId, onAccessRejected, revision]);
 
   const refresh = () => {
-    setProfile(null);
     setError(null);
     setLoading(true);
     setRevision(value => value + 1);
   };
+  const edit = (field: keyof Draft, value: string) => {
+    setDraft(previous => {
+      if (!previous) return previous;
+      const next = { ...previous, [field]: value };
+      draftRef.current = next;
+      return next;
+    });
+    setFieldErrors(previous => ({ ...previous, [field]: "" }));
+    setSaveError(null);
+    setMessage("");
+  };
+  const discard = () => {
+    if (!saved || busy) return;
+    const next = fromProfile(saved);
+    draftRef.current = next;
+    setDraft(next);
+    setFieldErrors({});
+    setSaveError(null);
+    setMessage("");
+  };
+  const changes = saved && draft ? changedFields(saved, draft) : {};
+  const dirty = Object.keys(changes).length > 0;
+
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (saving.current || !saved || !draft || !dirty || !publicAuthClient.updateProfile) return;
+    const nextErrors: Record<string, string> = {};
+    for (const field of ["firstName", "lastName"] as const) {
+      const issue = nameError(draft[field]);
+      if (issue) nextErrors[field] = issue;
+    }
+    if (draft.phoneNumber !== "" && !validPhone(draft.phoneNumber)) {
+      nextErrors.phoneNumber = "Use 09 plus nine digits or +639 plus nine digits, without spaces or hyphens.";
+    }
+    setFieldErrors(nextErrors);
+    setSaveError(null);
+    setMessage("");
+    if (Object.keys(nextErrors).length > 0) {
+      event.currentTarget.querySelector<HTMLElement>(Object.keys(nextErrors).map(field => `[name="${field}"]`).join(","))?.focus();
+      return;
+    }
+    saving.current = true;
+    setBusy(true);
+    try {
+      const current = await publicAuthClient.updateProfile(changes);
+      if (current.id !== saved.id || current.role !== saved.role || current.email !== saved.email) {
+        throw new AuthClientError("REQUEST_UNCERTAIN");
+      }
+      savedRef.current = current;
+      setSaved(current);
+      const accepted = fromProfile(current);
+      draftRef.current = accepted;
+      setDraft(accepted);
+      setMessage("Your personal account profile was saved.");
+    } catch (cause) {
+      const issue = cause instanceof AuthClientError ? cause : new AuthClientError("REQUEST_UNCERTAIN");
+      setFieldErrors(issue.fieldErrors);
+      setSaveError(issue);
+    } finally {
+      saving.current = false;
+      setBusy(false);
+    }
+  }
 
   return <section aria-labelledby="personal-profile-title" className="rounded-2xl border border-slate-700 bg-[#151b23] p-5 sm:p-8">
     <div className="flex flex-wrap items-start justify-between gap-4">
@@ -50,18 +143,28 @@ export default function AttendeeProfile({ session, onAccessRejected }: {
         <h2 id="personal-profile-title" className="text-xl font-semibold sm:text-2xl">Personal account profile</h2>
         <p className="mt-2 text-sm text-slate-300">Details for the attendee account you are using now.</p>
       </div>
-      {!loading && <button type="button" onClick={refresh} className="rounded-lg border border-[#66fcf1] px-4 py-2 text-sm font-medium text-[#66fcf1] hover:bg-[#66fcf1]/10">Refresh details</button>}
+      {!loading && <button type="button" onClick={refresh} disabled={busy} className="rounded-lg border border-[#66fcf1] px-4 py-2 text-sm font-medium text-[#66fcf1] hover:bg-[#66fcf1]/10 disabled:opacity-50">Refresh details</button>}
     </div>
-    {loading ? <p role="status" className="mt-8 text-slate-300">Loading your personal account profile…</p>
-      : error ? <div className="mt-6 space-y-3">
-        <AccountGate code={error.code} returnTo={returnTo} />
-        {error.code === "INVALID_RESPONSE" && <p className="text-sm text-slate-300">We could not confirm that these details belong to your current account.</p>}
+    {loading && !saved ? <p role="status" className="mt-8 text-slate-300">Loading your personal account profile…</p> : null}
+    {error && <div className="mt-6 space-y-3" role="alert">
+      <AccountGate code={error.code} returnTo={returnTo} />
+      {error.code === "INVALID_RESPONSE" && <p className="text-sm text-slate-300">We could not confirm that these details belong to your current account.</p>}
+    </div>}
+    {!loading && !error && saved && draft && <form onSubmit={save} noValidate aria-busy={busy} className="mt-8 space-y-6">
+      <fieldset disabled={busy} className="grid gap-5 sm:grid-cols-2">
+        <FormField name="firstName" label="First name" autoComplete="given-name" value={draft.firstName} onChange={event => edit("firstName", event.target.value)} error={fieldErrors.firstName} required />
+        <FormField name="lastName" label="Last name" autoComplete="family-name" value={draft.lastName} onChange={event => edit("lastName", event.target.value)} error={fieldErrors.lastName} required />
+        <div className="min-w-0"><p className="mb-2 text-[13px] font-semibold text-[#c5c6c7]">Email address (read only)</p><p className="break-all text-base">{saved.email}</p></div>
+        <FormField name="phoneNumber" label="Phone number (optional)" type="tel" autoComplete="tel" value={draft.phoneNumber} onChange={event => edit("phoneNumber", event.target.value)} error={fieldErrors.phoneNumber} hint="Use 09 plus nine digits or +639 plus nine digits. Clear this field to remove your phone number." />
+      </fieldset>
+      <p className="text-sm text-slate-300">Saved name: <strong className="break-words text-white">{saved.name}</strong></p>
+      {saveError && <p role="alert" className="rounded-lg border border-red-400/30 p-3 text-sm text-red-200">{saveError.code === "REQUEST_UNCERTAIN" ? "We could not confirm whether your changes were saved. Your draft is still here. Refresh your details before choosing whether to save again." : authErrorMessage(saveError)}</p>}
+      {message && <p role="status" className="text-sm text-[#66fcf1]">{message}</p>}
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <button type="submit" disabled={!dirty || busy || !publicAuthClient.updateProfile} className={`${submitClass} sm:w-auto`}>{busy ? "Saving…" : "Save changes"}</button>
+        <button type="button" onClick={discard} disabled={!dirty || busy} className="min-h-11 rounded-full border border-slate-500 px-6 py-2.5 text-sm font-semibold text-white disabled:opacity-50">Discard changes</button>
       </div>
-      : profile ? <dl className="mt-8 grid gap-6 sm:grid-cols-2">
-        <div className="min-w-0"><dt className="text-sm text-slate-400">First name</dt><dd className="mt-1 break-words text-lg font-medium">{profile.firstName}</dd></div>
-        <div className="min-w-0"><dt className="text-sm text-slate-400">Last name</dt><dd className="mt-1 break-words text-lg font-medium">{profile.lastName}</dd></div>
-        <div className="min-w-0"><dt className="text-sm text-slate-400">Email address <span className="text-xs">(read only)</span></dt><dd className="mt-1 break-all text-lg font-medium">{profile.email}</dd></div>
-        <div className="min-w-0"><dt className="text-sm text-slate-400">Phone number</dt><dd className="mt-1 break-words text-lg font-medium">{profile.phoneNumber ?? "Not provided"}</dd></div>
-      </dl> : <p role="alert" className="mt-6 text-amber-200">{authErrorMessage(new AuthClientError("UNAVAILABLE"))}</p>}
+    </form>}
+    {!loading && !saved && !error && <p role="alert" className="mt-6 text-amber-200">{authErrorMessage(new AuthClientError("UNAVAILABLE"))}</p>}
   </section>;
 }

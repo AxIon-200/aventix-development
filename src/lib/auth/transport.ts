@@ -6,12 +6,12 @@ const publicCodes: AuthErrorCode[] = ["INVALID_CREDENTIALS", "ACCOUNT_DISABLED",
   "EMAIL_ALREADY_REGISTERED", "ACCOUNT_CREATED_EMAIL_FAILED", "TERMS_VERSION_OUTDATED", "CURRENT_PASSWORD_INCORRECT", "LINK_INVALID_OR_EXPIRED", "PASSWORD_REUSE"];
 
 /** Decode only public envelopes. Provider messages and unknown field values never reach the UI. */
-export async function accountRequest(transport: typeof fetch, url: string, body?: Record<string, unknown>, cookie?: string): Promise<unknown> {
+export async function accountRequest(transport: typeof fetch, url: string, body?: Record<string, unknown>, cookie?: string, method: "POST" | "PATCH" = "POST"): Promise<unknown> {
   const mutation = body !== undefined;
   let response: Response;
   try {
     response = await transport(url, {
-      method: mutation ? "POST" : "GET", credentials: "include", cache: "no-store", redirect: "error",
+      method: mutation ? method : "GET", credentials: "include", cache: "no-store", redirect: "error",
       headers: { Accept: "application/json", ...(mutation ? { "Content-Type": "application/json" } : {}), ...(cookie ? { Cookie: cookie } : {}) },
       ...(mutation ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(15000),
     });

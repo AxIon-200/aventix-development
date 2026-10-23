@@ -16,6 +16,7 @@ export type PersonalAccountProfile = {
   id: string; firstName: string; lastName: string; name: string;
   email: string; phoneNumber: string | null; role: AccountRole;
 };
+export type ProfileChanges = Partial<Pick<PersonalAccountProfile, "firstName" | "lastName" | "phoneNumber">>;
 export interface AccountSession {
   userId: string;
   role: AccountRole;
@@ -30,6 +31,7 @@ export type { AuthErrorCode } from "./errors";
 export interface PublicAuthClient {
   getSession?: () => Promise<AccountSession | null>;
   getProfile?: () => Promise<PersonalAccountProfile>;
+  updateProfile?: (changes: ProfileChanges) => Promise<PersonalAccountProfile>;
   logout?: () => Promise<void>;
   passwordRules?: { description: string; validate: (password: string) => string | undefined };
   login?: (data: { email: string; password: string }) => Promise<AuthResult>;

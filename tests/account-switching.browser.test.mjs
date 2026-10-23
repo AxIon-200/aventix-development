@@ -22,7 +22,11 @@ test('account identity stays current and account switching preserves safe bookin
     emailVerified: true, termsVersion: 'fixture-terms',
     termsAcceptedAt: '2026-01-01T00:00:00.000Z',
     createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z',
+    ...savedProfiles.get(id),
   });
+  const savedProfiles = new Map();
+  const profilePatches = [];
+  let profilePatchMode = 'confirmed';
   let logoutMode = 'confirmed';
   let loginRole = 'ATTENDEE';
   let currentRole = 'ATTENDEE';
@@ -39,6 +43,28 @@ test('account identity stays current and account switching preserves safe bookin
     response.setHeader('Cache-Control', 'no-store');
     const account = /fixture-account=(old|new)/.exec(request.headers.cookie ?? '')?.[1];
     if (request.url === '/api/v1/me') {
+      if (request.method === 'PATCH') {
+        let body = '';
+        for await (const chunk of request) body += chunk;
+        const changes = JSON.parse(body);
+        profilePatches.push(changes);
+        if (profilePatchMode === 'rejected') {
+          response.statusCode = 400;
+          response.end(JSON.stringify({ error: { code: 'VALIDATION_ERROR', fields: { phoneNumber: 'private' } } }));
+          return;
+        }
+        const previous = profile(account);
+        const next = { ...previous, ...changes,
+          firstName: changes.firstName ?? previous.firstName,
+          lastName: changes.lastName ?? previous.lastName,
+          phoneNumber: changes.phoneNumber === undefined ? previous.phoneNumber : changes.phoneNumber };
+        next.name = `${next.firstName} ${next.lastName}`;
+        if (next.phoneNumber?.startsWith('09')) next.phoneNumber = `+63${next.phoneNumber.slice(1)}`;
+        savedProfiles.set(account, next);
+        if (profilePatchMode === 'lost') { request.socket.destroy(); return; }
+        response.end(JSON.stringify({ data: { user: next } }));
+        return;
+      }
       const result = accountResponse ?? { status: account ? 200 : 401, body: account
         ? { data: { user: profile(account, account === 'new' ? loginRole : currentRole) } }
         : { error: { code: 'AUTHENTICATION_REQUIRED' } } };
@@ -211,8 +237,8 @@ test('account identity stays current and account switching preserves safe bookin
     await until(() => evaluate(`(document.body?.innerText ?? '').includes('Loading your personal account profile')`), 'profile loading state');
     holdAccountReads = false;
     while (delayedAccountReads.length) delayedAccountReads.shift()();
-    await until(() => evaluate(`(document.body?.innerText ?? '').includes('+639171234567')`), 'live attendee profile');
-    assert.equal(await evaluate(`Array.from(document.querySelectorAll('dt')).map(item => item.textContent.trim()).join('|')`), 'First name|Last name|Email address (read only)|Phone number');
+    await until(() => evaluate(`document.querySelector('input[name="phoneNumber"]')?.value === '+639171234567'`), 'live attendee profile');
+    assert.equal(await evaluate(`Array.from(document.querySelectorAll('input[name="firstName"], input[name="lastName"], input[name="phoneNumber"]')).map(item => item.value).join('|')`), 'Fixture|old|+639171234567');
     assert.equal(await evaluate(`(document.body?.innerText ?? '').includes('old@example.invalid')`), true);
     assert.equal(await evaluate(`Boolean(document.querySelector('input[name="email"]'))`), false);
     await cdp.send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: 1, mobile: true });
@@ -220,13 +246,12 @@ test('account identity stays current and account switching preserves safe bookin
     await evaluate(`Array.from(document.querySelectorAll('button')).find(button => button.textContent.trim() === 'Refresh details').focus()`);
     assert.equal(await evaluate(`document.activeElement?.textContent.trim()`), 'Refresh details');
     holdAccountReads = true;
-    await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
-    await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+    await click('Refresh details');
     await until(() => delayedAccountReads.length > 0, 'keyboard profile refresh');
     assert.equal(await evaluate(`(document.body?.innerText ?? '').includes('old@example.invalid')`), false);
     holdAccountReads = false;
     while (delayedAccountReads.length) delayedAccountReads.shift()();
-    await until(() => evaluate(`(document.body?.innerText ?? '').includes('+639171234567')`), 'refreshed profile');
+    await until(() => evaluate(`document.querySelector('input[name="phoneNumber"]')?.value === '+639171234567'`), 'refreshed profile');
     await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
 
     await cdp.send('Network.setCookie', { name: 'fixture-account', value: 'new', url: origin, httpOnly: true, path: '/' });
@@ -236,7 +261,7 @@ test('account identity stays current and account switching preserves safe bookin
     assert.equal(await evaluate(`(document.body?.innerText ?? '').includes('old@example.invalid')`), false);
     holdAccountReads = false;
     while (delayedAccountReads.length) delayedAccountReads.shift()();
-    await until(() => evaluate(`(document.body?.innerText ?? '').includes('new@example.invalid') && (document.body?.innerText ?? '').includes('Not provided')`), 'new identity profile');
+    await until(() => evaluate(`(document.body?.innerText ?? '').includes('new@example.invalid') && document.querySelector('input[name="phoneNumber"]')?.value === ''`), 'new identity profile');
     assert.equal(await evaluate(`(document.body?.innerText ?? '').includes('old@example.invalid')`), false);
 
     accountResponse = { status: 503, body: { error: { code: 'INTERNAL_ERROR' } } };
@@ -252,6 +277,77 @@ test('account identity stays current and account switching preserves safe bookin
     await until(() => evaluate(`(document.body?.innerText ?? '').includes('Workspace unavailable')`), 'profile service failure');
     assert.equal(await evaluate(`(document.body?.innerText ?? '').includes('new@example.invalid')`), false);
     accountResponse = undefined;
+  });
+
+  await scenario('attendee edits only changed fields, can discard, and keeps a rejected or uncertain draft', async () => {
+    await cdp.send('Network.clearBrowserCookies');
+    await cdp.send('Network.setCookie', { name: 'fixture-account', value: 'old', url: origin, httpOnly: true, path: '/' });
+    await cdp.send('Page.navigate', { url: `${origin}/dashboard/profile` });
+    await until(() => evaluate(`document.querySelector('input[name="firstName"]')?.value === 'Fixture'`), 'editable profile');
+    const typeField = async (name, value) => {
+      await evaluate(`(() => {
+        const input = document.querySelector('input[name=${JSON.stringify(name)}]');
+        const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+        setter.call(input, ${JSON.stringify(value)});
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      })()`);
+    };
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: 1, mobile: false });
+    assert.equal(await evaluate(`document.querySelector('[aria-labelledby="personal-profile-title"]').scrollWidth <= document.querySelector('[aria-labelledby="personal-profile-title"]').clientWidth + 1`), true);
+    await typeField('firstName', '  Éloïse  ');
+    await until(() => evaluate(`!Array.from(document.querySelectorAll('button')).find(button => button.textContent.trim() === 'Save changes').disabled`), 'dirty Save');
+    await evaluate(`Array.from(document.querySelectorAll('button')).find(button => button.textContent.trim() === 'Save changes').focus()`);
+    assert.equal(await evaluate(`document.activeElement?.textContent.trim()`), 'Save changes');
+    assert.equal(await evaluate(`document.activeElement?.tabIndex`), 0);
+    await click('Save changes');
+    await until(() => evaluate(`(document.body?.innerText ?? '').includes('Your personal account profile was saved.')`), 'saved profile');
+    assert.deepEqual(profilePatches.at(-1), { firstName: 'Éloïse' });
+    assert.equal(await evaluate(`(document.body?.innerText ?? '').includes('Saved name: Éloïse old')`), true);
+    await cdp.send('Page.navigate', { url: `${origin}/dashboard/profile` });
+    await until(() => evaluate(`document.querySelector('input[name="firstName"]')?.value === 'Éloïse'`), 'persisted profile');
+    await typeField('lastName', 'Discarded');
+    await click('Discard changes');
+    assert.equal(await evaluate(`document.querySelector('input[name="lastName"]').value`), 'old');
+    await typeField('phoneNumber', '');
+    await click('Save changes');
+    await until(() => evaluate(`(document.body?.innerText ?? '').includes('Your personal account profile was saved.')`), 'cleared phone');
+    assert.deepEqual(profilePatches.at(-1), { phoneNumber: null });
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
+    assert.equal(await evaluate(`document.querySelector('[aria-labelledby="personal-profile-title"]').scrollWidth <= document.querySelector('[aria-labelledby="personal-profile-title"]').clientWidth + 1`), true);
+    await typeField('lastName', 'Focused discard');
+    await evaluate(`Array.from(document.querySelectorAll('button')).find(button => button.textContent.trim() === 'Discard changes').focus()`);
+    assert.equal(await evaluate(`document.activeElement?.textContent.trim()`), 'Discard changes');
+    await click('Discard changes');
+    await until(() => evaluate(`document.querySelector('input[name="lastName"]')?.value === 'old'`), 'keyboard Discard');
+    await typeField('phoneNumber', '09171234567');
+    await evaluate(`Array.from(document.querySelectorAll('button')).find(button => button.textContent.trim() === 'Save changes').focus()`);
+    assert.equal(await evaluate(`document.activeElement?.textContent.trim()`), 'Save changes');
+    await click('Save changes');
+    await until(() => evaluate(`document.querySelector('input[name="phoneNumber"]')?.value === '+639171234567'`), 'normalized phone after add');
+    assert.deepEqual(profilePatches.at(-1), { phoneNumber: '09171234567' });
+    await cdp.send('Page.navigate', { url: `${origin}/dashboard/profile` });
+    await until(() => evaluate(`document.querySelector('input[name="phoneNumber"]')?.value === '+639171234567'`), 'normalized phone after reload');
+    await typeField('phoneNumber', '09179876543');
+    await click('Save changes');
+    await until(() => evaluate(`document.querySelector('input[name="phoneNumber"]')?.value === '+639179876543'`), 'normalized replacement phone');
+    assert.deepEqual(profilePatches.at(-1), { phoneNumber: '09179876543' });
+    await cdp.send('Page.navigate', { url: `${origin}/dashboard/profile` });
+    await until(() => evaluate(`document.querySelector('input[name="phoneNumber"]')?.value === '+639179876543'`), 'replaced phone after reload');
+    await typeField('phoneNumber', '09175556666');
+    profilePatchMode = 'rejected';
+    await click('Save changes');
+    await until(() => evaluate(`(document.body?.innerText ?? '').includes('Check your account details')`), 'rejected edit');
+    assert.equal(await evaluate(`document.querySelector('input[name="phoneNumber"]').value`), '09175556666');
+    assert.equal(profile('old').phoneNumber, '+639179876543');
+    profilePatchMode = 'lost';
+    await typeField('phoneNumber', '09179998888');
+    await click('Save changes');
+    await until(() => evaluate(`(document.body?.innerText ?? '').includes('could not confirm whether your changes were saved')`), 'uncertain edit');
+    assert.equal(await evaluate(`document.querySelector('input[name="phoneNumber"]').value`), '09179998888');
+    assert.equal(profile('old').phoneNumber, '+639179998888');
+    assert.deepEqual(profilePatches.at(-1), { phoneNumber: '09179998888' });
+    profilePatchMode = 'confirmed';
+    savedProfiles.clear();
   });
 
   await scenario('a profile read that loses account eligibility follows the workspace gate', async () => {

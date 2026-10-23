@@ -1,6 +1,6 @@
 import { AuthClientError } from "./errors";
 import { accountFromProfile, accountDestination, isObject, personalProfileFromResponse } from "./profile";
-import type { PublicAuthClient } from "./client";
+import type { ProfileChanges, PublicAuthClient } from "./client";
 import { accountRequest } from "./transport";
 import { notifyAccountChange as notify } from "./session-events";
 
@@ -63,6 +63,28 @@ export function createBetterAuthClient(transport: typeof fetch = (...args) => fe
       const profile = personalProfileFromResponse(await request("/api/v1/me"));
       if (logoutBlocked) throw new AuthClientError("LOGOUT_UNCERTAIN");
       return profile;
+    },
+    updateProfile: async (changes: ProfileChanges) => {
+      if (logoutBlocked) throw new AuthClientError("LOGOUT_UNCERTAIN");
+      const body: Record<string, unknown> = {};
+      if (changes.firstName !== undefined) body.firstName = changes.firstName.trim();
+      if (changes.lastName !== undefined) body.lastName = changes.lastName.trim();
+      if (changes.phoneNumber !== undefined) body.phoneNumber = changes.phoneNumber;
+      if (Object.keys(body).length === 0) throw new AuthClientError("VALIDATION_ERROR");
+      let result: unknown;
+      try { result = await accountRequest(transport, "/api/v1/me", body, undefined, "PATCH"); }
+      catch (error) {
+        if (error instanceof AuthClientError && ["UNAVAILABLE", "INVALID_RESPONSE"].includes(error.code)) throw new AuthClientError("REQUEST_UNCERTAIN", error.retryAfter);
+        throw error;
+      }
+      try {
+        const profile = personalProfileFromResponse(result);
+        if (logoutBlocked) throw new AuthClientError("LOGOUT_UNCERTAIN");
+        return profile;
+      } catch (error) {
+        if (error instanceof AuthClientError && error.code === "LOGOUT_UNCERTAIN") throw error;
+        throw new AuthClientError("REQUEST_UNCERTAIN");
+      }
     },
     requestPasswordReset: async ({ email }) => {
       const result = await requestCompletion("/api/auth/request-password-reset", { email: email.trim().toLowerCase() });
