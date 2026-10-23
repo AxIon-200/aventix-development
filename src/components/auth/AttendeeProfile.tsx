@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { authErrorMessage, AuthClientError, publicAuthClient, type AccountSession, type AuthErrorCode, type PersonalAccountProfile, type ProfileChanges } from "@/lib/auth/client";
 import { nameError, validPhone } from "@/lib/auth/validation";
+import { saveProfile } from "@/lib/auth/save-profile";
 import AccountGate from "./AccountGate";
 import FormField, { submitClass } from "./FormField";
 
@@ -18,11 +19,6 @@ const changedFields = (saved: PersonalAccountProfile, draft: Draft): ProfileChan
 });
 export const hasUnsavedProfileChanges = (state: ProfileDraftState | null) =>
   state !== null && Object.keys(changedFields(state.saved, state.draft)).length > 0;
-
-const canonicalValue = (field: keyof ProfileChanges, value: string | null) =>
-  field === "phoneNumber" && typeof value === "string" && value.startsWith("09") ? `+63${value.slice(1)}` : value;
-const matchesSubmitted = (profile: PersonalAccountProfile, changes: ProfileChanges) =>
-  (Object.keys(changes) as (keyof ProfileChanges)[]).every(field => profile[field] === canonicalValue(field, changes[field] ?? null));
 
 export default function AttendeeProfile({ session, returnTo, onAccessRejected, retainedProfile, onProfileChange }: {
   session: AccountSession; onAccessRejected: (code: AuthErrorCode, expectedUserId: string) => void;
@@ -131,41 +127,17 @@ export default function AttendeeProfile({ session, returnTo, onAccessRejected, r
     saving.current = true;
     setBusy(true);
     try {
-      const current = await publicAuthClient.updateProfile(changes);
-      if (current.id !== saved.id || current.role !== saved.role || current.email !== saved.email) {
-        throw new AuthClientError("REQUEST_UNCERTAIN");
-      }
+      const { profile: current, reconciled } = await saveProfile(publicAuthClient, saved, changes);
       savedRef.current = current;
       setSaved(current);
       const accepted = fromProfile(current);
       draftRef.current = accepted;
       onProfileChange({ userId: session.userId, saved: current, draft: accepted });
       setDraft(accepted);
-      setMessage("Your personal account profile was saved.");
+      setMessage(reconciled ? "Your personal account profile was saved and confirmed by a fresh account check." : "Your personal account profile was saved.");
     } catch (cause) {
       const issue = cause instanceof AuthClientError ? cause : new AuthClientError("REQUEST_UNCERTAIN");
-      if (issue.code === "REQUEST_UNCERTAIN") {
-        try {
-          if (!publicAuthClient.getProfile) throw new AuthClientError("UNAVAILABLE");
-          const observed = await publicAuthClient.getProfile();
-          if (observed.id === saved.id && observed.role === saved.role && observed.email === saved.email
-            && matchesSubmitted(observed, changes)) {
-            savedRef.current = observed;
-            setSaved(observed);
-            const accepted = fromProfile(observed);
-            draftRef.current = accepted;
-            onProfileChange({ userId: session.userId, saved: observed, draft: accepted });
-            setDraft(accepted);
-            setMessage("Your personal account profile was saved and confirmed by a fresh account check.");
-            return;
-          }
-        } catch (readError) {
-          if (readError instanceof AuthClientError && ["AUTHENTICATION_REQUIRED", "ACCOUNT_DISABLED",
-            "EMAIL_VERIFICATION_REQUIRED", "TERMS_ACCEPTANCE_REQUIRED", "PASSWORD_RESET_REQUIRED"].includes(readError.code)) {
-            onAccessRejected(readError.code, session.userId);
-          }
-        }
-      } else if (["AUTHENTICATION_REQUIRED", "ACCOUNT_DISABLED", "EMAIL_VERIFICATION_REQUIRED",
+      if (["AUTHENTICATION_REQUIRED", "ACCOUNT_DISABLED", "EMAIL_VERIFICATION_REQUIRED",
         "TERMS_ACCEPTANCE_REQUIRED", "PASSWORD_RESET_REQUIRED"].includes(issue.code)) {
         onAccessRejected(issue.code, session.userId);
       }

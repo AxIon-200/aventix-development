@@ -27,6 +27,7 @@ test('account identity stays current and account switching preserves safe bookin
   const savedProfiles = new Map();
   const profilePatches = [];
   let profilePatchMode = 'confirmed';
+  let profileReads = 0;
   const passwordChanges = [];
   let passwordMode = 'confirmed';
   let logoutMode = 'confirmed';
@@ -64,10 +65,19 @@ test('account identity stays current and account switching preserves safe bookin
         next.name = `${next.firstName} ${next.lastName}`;
         if (next.phoneNumber?.startsWith('09')) next.phoneNumber = `+63${next.phoneNumber.slice(1)}`;
         savedProfiles.set(account, next);
-        if (profilePatchMode === 'lost') { request.socket.destroy(); return; }
+        if (profilePatchMode === 'concurrent-unsubmitted') {
+          savedProfiles.set(account, { ...next, lastName: 'Other tab', name: next.firstName + ' Other tab' });
+        }
+        if (profilePatchMode === 'concurrent-submitted') {
+          savedProfiles.set(account, { ...next, firstName: 'Other tab', name: 'Other tab ' + next.lastName });
+        }
+        if (profilePatchMode === 'read-unavailable') accountResponse = { status: 503, body: {} };
+        if (profilePatchMode === 'unusable') { response.end('{'); return; }
+        if (['lost', 'concurrent-unsubmitted', 'concurrent-submitted', 'read-unavailable'].includes(profilePatchMode)) { request.socket.destroy(); return; }
         response.end(JSON.stringify({ data: { user: next } }));
         return;
       }
+      profileReads++;
       const result = accountResponse ?? { status: account ? 200 : 401, body: account
         ? { data: { user: profile(account, account === 'new' ? loginRole : currentRole) } }
         : { error: { code: 'AUTHENTICATION_REQUIRED' } } };
@@ -371,6 +381,41 @@ test('account identity stays current and account switching preserves safe bookin
     await until(() => evaluate(`(document.body?.innerText ?? '').includes('could not confirm whether your changes were saved')`), 'unconfirmed edit');
     assert.equal(await evaluate(`document.querySelector('input[name="lastName"]').value`), 'Still a draft');
     assert.deepEqual(profilePatches.at(-1), { lastName: 'Still a draft' });
+    profilePatchMode = 'confirmed';
+    savedProfiles.clear();
+  });
+
+  await scenario('uncertain saves reconcile once, preserve drafts, and wait for an explicit retry', async () => {
+    for (const mode of ['concurrent-unsubmitted', 'concurrent-submitted', 'read-unavailable', 'unusable']) {
+      savedProfiles.clear();
+      accountResponse = undefined;
+      profilePatchMode = mode;
+      await cdp.send('Page.navigate', { url: origin + '/dashboard/profile' });
+      await until(() => evaluate(`document.querySelector('input[name="firstName"]')?.value === 'Fixture'`), 'clean reconciliation form');
+      await typeField('firstName', '  Maria  ');
+      await typeField('phoneNumber', '09179998888');
+      const writes = profilePatches.length;
+      const reads = profileReads;
+      await click('Save changes');
+      const confirmed = ['concurrent-unsubmitted', 'unusable'].includes(mode);
+      await until(() => evaluate(`(document.body?.innerText ?? '').includes(${JSON.stringify(confirmed ? 'saved and confirmed by a fresh account check' : 'could not confirm whether your changes were saved')})`), mode + ' outcome');
+      assert.equal(profilePatches.length - writes, 1, mode + ' must not replay PATCH');
+      assert.equal(profileReads - reads, 1, mode + ' must read exactly once');
+      assert.equal(await evaluate(`document.querySelector('input[name="firstName"]').value`), confirmed ? 'Maria' : '  Maria  ');
+      assert.equal(await evaluate(`document.querySelector('input[name="phoneNumber"]').value`), confirmed ? '+639179998888' : '09179998888');
+      if (mode === 'concurrent-unsubmitted') {
+        assert.equal(await evaluate(`document.querySelector('input[name="lastName"]').value`), 'Other tab');
+      }
+      if (!confirmed) {
+        assert.equal(await evaluate(`(document.body?.innerText ?? '').includes('profile was saved')`), false);
+        accountResponse = undefined;
+        profilePatchMode = 'confirmed';
+        await click('Save changes');
+        await until(() => evaluate(`(document.body?.innerText ?? '').includes('Your personal account profile was saved.')`), 'explicit retry');
+        assert.equal(profilePatches.length - writes, 2);
+        assert.deepEqual(profilePatches.at(-1), { firstName: 'Maria', phoneNumber: '09179998888' });
+      }
+    }
     profilePatchMode = 'confirmed';
     savedProfiles.clear();
   });
