@@ -55,7 +55,7 @@ Prioritize making existing frontend features functional before introducing addit
 
 ### Keep the Project Simple
 This is a school project, not a production-scale commercial application.
-
+    
 Avoid overengineering, unnecessary abstractions, excessive dependencies, and overly complex architectures.
 
 Prefer simple, maintainable, and straightforward solutions that satisfy the project requirements.
