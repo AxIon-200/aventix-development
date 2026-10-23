@@ -681,6 +681,91 @@ test('account identity stays current and account switching preserves safe bookin
     savedProfiles.clear();
   });
 
+  await scenario('administrator profile supports canonical phone edits, keyboard Discard, and dirty navigation', async () => {
+    currentRole = 'ADMINISTRATOR';
+    savedProfiles.clear();
+    await cdp.send('Network.clearBrowserCookies');
+    await cdp.send('Network.setCookie', { name: 'fixture-account', value: 'old', url: origin, httpOnly: true, path: '/' });
+    await cdp.send('Page.navigate', { url: origin + '/admin/profile' });
+    await until(() => evaluate(`document.querySelector('input[name="firstName"]')?.value === 'Fixture'`), 'administrator personal profile');
+    assert.equal(await evaluate(`document.body.innerText.includes('administrator account you are using now')`), true);
+    assert.equal(await evaluate(`Boolean(document.querySelector('input[name="email"], input[name="role"], input[type="file"]'))`), false);
+    assert.equal(await evaluate(`document.body.innerText.includes('Account Activity')`), false);
+    for (const width of [375, 1440]) {
+      await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: 1, mobile: false });
+      assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true);
+    }
+    await typeField('firstName', '  Administrator  ');
+    await typeField('phoneNumber', '09179876543');
+    await click('Save changes');
+    await until(() => evaluate(`document.querySelector('input[name="phoneNumber"]')?.value === '+639179876543'`), 'canonical administrator phone');
+    assert.deepEqual(profilePatches.at(-1), { firstName: 'Administrator', phoneNumber: '09179876543' });
+    await cdp.send('Page.bringToFront');
+    await until(() => evaluate(`Boolean(document.querySelector('input[name="lastName"]')) && !document.querySelector('fieldset').disabled`), 'focused administrator form');
+    await typeField('lastName', 'Discard this');
+    await until(() => evaluate(`!Array.from(document.querySelectorAll('button')).find(button => button.textContent.trim() === 'Discard changes').disabled`), 'administrator dirty form');
+    await evaluate(`Array.from(document.querySelectorAll('button')).find(button => button.textContent.trim() === 'Discard changes').focus()`);
+    assert.equal(await evaluate(`document.activeElement?.textContent.trim()`), 'Discard changes');
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, text: '\r' });
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+    await until(() => evaluate(`document.querySelector('input[name="lastName"]')?.value === 'old'`), 'administrator keyboard Discard');
+    await typeField('phoneNumber', '');
+    await click('Save changes');
+    await until(() => evaluate(`document.body.innerText.includes('Your personal account profile was saved.')`), 'administrator clears phone');
+    assert.deepEqual(profilePatches.at(-1), { phoneNumber: null });
+    await typeField('lastName', 'Keep draft');
+    await setConfirmResult(false);
+    await evaluate(`document.querySelector('nav[aria-label="Workspace"] a[href="/admin/settings"]').click()`);
+    await until(() => evaluate('window.profilePrompts.length === 1'), 'administrator navigation warning');
+    assert.equal(await evaluate('location.pathname'), '/admin/profile');
+    assert.equal(await evaluate(`document.querySelector('input[name="lastName"]').value`), 'Keep draft');
+    assert.equal(await evaluate(`(() => { const event = new Event('beforeunload', { cancelable: true }); window.dispatchEvent(event); return event.defaultPrevented; })()`), true);
+    savedProfiles.set('old', { ...profile('old', 'ADMINISTRATOR'), lastName: 'Latest', name: 'Administrator Latest' });
+    await click('Refresh details');
+    await until(() => evaluate(`document.body.innerText.includes('Saved name: Administrator Latest')`), 'fresh administrator details');
+    assert.equal(await evaluate(`document.querySelector('input[name="lastName"]').value`), 'Keep draft');
+    await click('Discard changes');
+    assert.equal(await evaluate(`document.querySelector('input[name="lastName"]').value`), 'Latest');
+    await evaluate(`document.querySelector('nav[aria-label="Workspace"] a[href="/admin/settings"]').click()`);
+    await until(() => evaluate(`location.pathname === '/admin/settings'`), 'clean administrator navigation');
+    assert.equal(await evaluate('window.profilePrompts.length'), 1);
+    currentRole = 'ATTENDEE';
+    savedProfiles.clear();
+  });
+
+  await scenario('administrator lost profile saves reconcile once and preserve unconfirmed drafts', async () => {
+    currentRole = 'ADMINISTRATOR';
+    await cdp.send('Page.navigate', { url: origin + '/admin/profile' });
+    await until(() => evaluate(`document.querySelector('input[name="firstName"]')?.value === 'Fixture'`), 'administrator before uncertain save');
+    profilePatchMode = 'lost';
+    await typeField('firstName', 'Confirmed administrator');
+    const writes = profilePatches.length;
+    const reads = profileReads;
+    await click('Save changes');
+    await until(() => evaluate(`document.body.innerText.includes('confirmed by a fresh account check')`), 'administrator reconciliation');
+    assert.equal(profilePatches.length, writes + 1);
+    assert.equal(profileReads, reads + 1);
+    profilePatchMode = 'lost-not-applied';
+    await typeField('lastName', 'Unconfirmed draft');
+    await click('Save changes');
+    await until(() => evaluate(`document.body.innerText.includes('could not confirm whether your changes were saved')`), 'administrator uncertain draft');
+    assert.equal(await evaluate(`document.querySelector('input[name="lastName"]').value`), 'Unconfirmed draft');
+    assert.equal(profilePatches.length, writes + 2);
+    assert.equal(profileReads, reads + 2);
+    accountResponse = { status: 200, body: { data: { user: profile('new', 'ATTENDEE') } } };
+    await click('Refresh details');
+    await until(() => evaluate(`document.body.innerText.includes('could not confirm that these details belong to your current account')`), 'administrator identity mismatch');
+    assert.equal(await evaluate(`document.body.innerText.includes('new@example.invalid')`), false);
+    accountResponse = { status: 403, body: { error: { code: 'ACCOUNT_DISABLED' } } };
+    await click('Refresh details');
+    await until(() => evaluate(`document.body.innerText.includes('Workspace unavailable')`), 'administrator eligibility gate');
+    assert.equal(await evaluate(`Boolean(document.querySelector('input[name="firstName"]'))`), false);
+    accountResponse = undefined;
+    profilePatchMode = 'confirmed';
+    currentRole = 'ATTENDEE';
+    savedProfiles.clear();
+  });
+
   await scenario('a profile read that loses account eligibility follows the workspace gate', async () => {
     await cdp.send('Network.clearBrowserCookies');
     await cdp.send('Network.setCookie', { name: 'fixture-account', value: 'old', url: origin, httpOnly: true, path: '/' });
