@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { publicAuthClient, type AccountRole } from "@/lib/auth/client";
@@ -25,8 +25,18 @@ export default function WorkspaceScreen({ role, title, returnTo, initial, accoun
   const hasDraft = useCallback(() => accountScreen === "profile" && (!currentUserId || currentUserId === profileState?.userId)
     && hasUnsavedProfileChanges(profileState), [accountScreen, currentUserId, profileState]);
   const confirmLeave = useCallback(() => !hasDraft() || window.confirm("You have unsaved personal account changes. Discard them and leave this page?"), [hasDraft]);
-  const confirmNavigation = (destination: string, event: { preventDefault: () => void }) => {
-    if (destination !== window.location.pathname && !confirmLeave()) event.preventDefault();
+  const confirmNavigation = (event: MouseEvent<HTMLElement>) => {
+    // Include recovery and account-gate links nested inside the account forms.
+    // Modified clicks and new tabs leave this document and its draft in place.
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>("a[href]") : null;
+    if (!link || link.hasAttribute("download") || (link.target && link.target !== "_self")) return;
+    const destination = new URL(link.href);
+    if (destination.origin !== window.location.origin || destination.pathname === window.location.pathname) return;
+    if (!confirmLeave()) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
   };
   const signOutCallbacks = {
     onStart: () => { signingOut.current = true; },
@@ -63,8 +73,8 @@ export default function WorkspaceScreen({ role, title, returnTo, initial, accoun
   }, [accountScreen, hasDraft, confirmLeave, route]);
 
   const session = account.session;
-  return <main id="main-content" className="mx-auto min-h-screen max-w-4xl space-y-6 px-6 py-16">
-    <Link href="/events" onNavigate={event => confirmNavigation("/events", event)} className="inline-block text-[#66fcf1] underline">Browse public events</Link>
+  return <main id="main-content" onClickCapture={confirmNavigation} className="mx-auto min-h-screen max-w-4xl space-y-6 px-6 py-16">
+    <Link href="/events" className="inline-block text-[#66fcf1] underline">Browse public events</Link>
     {account.loading ? <p role="status">Checking your current account…</p>
       : account.unavailable ? <section className="space-y-4">
         <h1 className="text-3xl font-semibold">Workspace unavailable</h1>
@@ -88,7 +98,7 @@ export default function WorkspaceScreen({ role, title, returnTo, initial, accoun
           {accountScreen !== "profile" && <p>Signed in as {session.displayName} · {session.email}</p>}
         </header>
         <nav aria-label="Workspace" className="flex flex-wrap gap-4 border-y border-slate-700 py-4">
-          {workspaceNavigation[role].map(item => <Link key={item.href} href={item.href} onNavigate={event => confirmNavigation(item.href, event)} prefetch={false} className="text-[#66fcf1] underline">{item.label}</Link>)}
+          {workspaceNavigation[role].map(item => <Link key={item.href} href={item.href} prefetch={false} className="text-[#66fcf1] underline">{item.label}</Link>)}
         </nav>
         {accountScreen === "profile" ? <div className="space-y-6">
           <AttendeeProfile key={session.userId} session={session} returnTo={role === "ATTENDEE" ? "/dashboard/profile" : "/admin/profile"} onAccessRejected={account.rejectAccess} retainedProfile={profileState} onProfileChange={setProfileState} />

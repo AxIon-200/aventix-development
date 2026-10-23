@@ -7,12 +7,19 @@ export const escapeHtml = (value: string) => value.replace(/[&<>"']/g, character
 export async function deliverAuthEmail(message: { to: string; subject: string; text: string; html: string }) {
   const key = process.env.RESEND_API_KEY;
   const from = process.env.AUTH_EMAIL_FROM;
-  if (!key || !from) throw new Error("Email provider is not configured");
+  if (!key || !from) { console.error("Auth email provider failure", { reason: "MISSING_CONFIGURATION", missingApiKey: !key, missingSender: !from }); throw new Error("Email provider is not configured"); }
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     signal: AbortSignal.timeout(10_000),
     body: JSON.stringify({ ...message, from, to: [message.to] }),
+  }).catch(() => {
+    console.error("Auth email provider failure", { reason: "NETWORK_OR_TIMEOUT" });
+    throw new Error("Email provider could not be reached");
   });
-  if (!response.ok) throw new Error("Email provider rejected delivery");
+  if (!response.ok) {
+    // Provider bodies can contain recipient addresses; log only safe metadata.
+    console.error("Auth email provider failure", { reason: "PROVIDER_REJECTED", status: response.status, testSender: from.includes("onboarding@resend.dev") });
+    throw new Error("Email provider rejected delivery");
+  }
 }

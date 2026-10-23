@@ -21,3 +21,21 @@ from any attendee or administrator identity held by the same person.
 **Administrator account**:
 A dedicated Aventix identity for platform administration, distinct from any
 attendee or organizer identity held by the same person.
+
+**Organization profile**:
+The organization represented by one dedicated organizer account, distinct from
+that account's personal account profile.
+
+**Organizer application**:
+A request for administrator approval to organize events on Aventix, belonging
+to a separate organizer account and its organization profile.
+_Avoid_: Organizer verification
+
+**Organization approval**:
+An administrator's permission for an organization to operate through its
+organizer account, distinct from confirmation of the account's email ownership.
+_Avoid_: Email verification, organizer verification
+
+**Organization suspension**:
+A reversible withdrawal of an approved organization's organizer access,
+distinct from disabling its account or cancelling its events.

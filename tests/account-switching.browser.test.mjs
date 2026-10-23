@@ -516,6 +516,29 @@ test('account identity stays current and account switching preserves safe bookin
     savedProfiles.clear();
   });
 
+  await scenario('password recovery navigation protects a dirty profile draft', async () => {
+    await cdp.send('Page.navigate', { url: `${origin}/dashboard/profile` });
+    await until(() => evaluate(`document.querySelector('input[name="firstName"]')?.value === 'Fixture'`), 'profile before recovery navigation');
+    await setConfirmResult(false);
+    await typeField('phoneNumber', '09178887777');
+    await evaluate(`document.querySelector('a[href^="/forgot-password"]').click()`);
+    await until(() => evaluate(`window.profilePrompts.length === 1`), 'recovery navigation confirmation');
+    assert.equal(await evaluate(`location.pathname`), '/dashboard/profile');
+    assert.equal(await evaluate(`document.querySelector('input[name="phoneNumber"]').value`), '09178887777');
+    assert.equal(await evaluate(`window.dispatchEvent(new Event('beforeunload', { cancelable: true }))`), false);
+    await setConfirmResult(true);
+    await evaluate(`document.querySelector('a[href^="/forgot-password"]').click()`);
+    await until(() => evaluate(`location.pathname === '/forgot-password'`), 'confirmed recovery navigation');
+    assert.equal(await evaluate(`window.profilePrompts.length`), 1);
+    await cdp.send('Page.navigate', { url: `${origin}/dashboard/profile` });
+    await until(() => evaluate(`document.querySelector('input[name="firstName"]')?.value === 'Fixture'`), 'profile after abandoning draft');
+    assert.equal(await evaluate(`document.querySelector('input[name="phoneNumber"]').value`), '+639171234567');
+    await setConfirmResult(false);
+    await evaluate(`document.querySelector('a[href^="/forgot-password"]').click()`);
+    await until(() => evaluate(`location.pathname === '/forgot-password'`), 'clean recovery navigation');
+    assert.equal(await evaluate(`window.profilePrompts.length`), 0);
+  });
+
   await scenario('attendee can correct a rejected current password and change it without leaving the profile', async () => {
     await cdp.send('Page.navigate', { url: `${origin}/dashboard/profile` });
     await until(() => evaluate(`document.querySelector('input[name="firstName"]')?.value === 'Fixture'`), 'attendee password entry');
@@ -663,8 +686,12 @@ test('account identity stays current and account switching preserves safe bookin
     await until(() => evaluate(`(document.body?.innerText ?? '').includes('Other sessions and outstanding password-reset links were invalidated.')`), 'confirmed password change');
     assert.equal(await evaluate(`document.querySelector('input[name="newPassword"]').value`), '');
     assert.equal(await evaluate(`location.pathname`), '/admin/profile');
-    await cdp.send('Page.navigate', { url: `${origin}/admin/settings` });
-    await until(() => evaluate(`Boolean(document.querySelector('input[name="currentPassword"]'))`), 'settings password entry');
+    // Use the workspace entry point so typing starts after the route's account
+    // check, rather than in a server-rendered form awaiting hydration.
+    await evaluate(`document.querySelector('nav[aria-label="Workspace"] a[href="/admin/settings"]').click()`);
+    await until(() => evaluate(`location.pathname === '/admin/settings'
+      && Boolean(document.querySelector('input[name="currentPassword"]'))
+      && !document.querySelector('input[name="firstName"]')`), 'settings password entry');
     assert.equal(await evaluate(`Boolean(document.querySelector('input[name="firstName"]'))`), false);
     await typeField('currentPassword', ' exact old password ');
     await typeField('newPassword', ' another password 😀 ');
