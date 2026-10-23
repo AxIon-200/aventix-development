@@ -13,6 +13,7 @@ export default function ChangePasswordForm({ session, returnTo, onAccessRejected
 }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [outcome, setOutcome] = useState<"confirmed" | "uncertain" | null>(null);
+  const [sessionCheck, setSessionCheck] = useState<"checking" | "available" | "unavailable">("checking");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const submitting = useRef(false);
@@ -55,13 +56,20 @@ export default function ChangePasswordForm({ session, returnTo, onAccessRejected
       } else if (["REQUEST_UNCERTAIN", "INVALID_RESPONSE", "UNAVAILABLE"].includes(error.code)) {
         form.reset();
         setOutcome("uncertain");
+        setSessionCheck("checking");
         // A profile read can confirm session availability, never the stored password.
-        void publicAuthClient.getProfile?.().catch((readError: unknown) => {
+        try {
+          if (!publicAuthClient.getProfile) throw new AuthClientError("UNAVAILABLE");
+          const current = await publicAuthClient.getProfile();
+          if (current.id !== session.userId || current.role !== session.role) throw new AuthClientError("INVALID_RESPONSE");
+          setSessionCheck("available");
+        } catch (readError) {
+          setSessionCheck("unavailable");
           if (readError instanceof AuthClientError && ["AUTHENTICATION_REQUIRED", "ACCOUNT_DISABLED",
             "EMAIL_VERIFICATION_REQUIRED", "TERMS_ACCEPTANCE_REQUIRED", "PASSWORD_RESET_REQUIRED"].includes(readError.code)) {
             onAccessRejected(readError.code, session.userId);
           }
-        });
+        }
       } else {
         const feedback = error.code === "PASSWORD_REUSE"
           ? "Choose a new password different from your current password." : authErrorMessage(error);
@@ -85,7 +93,7 @@ export default function ChangePasswordForm({ session, returnTo, onAccessRejected
       </fieldset>
       {message && <p role="alert" className="text-sm text-red-200">{message}</p>}
       {outcome === "confirmed" && <p role="status" className="text-sm text-[#66fcf1]">Your password was changed. This session remains signed in until its original expiry. Other sessions and outstanding password-reset links were invalidated.</p>}
-      {outcome === "uncertain" && <p role="alert" className="text-sm text-amber-200">We could not confirm whether your password changed. The request was not sent again. Your current session may still work, but a session check cannot show which password is stored. Try logging in with the new password, or use account recovery if needed.</p>}
+      {outcome === "uncertain" && <p role="alert" className="text-sm text-amber-200">We could not confirm whether your password changed. The request was not sent again. {sessionCheck === "checking" ? "Checking whether this session is still available." : sessionCheck === "available" ? "Your current session is still available." : "We could not check whether this session is still available."} A session check cannot show which password is stored. Try logging in with the new password, or use account recovery if needed.</p>}
       <button type="submit" disabled={busy || !publicAuthClient.changePassword} className={`${submitClass} sm:w-auto`}>{busy ? "Changing password…" : "Change password"}</button>
     </form>
     <div className="mt-5 flex flex-wrap gap-4 text-sm">

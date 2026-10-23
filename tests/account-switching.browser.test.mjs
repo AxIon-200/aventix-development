@@ -92,6 +92,7 @@ test('account identity stays current and account switching preserves safe bookin
       for await (const chunk of request) body += chunk;
       passwordChanges.push(JSON.parse(body));
       if (passwordMode === 'lost') { request.socket.destroy(); return; }
+      if (passwordMode === 'unusable') { response.end('{'); return; }
       if (passwordMode === 'validation' || passwordMode === 'service') {
         response.statusCode = passwordMode === 'validation' ? 400 : 500;
         response.end(JSON.stringify({ error: { code: passwordMode === 'validation' ? 'VALIDATION_ERROR' : 'INTERNAL_ERROR',
@@ -596,6 +597,41 @@ test('account identity stays current and account switching preserves safe bookin
     await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
     await evaluate(`document.querySelector('a[href^="/forgot-password"]').click()`);
     await until(() => evaluate(`location.pathname === '/forgot-password' && Boolean(document.querySelector('[name="email"]'))`), 'attendee S01 recovery navigation');
+  });
+
+  await scenario('uncertain password changes distinguish session availability from stored credentials', async () => {
+    for (const mode of ['lost', 'unusable', 'service']) {
+      for (const sessionState of ['available', 'unavailable', 'other-account', 'other-role']) {
+        accountResponse = undefined;
+        await cdp.send('Page.navigate', { url: `${origin}/dashboard/profile` });
+        await until(() => evaluate(`document.querySelector('input[name="firstName"]')?.value === 'Fixture'`), 'uncertainty profile');
+        await typeField('currentPassword', ' current secret password ');
+        await typeField('newPassword', ' proposed secret password ');
+        await typeField('confirmPassword', ' proposed secret password ');
+        passwordMode = mode;
+        if (sessionState === 'unavailable') accountResponse = { status: 503, body: {} };
+        if (sessionState === 'other-account') accountResponse = { status: 200, body: { data: { user: profile('new') } } };
+        if (sessionState === 'other-role') accountResponse = { status: 200, body: { data: { user: profile('old', 'ADMINISTRATOR') } } };
+        const mutationsBefore = passwordChanges.length;
+        const readsBefore = profileReads;
+        await click('Change password');
+        const expected = sessionState === 'available' ? 'Your current session is still available.' : 'We could not check whether this session is still available.';
+        await until(() => evaluate(`(document.body?.innerText ?? '').includes(${JSON.stringify(expected)})`), 'session-only uncertainty feedback', 10000);
+        for (const name of ['currentPassword', 'newPassword', 'confirmPassword']) {
+          assert.equal(await evaluate(`document.querySelector('[name="${name}"]').value`), '');
+        }
+        const text = await evaluate(`document.querySelector('[aria-labelledby="change-password-title"]').innerText`);
+        assert.match(text, /could not confirm whether your password changed/);
+        assert.match(text, /cannot show which password is stored/);
+        assert.doesNotMatch(text, /Your password was changed|current secret|proposed secret|private provider/);
+        assert.equal(await evaluate(`Boolean(document.querySelector('a[href^="/login"]')) && Boolean(document.querySelector('a[href^="/forgot-password"]'))`), true);
+        await delay(200);
+        assert.equal(passwordChanges.length, mutationsBefore + 1);
+        assert.equal(profileReads, readsBefore + 1);
+      }
+    }
+    accountResponse = undefined;
+    passwordMode = 'confirmed';
   });
 
   await scenario('administrator profile and settings use the current identity and known-password contract', async () => {
