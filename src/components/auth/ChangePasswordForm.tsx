@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { authErrorMessage, AuthClientError, publicAuthClient, type AccountSession, type AuthErrorCode } from "@/lib/auth/client";
 import { authHref } from "@/lib/auth/destination";
@@ -16,6 +16,11 @@ export default function ChangePasswordForm({ session, returnTo, onAccessRejected
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const submitting = useRef(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (!busy) formRef.current?.querySelector<HTMLInputElement>('input[aria-invalid="true"]')?.focus();
+  }, [errors, busy]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -58,8 +63,11 @@ export default function ChangePasswordForm({ session, returnTo, onAccessRejected
           }
         });
       } else {
-        setErrors(error.fieldErrors);
-        setMessage(error.code === "PASSWORD_REUSE" ? "Choose a new password different from your current password." : authErrorMessage(error));
+        const feedback = error.code === "PASSWORD_REUSE"
+          ? "Choose a new password different from your current password." : authErrorMessage(error);
+        setErrors(error.code === "CURRENT_PASSWORD_INCORRECT" ? { currentPassword: feedback }
+          : error.code === "PASSWORD_REUSE" ? { newPassword: feedback } : error.fieldErrors);
+        setMessage(feedback);
       }
     } finally {
       submitting.current = false; setBusy(false);
@@ -69,7 +77,7 @@ export default function ChangePasswordForm({ session, returnTo, onAccessRejected
   return <section aria-labelledby="change-password-title" className="rounded-2xl border border-slate-700 bg-[#151b23] p-5 sm:p-8">
     <h2 id="change-password-title" className="text-xl font-semibold sm:text-2xl">Change password</h2>
     <p className="mt-2 text-sm text-slate-300">Enter your current password and a different new password. Passwords are used exactly as entered.</p>
-    <form onSubmit={submit} noValidate aria-busy={busy} className="mt-6 space-y-4">
+    <form ref={formRef} onSubmit={submit} noValidate aria-busy={busy} className="mt-6 space-y-4">
       <fieldset disabled={busy} className="space-y-4">
         <FormField name="currentPassword" label="Current password" type="password" autoComplete="current-password" error={errors.currentPassword} required />
         <FormField name="newPassword" label="New password" type="password" autoComplete="new-password" error={errors.newPassword} hint="Use 15–128 Unicode characters, including spaces." required />

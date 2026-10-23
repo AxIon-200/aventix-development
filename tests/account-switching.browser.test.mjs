@@ -92,6 +92,12 @@ test('account identity stays current and account switching preserves safe bookin
       for await (const chunk of request) body += chunk;
       passwordChanges.push(JSON.parse(body));
       if (passwordMode === 'lost') { request.socket.destroy(); return; }
+      if (passwordMode === 'validation' || passwordMode === 'service') {
+        response.statusCode = passwordMode === 'validation' ? 400 : 500;
+        response.end(JSON.stringify({ error: { code: passwordMode === 'validation' ? 'VALIDATION_ERROR' : 'INTERNAL_ERROR',
+          fields: { newPassword: 'private provider detail' }, message: 'private provider detail' } }));
+        return;
+      }
       if (passwordMode === 'wrong' || passwordMode === 'reused') {
         response.statusCode = passwordMode === 'wrong' ? 401 : 400;
         response.end(JSON.stringify({ error: { code: passwordMode === 'wrong' ? 'CURRENT_PASSWORD_INCORRECT' : 'PASSWORD_REUSE' } }));
@@ -507,6 +513,89 @@ test('account identity stays current and account switching preserves safe bookin
     await until(() => evaluate(`location.pathname === '/events'`), 'confirmed dirty navigation');
     assert.equal(await evaluate(`window.profilePrompts.length`), 1);
     savedProfiles.clear();
+  });
+
+  await scenario('attendee can correct a rejected current password and change it without leaving the profile', async () => {
+    await cdp.send('Page.navigate', { url: `${origin}/dashboard/profile` });
+    await until(() => evaluate(`document.querySelector('input[name="firstName"]')?.value === 'Fixture'`), 'attendee password entry');
+    const currentPassword = ' exact current e\u0301 password ';
+    const newPassword = ' new exact password 😀 ';
+    await typeField('currentPassword', currentPassword);
+    await typeField('newPassword', newPassword);
+    await typeField('confirmPassword', newPassword);
+    passwordMode = 'wrong';
+    await click('Change password');
+    await until(() => evaluate(`(document.body?.innerText ?? '').includes('current password is incorrect')`), 'attendee wrong password feedback');
+    assert.equal(await evaluate(`document.activeElement?.name`), 'currentPassword');
+    assert.equal(await evaluate(`document.querySelector('[name="currentPassword"]').getAttribute('aria-invalid')`), 'true');
+    assert.equal(await evaluate(`document.querySelector('[name="newPassword"]').value`), newPassword);
+    assert.deepEqual(passwordChanges.at(-1), { currentPassword, newPassword });
+    passwordMode = 'confirmed';
+    await typeField('currentPassword', ' corrected current password ');
+    await click('Change password');
+    await until(() => evaluate(`(document.body?.innerText ?? '').includes('Your password was changed.')`), 'attendee confirmed password change');
+    assert.equal(await evaluate(`location.pathname`), '/dashboard/profile');
+    for (const name of ['currentPassword', 'newPassword', 'confirmPassword']) {
+      assert.equal(await evaluate(`document.querySelector('[name="${name}"]').value`), '');
+    }
+    assert.match(await evaluate(`document.querySelector('[aria-labelledby="change-password-title"]').innerText`), /original expiry.*Other sessions and outstanding password-reset links were invalidated/s);
+  });
+
+  await scenario('attendee password validation stays local and rejected or lost changes never claim success', async () => {
+    await cdp.send('Page.navigate', { url: `${origin}/dashboard/profile` });
+    await until(() => evaluate(`document.querySelector('input[name="firstName"]')?.value === 'Fixture'`), 'attendee password validation');
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: 1, mobile: true });
+    assert.equal(await evaluate(`document.querySelector('[aria-labelledby="change-password-title"]').scrollWidth <= document.querySelector('[aria-labelledby="change-password-title"]').clientWidth + 1`), true);
+    const before = passwordChanges.length;
+    await typeField('currentPassword', ' exact current password ');
+    for (const candidate of ['😀'.repeat(14), '😀'.repeat(129)]) {
+      await typeField('newPassword', candidate);
+      await typeField('confirmPassword', candidate);
+      await click('Change password');
+      await until(() => evaluate(`document.querySelector('[name="newPassword"]').getAttribute('aria-invalid') === 'true'`), 'code point validation');
+      assert.equal(passwordChanges.length, before);
+    }
+    await typeField('newPassword', '😀'.repeat(15));
+    await typeField('confirmPassword', 'different confirmation');
+    await click('Change password');
+    await until(() => evaluate(`document.querySelector('[name="confirmPassword"]').getAttribute('aria-invalid') === 'true'`), 'local mismatch');
+    assert.equal(passwordChanges.length, before);
+    for (const length of [15, 128]) {
+      const exact = ' '.repeat(length);
+      await typeField('newPassword', exact);
+      await typeField('confirmPassword', exact);
+      passwordMode = 'reused';
+      await click('Change password');
+      await until(() => evaluate(`(document.body?.innerText ?? '').includes('Choose a new password different')`), 'password reuse feedback');
+      assert.deepEqual(passwordChanges.at(-1), { currentPassword: ' exact current password ', newPassword: exact });
+      assert.equal(await evaluate(`document.activeElement?.name`), 'newPassword');
+    }
+    passwordMode = 'validation';
+    await click('Change password');
+    await until(() => evaluate(`(document.body?.innerText ?? '').includes('Check your account details')`), 'server validation');
+    assert.equal(await evaluate(`document.activeElement?.name`), 'newPassword');
+    assert.doesNotMatch(await evaluate(`document.body.innerText`), /private provider detail|Your password was changed/);
+    passwordMode = 'lost';
+    const beforeLost = passwordChanges.length;
+    await click('Change password');
+    await until(() => evaluate(`(document.body?.innerText ?? '').includes('could not confirm whether your password changed')`), 'lost attendee response');
+    assert.equal(passwordChanges.length, beforeLost + 1);
+    for (const name of ['currentPassword', 'newPassword', 'confirmPassword']) {
+      assert.equal(await evaluate(`document.querySelector('[name="${name}"]').value`), '');
+    }
+    assert.doesNotMatch(await evaluate(`document.body.innerText`), /Your password was changed/);
+    assert.equal(await evaluate(`new URL(document.querySelector('a[href^="/forgot-password"]').href).pathname`), '/forgot-password');
+    passwordMode = 'service';
+    await typeField('currentPassword', ' exact current password ');
+    await typeField('newPassword', ' new attendee password ');
+    await typeField('confirmPassword', ' new attendee password ');
+    await click('Change password');
+    await until(() => evaluate(`document.querySelector('[name="newPassword"]').value === ''`), 'service error clears secrets');
+    assert.doesNotMatch(await evaluate(`document.body.innerText`), /private provider detail|Your password was changed/);
+    passwordMode = 'confirmed';
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
+    await evaluate(`document.querySelector('a[href^="/forgot-password"]').click()`);
+    await until(() => evaluate(`location.pathname === '/forgot-password' && Boolean(document.querySelector('[name="email"]'))`), 'attendee S01 recovery navigation');
   });
 
   await scenario('administrator profile and settings use the current identity and known-password contract', async () => {
