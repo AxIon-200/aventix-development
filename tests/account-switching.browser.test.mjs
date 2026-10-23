@@ -787,6 +787,100 @@ test('account identity stays current and account switching preserves safe bookin
     accountResponse = undefined;
   });
 
+  for (const route of ['/admin/profile', '/admin/settings']) {
+    await scenario(route + ' supports keyboard password changes and safe outcomes on mobile and desktop', async () => {
+      currentRole = 'ADMINISTRATOR';
+      savedProfiles.clear();
+      await cdp.send('Network.clearBrowserCookies');
+      await cdp.send('Network.setCookie', { name: 'fixture-account', value: 'old', url: origin, httpOnly: true, path: '/' });
+      await cdp.send('Page.navigate', { url: origin + '/admin/dashboard' });
+      await until(() => evaluate('(() => { const link = document.querySelector(' + JSON.stringify('nav[aria-label=Workspace] a[href="' + route + '"]') + '); if (location.pathname !== "/admin/dashboard" || !link) return false; link.click(); return true; })()'), 'administrator navigation');
+      await until(() => evaluate('location.pathname === ' + JSON.stringify(route) + ' && Boolean(document.querySelector("input[name=currentPassword]"))'), 'administrator password entry');
+      for (const width of [375, 1440]) {
+        await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: 1, mobile: width === 375 });
+        assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true);
+        assert.equal(await evaluate('Array.from(document.querySelectorAll("input[type=password]")).every(input => { const rect = input.getBoundingClientRect(); return rect.width > 0 && rect.left >= 0 && rect.right <= innerWidth; })'), true);
+      }
+      assert.equal(await evaluate('Boolean(document.querySelector("a[href^=\'/forgot-password\']"))'), true);
+      if (route === '/admin/settings') {
+        assert.match(await evaluate('document.body.innerText'), /Other settings are unavailable/);
+        assert.deepEqual(await evaluate('Array.from(document.querySelectorAll("input")).map(input => input.name).sort()'), ['confirmPassword', 'currentPassword', 'newPassword']);
+        assert.equal(await evaluate('Boolean(document.querySelector("[role=switch], input[type=checkbox], select"))'), false);
+      }
+      const currentPassword = ' exact current e\u0301 password ';
+      const newPassword = ' new administrator password \u{1F600} ';
+      const fill = async confirmation => {
+        await typeField('currentPassword', currentPassword);
+        await typeField('newPassword', newPassword);
+        await typeField('confirmPassword', confirmation);
+      };
+      await fill('mismatch');
+      const beforeMismatch = passwordChanges.length;
+      await click('Change password');
+      await until(() => evaluate('document.activeElement?.name === "confirmPassword" && (document.body?.innerText ?? "").includes("Passwords must match.")'), 'local administrator confirmation');
+      assert.equal(passwordChanges.length, beforeMismatch);
+      await typeField('confirmPassword', newPassword);
+      for (const [mode, feedback] of [['wrong', 'current password is incorrect'], ['reused', 'Choose a new password different']]) {
+        passwordMode = mode;
+        await click('Change password');
+        await until(() => evaluate('(document.body?.innerText ?? "").includes(' + JSON.stringify(feedback) + ') && !document.querySelector("input[name=currentPassword]").matches(":disabled")'), 'administrator rejection');
+        assert.deepEqual(passwordChanges.at(-1), { currentPassword, newPassword });
+        assert.equal(await evaluate('document.querySelector("input[name=newPassword]").value'), newPassword);
+        assert.doesNotMatch(await evaluate('document.body.innerText'), /Your password was changed/);
+      }
+      passwordMode = 'confirmed';
+      await until(() => evaluate('document.activeElement?.name === "newPassword"'), 'rejected field focus');
+      await cdp.send('Page.bringToFront');
+      await evaluate('document.querySelector("input[name=currentPassword]").focus()');
+      assert.equal(await evaluate('document.activeElement.name'), 'currentPassword');
+      for (const expected of ['Show current password', 'newPassword', 'Show new password', 'confirmPassword']) {
+        await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
+        await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
+        assert.equal(await evaluate('document.activeElement.name || document.activeElement.getAttribute("aria-label")'), expected);
+      }
+      await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, text: '\r' });
+      await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+      await until(() => evaluate('(document.body?.innerText ?? "").includes("Your password was changed.")'), 'keyboard administrator change');
+      assert.deepEqual(passwordChanges.at(-1), { currentPassword, newPassword });
+      assert.equal(await evaluate('location.pathname'), route);
+      assert.match(await evaluate('document.body.innerText'), /original expiry.*Other sessions and outstanding password-reset links were invalidated/s);
+      for (const name of ['currentPassword', 'newPassword', 'confirmPassword']) {
+        assert.equal(await evaluate('document.querySelector(' + JSON.stringify('input[name=' + name + ']') + ').value'), '');
+      }
+      for (const mode of ['lost', 'unusable', 'service']) {
+        await fill(newPassword);
+        passwordMode = mode;
+        const writes = passwordChanges.length;
+        const reads = profileReads;
+        await click('Change password');
+        await until(() => evaluate('(document.body?.innerText ?? "").includes("Your current session is still available.")'), 'administrator uncertain outcome');
+        assert.match(await evaluate('document.body.innerText'), /cannot show which password is stored/);
+        assert.doesNotMatch(await evaluate('document.body.innerText'), /Your password was changed|private provider/);
+        for (const name of ['currentPassword', 'newPassword', 'confirmPassword']) {
+          assert.equal(await evaluate('document.querySelector(' + JSON.stringify('input[name=' + name + ']') + ').value'), '');
+        }
+        await delay(200);
+        assert.equal(passwordChanges.length, writes + 1);
+        assert.equal(profileReads, reads + 1);
+        assert.equal(await evaluate('Boolean(document.querySelector("a[href^=\'/login\']")) && Boolean(document.querySelector("a[href^=\'/forgot-password\']"))'), true);
+      }
+      passwordMode = 'confirmed';
+      currentRole = 'ATTENDEE';
+    });
+    await scenario(route + ' hides administrator password controls from other roles and guests', async () => {
+      for (const role of ['ATTENDEE', 'ORGANIZER']) {
+        currentRole = role;
+        await cdp.send('Page.navigate', { url: origin + route });
+        await until(() => evaluate('(document.body?.innerText ?? "").includes("Access denied")'), 'administrator role denial');
+        assert.equal(await evaluate('Boolean(document.querySelector("input[type=password]"))'), false);
+      }
+      await cdp.send('Network.clearBrowserCookies');
+      await cdp.send('Page.navigate', { url: origin + route });
+      await until(() => evaluate('location.pathname === "/login" && Boolean(document.querySelector("input[name=email]"))'), 'administrator guest login');
+      currentRole = 'ATTENDEE';
+    });
+  }
+
   const registrationReturn = '/events/concert/tickets?category=standing';
   const openRegistration = async () => {
     await cdp.send('Network.clearBrowserCookies');
