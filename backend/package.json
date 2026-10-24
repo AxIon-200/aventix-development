@@ -9,6 +9,7 @@
     "test:watch": "vitest",
     "dev": "node --env-file=.env.test --import tsx --watch src/server.ts",
     "seed:events": "npm run build && node --env-file=.env.test dist/commands/seed-events.js",
+    "seed:seats": "npm run build && node --env-file=.env.test dist/commands/prepare-demo-seats.js",
     "build": "tsc",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit"

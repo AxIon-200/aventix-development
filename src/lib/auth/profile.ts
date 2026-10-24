@@ -30,7 +30,7 @@ export function accountFromProfile(value: unknown): AccountSession {
     { label: "Profile", href: "/dashboard/profile" },
   ] : user.role === "ORGANIZER" ? [{ label: "Organizer dashboard", href: "/organizer/dashboard" }]
     : [{ label: "Administrator dashboard", href: "/admin/dashboard" }];
-  return { userId: user.id, role: user.role, displayName: user.name, email: user.email, canBook: user.role === "ATTENDEE", navigation };
+  return { userId: user.id, role: user.role, displayName: user.name, email: user.email, phoneNumber: user.phoneNumber, canBook: user.role === "ATTENDEE", navigation };
 }
 
 export function accountDestination(session: AccountSession, returnTo?: string): string {

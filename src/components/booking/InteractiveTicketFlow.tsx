@@ -1,78 +1,25 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import Image from "next/image";
+import React, { useRef, useState } from "react";
+import PayMongoSimulation from "./PayMongoSimulation";
+import { demoStorageKey, demoRecordsChanged, parseDemoBookings } from "@/lib/attendee-records";
+import { createSimulationSession, completeSimulation, type SimulationSession, type SimulationOutcome } from "@/lib/paymongo-simulation";
 import Link from "next/link";
 import {
   Calendar,
   Clock,
   MapPin,
-  Users,
   Check,
   ChevronRight,
   ArrowLeft,
   ShieldCheck,
-  CreditCard,
-  Plus,
-  X,
-  Ticket as TicketIcon,
   Sparkles,
-  Info,
 } from "lucide-react";
-import InteractiveSeatMap, { type SelectedSeatInfo } from "./InteractiveSeatMap";
+import InteractiveSeatMap from "./InteractiveSeatMap";
 import ConfirmedETicket, { type ETicketData, DEFAULT_ETICKET_DATA } from "./ConfirmedETicket";
 
-interface EventOption {
-  id: string;
-  name: string;
-  genre: string;
-  ageRestriction: string;
-  date: string;
-  time: string;
-  venueName: string;
-  venueAddress: string;
-  organizer: string;
-  lineup: string[];
-}
-
-const AVAILABLE_EVENTS: EventOption[] = [
-  {
-    id: "neon-nights-2026",
-    name: "Neon Nights: Live Sessions",
-    genre: "Electronic / Techno",
-    ageRestriction: "18+ Only",
-    date: "Sat, Dec 5, 2026",
-    time: "7:00 PM (22:00)",
-    venueName: "The Astoria",
-    venueAddress: "2/F Poblacion Strip, Makati City",
-    organizer: "Soundwave PH",
-    lineup: ["Charlotte de Witte", "Enrico Sangiuliano"],
-  },
-  {
-    id: "puth-2026",
-    name: "Charlie Puth - Whatever's Clever! World Tour",
-    genre: "Pop / Live Concert",
-    ageRestriction: "All Ages",
-    date: "Oct 14, 2026",
-    time: "19:30",
-    venueName: "SM Mall of Asia Arena",
-    venueAddress: "Seaside Blvd, Mall of Asia Complex, Pasay",
-    organizer: "Live Nation Philippines",
-    lineup: ["Charlie Puth"],
-  },
-  {
-    id: "wte-2026",
-    name: "wave to earth - The Pieces Tour",
-    genre: "Indie / Alternative",
-    ageRestriction: "All Ages",
-    date: "Nov 15, 2026",
-    time: "19:00",
-    venueName: "SM Mall of Asia Arena",
-    venueAddress: "Seaside Blvd, Mall of Asia Complex, Pasay",
-    organizer: "Live Nation Philippines",
-    lineup: ["wave to earth", "Milena"],
-  },
-];
+import { isCategoryBookable, categoryStateLabel } from "@/lib/event-booking";
+import type { EventDetails, EventSeat } from "@/types/event";
 
 const STEPS = [
   { id: 1, title: "Performance Details", subtitle: "Event info & lineup" },
@@ -82,144 +29,146 @@ const STEPS = [
   { id: 5, title: "Confirmed Booking", subtitle: "Digital pass" },
 ];
 
+export interface BookingAttendee {
+  userId: string;
+  name: string;
+  email: string;
+  phoneNumber: string | null;
+}
+
 export default function InteractiveTicketFlow({
+  events,
   initialEventId,
   initialCategory,
+  attendee,
 }: {
+  events: EventDetails[];
   initialEventId?: string;
   initialCategory?: string;
+  attendee?: BookingAttendee | null;
 }) {
   const [currentStep, setCurrentStep] = useState<number>(1);
-  const [selectedEventId, setSelectedEventId] = useState<string>(
-    initialEventId || "neon-nights-2026"
+  const [selectedEventId, setSelectedEventId] = useState(
+    events.find((event) => event.id === initialEventId)?.id ?? events[0]?.id ?? ""
   );
+  const selectedEvent = events.find((event) => event.id === selectedEventId);
+  const concertTitle = selectedEvent?.name ?? "";
+  // The API maps eventType to type and artistPerformer to performers.
+  const genre = selectedEvent?.type ?? "";
+  const lineup = selectedEvent?.performers ?? [];
+  const artistPerformer = lineup.join(", ");
+  const eventDate = selectedEvent
+    ? new Intl.DateTimeFormat("en-PH", {
+        timeZone: "Asia/Manila", year: "numeric", month: "short", day: "numeric",
+      }).format(new Date(selectedEvent.startsAt))
+    : "";
+  const eventTime = selectedEvent
+    ? new Intl.DateTimeFormat("en-PH", {
+        timeZone: "Asia/Manila", hour: "2-digit", minute: "2-digit", hour12: true,
+      }).format(new Date(selectedEvent.startsAt))
+    : "";
+  const venueLocation = selectedEvent
+    ? [selectedEvent.venue.name, selectedEvent.venue.address].filter(Boolean).join(", ")
+    : "";
 
-  const selectedEvent =
-    AVAILABLE_EVENTS.find((e) => e.id === selectedEventId) || AVAILABLE_EVENTS[0];
-
-  // Performance details state (like Image 1)
-  const [concertTitle, setConcertTitle] = useState(selectedEvent.name);
-  const [genre, setGenre] = useState(selectedEvent.genre);
-  const [ageRestriction, setAgeRestriction] = useState(selectedEvent.ageRestriction);
-  const [eventDate, setEventDate] = useState("2026-12-05");
-  const [eventTime, setEventTime] = useState("22:00");
-  const [venueLocation, setVenueLocation] = useState(
-    `${selectedEvent.venueName}, ${selectedEvent.venueAddress}`
-  );
-  const [lineup, setLineup] = useState<string[]>(selectedEvent.lineup);
-  const [newGuestName, setNewGuestName] = useState("");
-  const [isAddingGuest, setIsAddingGuest] = useState(false);
-
-  // Update when selected event changes
-  useEffect(() => {
-    setConcertTitle(selectedEvent.name);
-    setGenre(selectedEvent.genre);
-    setAgeRestriction(selectedEvent.ageRestriction);
-    setVenueLocation(`${selectedEvent.venueName}, ${selectedEvent.venueAddress}`);
-    setLineup(selectedEvent.lineup);
-  }, [selectedEvent]);
-
-  // Ticket Tiers
-  const ticketTiers = [
-    {
-      id: "vip",
-      name: "VIP Pass",
-      section: "Section A",
-      price: 4500,
-      perks: "Front center rows, fast-track entrance, VIP lounge & soundcheck access",
-      remaining: 45,
-      badge: "Most Popular",
-    },
-    {
-      id: "patron",
-      name: "Patron / Lower Box",
-      section: "Section B",
-      price: 2800,
-      perks: "Prime elevated center sightline, padded stadium seating",
-      remaining: 120,
-    },
-    {
-      id: "balcony",
-      name: "Balcony / Upper Box",
-      section: "Section C",
-      price: 1800,
-      perks: "Panoramic stage view, reserved amphitheater row",
-      remaining: 85,
-    },
-    {
-      id: "ga",
-      name: "General Admission",
-      section: "Open Lawn / Floor",
-      price: 1200,
-      perks: "Standing floor area directly across the main sound rig",
-      remaining: 350,
-    },
-  ];
-
-  const [selectedTierId, setSelectedTierId] = useState<string>("vip");
-  const [ticketQuantity, setTicketQuantity] = useState<number>(1);
-
-  // Seat Selection (Section A, Row 5, Seat 12 like Image 2!)
-  const [selectedSeat, setSelectedSeat] = useState<SelectedSeatInfo>({
-    section: "Section A",
-    row: 5,
-    seat: 12,
-    label: "Section A · Row 5 · Seat 12",
-    tier: "VIP",
-    price: 4500,
-    gate: "Enter via Gate B",
-  });
+  const ticketTiers = selectedEvent?.categories ?? [];
+  const [selectedTierId, setSelectedTierId] = useState(initialCategory ?? "");
+  const activeTier = ticketTiers.find((tier) =>
+    tier.id === selectedTierId && selectedEvent && isCategoryBookable(selectedEvent, tier)
+  ) ?? ticketTiers.find((tier) => selectedEvent && isCategoryBookable(selectedEvent, tier));
+  const [requestedQuantity, setTicketQuantity] = useState(1);
+  const maxQuantity = activeTier ? Math.min(6, activeTier.remaining ?? 6) : 0;
+  const ticketQuantity = Math.min(requestedQuantity, maxQuantity);
+  const [seatSelection, setSelectedSeats] = useState<EventSeat[]>([]);
+  const availableSeats = activeTier?.seats ?? [];
+  const requiresSeats = activeTier?.admissionMode === "ASSIGNED_SEATING";
+  const selectedSeats = seatSelection.filter((seat) => availableSeats.some((available) => available.id === seat.id)).slice(0, ticketQuantity);
+  const seatsComplete = !requiresSeats || (ticketQuantity > 0 && selectedSeats.length === ticketQuantity);
+  const selectedSeat = {
+    label: requiresSeats ? selectedSeats.map((seat) => seat.label).join("; ") || "No seats selected" : "General admission",
+    gate: "See venue entry instructions",
+    tier: activeTier?.name ?? "",
+  };
+  const handleSeatToggle = (seat: EventSeat) => {
+    if (!availableSeats.some((available) => available.id === seat.id)) return;
+    setSelectedSeats((current) => {
+      const valid = current.filter((item) => availableSeats.some((available) => available.id === item.id)).slice(0, ticketQuantity);
+      return valid.some((item) => item.id === seat.id)
+        ? valid.filter((item) => item.id !== seat.id)
+        : valid.length < ticketQuantity ? [...valid, seat] : valid;
+    });
+  };
+  const handleQuantityChange = (delta: number) => {
+    setTicketQuantity((quantity) => maxQuantity > 0 ? Math.max(1, Math.min(maxQuantity, quantity + delta)) : 0);
+    setSelectedSeats([]);
+  };
+  const totalAmount = (activeTier?.price ?? 0) * ticketQuantity;
 
   // Attendee info
-  const [ticketHolderName, setTicketHolderName] = useState("Jamie Dela Cruz");
-  const [attendeeEmail, setAttendeeEmail] = useState("jamie.delacruz@soundwave.ph");
-  const [attendeePhone, setAttendeePhone] = useState("+63 917 555 0123");
+  const ticketHolderName = attendee?.name ?? "";
+  const attendeeEmail = attendee?.email ?? "";
+  const attendeePhone = attendee?.phoneNumber ?? "";
   const [paymentMethod, setPaymentMethod] = useState<"GCash" | "Maya" | "Card">("GCash");
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [simulation, setSimulation] = useState<SimulationSession | null>(null);
+  const activeSimulation = useRef<SimulationSession | null>(null);
+  const [paymentMessage, setPaymentMessage] = useState("");
+  const isProcessingPayment = simulation !== null;
 
   // Confirmed E-Ticket state
   const [eTicketData, setETicketData] = useState<ETicketData>(DEFAULT_ETICKET_DATA);
 
-  // Add guest to lineup
-  const handleAddGuest = () => {
-    if (newGuestName.trim()) {
-      setLineup([...lineup, newGuestName.trim()]);
-      setNewGuestName("");
-      setIsAddingGuest(false);
-    }
-  };
-
-  const handleRemoveGuest = (index: number) => {
-    setLineup(lineup.filter((_, i) => i !== index));
-  };
-
   // Process checkout & transition to confirmation pass
   const handleConfirmBooking = () => {
-    setIsProcessingPayment(true);
-    setTimeout(() => {
-      const activeTier = ticketTiers.find((t) => t.id === selectedTierId) || ticketTiers[0];
-      const now = new Date();
-      const formattedDate = "Oct 2, 2026 09:42";
-      const randomRef = `Ref GC-${Math.floor(10000 + Math.random() * 90000)}-${Math.floor(100000 + Math.random() * 900000)}`;
+    if (!selectedEvent || !activeTier || ticketQuantity < 1 || !seatsComplete) return;
+    if (!attendee?.userId) {
+      setPaymentMessage("Sign in as an attendee before starting a demo checkout.");
+      return;
+    }
+    if (activeSimulation.current || currentStep === 5) return;
+    const session = createSimulationSession(paymentMethod, totalAmount);
+    activeSimulation.current = session;
+    setSimulation(session);
+    setPaymentMessage("");
+  };
+
+  const handleSimulationComplete = (outcome: SimulationOutcome) => {
+    const session = activeSimulation.current;
+    if (!session || session.status !== "pending") return;
+    const result = completeSimulation(session, outcome);
+    activeSimulation.current = null;
+    setSimulation(null);
+    if (result.status !== "paid") {
+      setPaymentMessage(result.status === "failed"
+        ? "Simulated payment failed. No charge was made. Try again or choose another method."
+        : "Checkout cancelled. No charge was made. You can try again.");
+      return;
+    }
+    if (!selectedEvent || !activeTier) return;
+    {
+      const formattedDate = new Intl.DateTimeFormat("en-PH", {
+        timeZone: "Asia/Manila", dateStyle: "medium", timeStyle: "short",
+      }).format(new Date());
+      const randomRef = result.paymentReference!;
 
       const confirmedData: ETicketData = {
         eventTitle: concertTitle,
-        category: "CONCERT",
-        organizer: selectedEvent.organizer,
-        date: "Sat, Dec 5, 2026",
-        time: "7:00 PM",
-        doorsOpenTime: "Doors open 6:00 PM",
-        venueName: selectedEvent.venueName,
-        venueAddress: selectedEvent.venueAddress,
-        ticketHolder: ticketHolderName || "Jamie Dela Cruz",
-        ticketType: activeTier.name.includes("VIP") ? "VIP" : activeTier.name,
+        category: genre,
+        organizer: selectedEvent.organizer.name,
+        date: eventDate,
+        time: eventTime,
+        doorsOpenTime: "",
+        venueName: selectedEvent.venue.name,
+        venueAddress: selectedEvent.venue.address,
+        ticketHolder: ticketHolderName || "Attendee",
+        ticketType: activeTier.name,
         seatInfo: selectedSeat.label,
-        gateInfo: selectedSeat.gate || "Enter via Gate B",
-        bookingRef: "BKG-9031",
-        admitsText: `Ticket 1 of ${ticketQuantity}`,
-        ticketId: "TKT-7F3K-92QD-XM41",
-        priceFormatted: `PHP ${(selectedSeat.price * ticketQuantity).toLocaleString()}.00`,
-        paymentMethod: `Paid with ${paymentMethod}`,
+        gateInfo: selectedSeat.gate,
+        bookingRef: result.id,
+        admitsText: `Admits ${ticketQuantity} ${ticketQuantity === 1 ? "attendee" : "attendees"}`,
+        ticketId: `TKT-DEMO-${crypto.randomUUID()}`,
+        simulation: true,
+        priceFormatted: `PHP ${totalAmount.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        paymentMethod: `PayMongo demo - ${result.method}`,
         paymentDate: formattedDate,
         paymentRef: randomRef,
         supportEmail: "help@soundwave.ph",
@@ -230,33 +179,46 @@ export default function InteractiveTicketFlow({
 
       // Save to localStorage so My Tickets immediately displays it
       try {
-        const stored = localStorage.getItem("aventix_attendee_tickets");
-        const list = stored ? JSON.parse(stored) : [];
+        if (!attendee?.userId) throw new Error("Attendee account required");
+        const key = demoStorageKey(attendee.userId);
+        const list = parseDemoBookings(localStorage.getItem(key));
         list.unshift({
-          id: confirmedData.ticketId,
+          id: result.id,
+          reference: result.id,
+          eventId: selectedEvent.id,
           eventTitle: confirmedData.eventTitle,
-          tier: confirmedData.ticketType,
-          date: confirmedData.date,
+          startsAt: selectedEvent.startsAt,
+          eventStatus: selectedEvent.status,
+          createdAt: new Date().toISOString(),
           venue: confirmedData.venueName,
-          status: "confirmed",
-          seat: confirmedData.seatInfo,
-          price: confirmedData.priceFormatted,
+          status: "DEMO",
+          quantity: ticketQuantity,
+          totalCentavos: result.amountCentavos,
+          paidCentavos: 0,
+          tickets: [],
+          simulation: true,
+          pass: confirmedData,
         });
-        localStorage.setItem("aventix_attendee_tickets", JSON.stringify(list));
+        localStorage.setItem(key, JSON.stringify(list));
+        window.dispatchEvent(new Event(demoRecordsChanged));
       } catch {
-        // storage fallback
+        setPaymentMessage("Your demo pass could not be saved in this browser. You can still view it below.");
       }
 
-      setIsProcessingPayment(false);
       setCurrentStep(5);
-    }, 1200);
+    }
   };
 
-  const activeTier = ticketTiers.find((t) => t.id === selectedTierId) || ticketTiers[0];
-  const totalAmount = selectedSeat.price * ticketQuantity;
+
+  if (!selectedEvent) {
+    return <p role="status" className="rounded-xl border border-white/10 bg-[#111622] p-6 text-slate-300">
+      No concerts are available. Please check again later.
+    </p>;
+  }
 
   return (
     <div className="space-y-8">
+      {simulation && <PayMongoSimulation session={simulation} onComplete={handleSimulationComplete} />}
       {/* Top Banner and Navigation */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
@@ -276,28 +238,12 @@ export default function InteractiveTicketFlow({
           </h1>
           <p className="mt-1 text-xs sm:text-sm text-slate-400">
             {currentStep === 5
-              ? "Your digital pass has been issued. Present this QR code at the venue gate for instant admission."
+              ? "Your demo pass is ready. This simulation does not grant event admission."
               : "Complete the step-by-step reservation, select your preferred numbered seats, and checkout."}
           </p>
         </div>
 
-        {/* Selected Event Quick Dropdown */}
-        {currentStep < 5 && (
-          <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-[#111622] px-3 py-2 text-xs">
-            <span className="text-slate-400">Event:</span>
-            <select
-              value={selectedEventId}
-              onChange={(e) => setSelectedEventId(e.target.value)}
-              className="bg-transparent font-medium text-teal-300 focus:outline-none"
-            >
-              {AVAILABLE_EVENTS.map((ev) => (
-                <option key={ev.id} value={ev.id} className="bg-[#111622] text-white">
-                  {ev.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+
       </div>
 
       {/* Progress Bar (Matching Image 1 Flow) */}
@@ -306,7 +252,7 @@ export default function InteractiveTicketFlow({
           {STEPS.map((step, idx) => {
             const isCompleted = currentStep > step.id;
             const isCurrent = currentStep === step.id;
-            const isClickable = step.id <= currentStep;
+            const isClickable = !isProcessingPayment && (currentStep === 5 ? step.id === 5 : step.id <= currentStep && (step.id < 4 || seatsComplete));
 
             return (
               <React.Fragment key={step.id}>
@@ -374,50 +320,52 @@ export default function InteractiveTicketFlow({
                 <div className="mt-5 space-y-4">
                   {/* Concert Title */}
                   <div>
-                    <label className="block text-xs font-medium text-slate-300">
+                    <label htmlFor="concert-title" className="block text-xs font-medium text-slate-300">
                       Concert Title
                     </label>
-                    <input
-                      type="text"
-                      value={concertTitle}
-                      onChange={(e) => setConcertTitle(e.target.value)}
-                      placeholder="Enter high-energy headline name..."
-                      className="mt-1.5 w-full rounded-xl border border-white/10 bg-[#0B0F19] px-4 py-3 text-sm text-white placeholder-slate-500 transition focus:border-teal-400 focus:outline-none"
-                    />
+                    <select
+                      id="concert-title"
+                      value={selectedEventId}
+                      onChange={(e) => {
+                        setSelectedEventId(e.target.value);
+                        setSelectedTierId("");
+                        setTicketQuantity(1);
+                        setSelectedSeats([]);
+                      }}
+                      className="mt-1.5 w-full rounded-xl border border-white/10 bg-[#0B0F19] px-4 py-3 text-sm text-white transition focus:border-teal-400 focus:outline-none"
+                    >
+                      {events.map((event) => (
+                        <option key={event.id} value={event.id}>{event.name}</option>
+                      ))}
+                    </select>
                   </div>
 
-                  {/* Genre / Category & Age Restriction */}
+                  {/* Genre / Category & Artist Performer */}
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
-                      <label className="block text-xs font-medium text-slate-300">
+                      <label htmlFor="event-category" className="block text-xs font-medium text-slate-300">
                         Genre / Category
                       </label>
-                      <select
+                      <input
+                        id="event-category"
+                        type="text"
                         value={genre}
-                        onChange={(e) => setGenre(e.target.value)}
-                        className="mt-1.5 w-full rounded-xl border border-white/10 bg-[#0B0F19] px-3.5 py-3 text-sm text-white transition focus:border-teal-400 focus:outline-none"
-                      >
-                        <option value="Electronic / Techno">Electronic / Techno</option>
-                        <option value="Pop / Live Concert">Pop / Live Concert</option>
-                        <option value="Indie / Alternative">Indie / Alternative</option>
-                        <option value="Festival / Rave">Festival / Rave</option>
-                      </select>
+                        readOnly
+                        className="mt-1.5 w-full rounded-xl border border-white/10 bg-[#0B0F19] px-3.5 py-3 text-sm text-slate-300"
+                      />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-slate-300">
-                        Age Restriction
+                      <label htmlFor="artist-performer" className="block text-xs font-medium text-slate-300">
+                        Artist Performer
                       </label>
-                      <select
-                        value={ageRestriction}
-                        onChange={(e) => setAgeRestriction(e.target.value)}
-                        className="mt-1.5 w-full rounded-xl border border-white/10 bg-[#0B0F19] px-3.5 py-3 text-sm text-white transition focus:border-teal-400 focus:outline-none"
-                      >
-                        <option value="18+ Only">18+ Only</option>
-                        <option value="All Ages">All Ages</option>
-                        <option value="16+ with Adult">16+ with Adult</option>
-                        <option value="21+ VIP Only">21+ VIP Only</option>
-                      </select>
+                      <input
+                        id="artist-performer"
+                        type="text"
+                        value={artistPerformer}
+                        readOnly
+                        className="mt-1.5 w-full rounded-xl border border-white/10 bg-[#0B0F19] px-3.5 py-3 text-sm text-slate-300"
+                      />
                     </div>
                   </div>
                 </div>
@@ -431,15 +379,15 @@ export default function InteractiveTicketFlow({
                   {/* Date & Time */}
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
-                      <label className="block text-xs font-medium text-slate-300">
+                      <label htmlFor="eventDate" className="block text-xs font-medium text-slate-300">
                         Date of Event
                       </label>
                       <div className="relative mt-1.5">
                         <input
                           type="text"
+                          id="eventDate"
                           value={eventDate}
-                          onChange={(e) => setEventDate(e.target.value)}
-                          placeholder="Oct 24, 2025"
+                          readOnly
                           className="w-full rounded-xl border border-white/10 bg-[#0B0F19] px-4 py-3 pl-10 text-sm text-white transition focus:border-teal-400 focus:outline-none"
                         />
                         <Calendar className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
@@ -447,15 +395,15 @@ export default function InteractiveTicketFlow({
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-slate-300">
+                      <label htmlFor="eventTime" className="block text-xs font-medium text-slate-300">
                         Start Time
                       </label>
                       <div className="relative mt-1.5">
                         <input
                           type="text"
+                          id="eventTime"
                           value={eventTime}
-                          onChange={(e) => setEventTime(e.target.value)}
-                          placeholder="22:00"
+                          readOnly
                           className="w-full rounded-xl border border-white/10 bg-[#0B0F19] px-4 py-3 pl-10 text-sm text-white transition focus:border-teal-400 focus:outline-none"
                         />
                         <Clock className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
@@ -465,15 +413,15 @@ export default function InteractiveTicketFlow({
 
                   {/* Venue Location */}
                   <div>
-                    <label className="block text-xs font-medium text-slate-300">
+                    <label htmlFor="venueLocation" className="block text-xs font-medium text-slate-300">
                       Venue Location
                     </label>
                     <div className="relative mt-1.5">
                       <input
                         type="text"
+                        id="venueLocation"
                         value={venueLocation}
-                        onChange={(e) => setVenueLocation(e.target.value)}
-                        placeholder="Type club name, arena, stadium or warehouse coordinates..."
+                        readOnly
                         className="w-full rounded-xl border border-white/10 bg-[#0B0F19] px-4 py-3 pl-10 text-sm text-white transition focus:border-teal-400 focus:outline-none"
                       />
                       <MapPin className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
@@ -496,49 +444,11 @@ export default function InteractiveTicketFlow({
                       className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-[#0B0F19] px-3.5 py-1.5 text-xs font-medium text-slate-200"
                     >
                       <span>{artist}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveGuest(idx)}
-                        className="text-slate-500 hover:text-white"
-                        aria-label={`Remove ${artist}`}
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
+
                     </span>
                   ))}
 
-                  {isAddingGuest ? (
-                    <div className="inline-flex items-center gap-1">
-                      <input
-                        type="text"
-                        autoFocus
-                        value={newGuestName}
-                        onChange={(e) => setNewGuestName(e.target.value)}
-                        placeholder="Artist name..."
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") handleAddGuest();
-                          if (e.key === "Escape") setIsAddingGuest(false);
-                        }}
-                        className="rounded-full border border-teal-500/40 bg-[#0B0F19] px-3 py-1 text-xs text-white focus:outline-none"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleAddGuest}
-                        className="rounded-full bg-teal-500 px-2.5 py-1 text-[11px] font-bold text-slate-950"
-                      >
-                        Add
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setIsAddingGuest(true)}
-                      className="inline-flex items-center gap-1 rounded-full border border-teal-500/40 bg-teal-500/10 px-3 py-1.5 text-xs font-medium text-teal-300 hover:bg-teal-500/20"
-                    >
-                      <Plus className="h-3 w-3" />
-                      <span>Add Guest</span>
-                    </button>
-                  )}
+
                 </div>
               </div>
 
@@ -594,7 +504,8 @@ export default function InteractiveTicketFlow({
                 {/* Configure Button */}
                 <button
                   type="button"
-                  onClick={() => setCurrentStep(3)}
+                  disabled={!activeTier || ticketQuantity < 1}
+                  onClick={() => { if (activeTier && ticketQuantity > 0) setCurrentStep(3); }}
                   className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-teal-500/40 bg-teal-500/10 py-3 text-xs font-semibold text-teal-300 transition hover:bg-teal-500/20"
                 >
                   <Sparkles className="h-4 w-4" />
@@ -630,47 +541,26 @@ export default function InteractiveTicketFlow({
               </p>
 
               <div className="space-y-3">
+                {ticketTiers.length === 0 && (
+                  <p role="status" className="text-sm text-slate-400">No ticket tiers have been listed for this concert.</p>
+                )}
                 {ticketTiers.map((tier) => {
-                  const isSelected = selectedTierId === tier.id;
+                  const isSelected = activeTier?.id === tier.id;
+                  const isAvailable = isCategoryBookable(selectedEvent, tier);
 
                   return (
-                    <div
+                    <button
+                      type="button"
                       key={tier.id}
+                      aria-pressed={isSelected}
+                      disabled={!isAvailable}
                       onClick={() => {
+                        if (!isAvailable) return;
                         setSelectedTierId(tier.id);
-                        if (tier.id === "vip") {
-                          setSelectedSeat({
-                            section: "Section A",
-                            row: 5,
-                            seat: 12,
-                            label: "Section A · Row 5 · Seat 12",
-                            tier: "VIP",
-                            price: 4500,
-                            gate: "Enter via Gate B",
-                          });
-                        } else if (tier.id === "patron") {
-                          setSelectedSeat({
-                            section: "Section B",
-                            row: 7,
-                            seat: 10,
-                            label: "Section B · Row 7 · Seat 10",
-                            tier: "Patron",
-                            price: 2800,
-                            gate: "Enter via Gate C",
-                          });
-                        } else {
-                          setSelectedSeat({
-                            section: "Section C",
-                            row: 10,
-                            seat: 8,
-                            label: "Section C · Row 10 · Seat 8",
-                            tier: "Balcony",
-                            price: 1800,
-                            gate: "Enter via Gate D",
-                          });
-                        }
+                        setTicketQuantity(1);
+                        setSelectedSeats([]);
                       }}
-                      className={`group cursor-pointer rounded-2xl border p-5 transition-all ${
+                      className={`group w-full rounded-2xl border p-5 text-left transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
                         isSelected
                           ? "border-[#2dd4bf] bg-teal-950/20 shadow-[0_0_20px_rgba(45,212,191,0.15)]"
                           : "border-white/10 bg-[#111622] hover:border-white/20"
@@ -682,27 +572,22 @@ export default function InteractiveTicketFlow({
                             <h3 className="text-base font-bold text-white">
                               {tier.name}
                             </h3>
-                            {tier.badge && (
-                              <span className="rounded-full bg-teal-500/20 px-2 py-0.5 text-[10px] font-bold text-teal-300">
-                                {tier.badge}
-                              </span>
-                            )}
+
                           </div>
-                          <p className="mt-1 text-xs text-slate-400">{tier.perks}</p>
+                          <p className="mt-1 text-xs text-slate-400">{tier.description}</p>
                           <div className="mt-2 flex items-center gap-3 text-xs">
                             <span className="text-teal-400 font-medium">
-                              {tier.section}
+                              {isAvailable ? "Available" : categoryStateLabel(selectedEvent, tier)}
                             </span>
-                            <span className="text-slate-600">•</span>
-                            <span className="text-slate-400">
-                              Only {tier.remaining} tickets left
-                            </span>
+                            {tier.remaining !== undefined && (
+                              <span className="text-slate-400">{tier.remaining} tickets left</span>
+                            )}
                           </div>
                         </div>
 
                         <div className="flex items-center gap-4 sm:flex-col sm:items-end sm:justify-center">
                           <p className="text-xl font-extrabold text-white">
-                            PHP {tier.price.toLocaleString()}
+                            PHP {tier.price.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </p>
                           <div
                             className={`flex h-6 w-6 items-center justify-center rounded-full border transition-all ${
@@ -715,7 +600,7 @@ export default function InteractiveTicketFlow({
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -730,13 +615,21 @@ export default function InteractiveTicketFlow({
                 <div className="mt-4 flex items-center justify-between border-b border-white/10 pb-4">
                   <div>
                     <p className="text-xs font-semibold text-slate-300">Quantity</p>
-                    <p className="text-[11px] text-slate-500">Max 6 per booking</p>
+                    <p className="text-[11px] text-slate-500">
+                      {activeTier ? `Max ${maxQuantity} per booking` : "Tickets unavailable"}
+                    </p>
+                    {activeTier?.remaining !== undefined && (
+                      <p role="status" className="mt-1 text-[11px] text-slate-400">
+                        {activeTier.remaining} {activeTier.remaining === 1 ? "ticket" : "tickets"} available
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-[#0B0F19] px-3 py-1.5">
                     <button
                       type="button"
+                      aria-label="Decrease ticket quantity"
                       disabled={ticketQuantity <= 1}
-                      onClick={() => setTicketQuantity(Math.max(1, ticketQuantity - 1))}
+                      onClick={() => handleQuantityChange(-1)}
                       className="text-sm font-bold text-slate-400 hover:text-white disabled:opacity-30"
                     >
                       -
@@ -746,8 +639,9 @@ export default function InteractiveTicketFlow({
                     </span>
                     <button
                       type="button"
-                      disabled={ticketQuantity >= 6}
-                      onClick={() => setTicketQuantity(Math.min(6, ticketQuantity + 1))}
+                      aria-label="Increase ticket quantity"
+                      disabled={!activeTier || ticketQuantity >= maxQuantity}
+                      onClick={() => handleQuantityChange(1)}
                       className="text-sm font-bold text-slate-400 hover:text-white disabled:opacity-30"
                     >
                       +
@@ -759,10 +653,10 @@ export default function InteractiveTicketFlow({
                 <div className="mt-4 space-y-2 text-xs">
                   <div className="flex justify-between text-slate-400">
                     <span>
-                      {activeTier.name} x {ticketQuantity}
+                      {activeTier?.name ?? "No available tier"} x {ticketQuantity}
                     </span>
                     <span className="font-semibold text-white">
-                      PHP {(activeTier.price * ticketQuantity).toLocaleString()}
+                      PHP {totalAmount.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
                   <div className="flex justify-between text-slate-400">
@@ -772,7 +666,7 @@ export default function InteractiveTicketFlow({
                   <div className="flex justify-between border-t border-white/10 pt-3 text-sm font-bold text-white">
                     <span>Estimated Total</span>
                     <span className="text-[#2dd4bf]">
-                      PHP {totalAmount.toLocaleString()}.00
+                      PHP {totalAmount.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
                 </div>
@@ -780,8 +674,9 @@ export default function InteractiveTicketFlow({
                 {/* Next CTA */}
                 <button
                   type="button"
-                  onClick={() => setCurrentStep(3)}
-                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-teal-500 py-3 text-xs font-bold text-slate-950 transition hover:bg-teal-400"
+                  disabled={!activeTier || ticketQuantity < 1}
+                  onClick={() => { if (activeTier && ticketQuantity > 0) setCurrentStep(3); }}
+                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-teal-500 py-3 text-xs font-bold text-slate-950 transition hover:bg-teal-400 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <span>Select Numbered Seats</span>
                   <ChevronRight className="h-4 w-4" />
@@ -807,9 +702,13 @@ export default function InteractiveTicketFlow({
       {currentStep === 3 && (
         <div className="space-y-6">
           <InteractiveSeatMap
-            selectedSeat={selectedSeat}
-            onSeatSelect={(seat) => setSelectedSeat(seat)}
-            selectedTier={activeTier.name}
+            seats={availableSeats}
+            selectedSeats={selectedSeats}
+            quantity={ticketQuantity}
+            tierName={activeTier?.name ?? ""}
+            ticketPrice={activeTier?.price ?? 0}
+            requiresSeats={requiresSeats}
+            onSeatToggle={handleSeatToggle}
           />
 
           <div className="flex items-center justify-between pt-2">
@@ -824,8 +723,9 @@ export default function InteractiveTicketFlow({
 
             <button
               type="button"
-              onClick={() => setCurrentStep(4)}
-              className="flex items-center gap-2 rounded-xl bg-teal-500 px-6 py-3 text-xs font-bold text-slate-950 transition hover:bg-teal-400"
+              disabled={!activeTier || !seatsComplete}
+              onClick={() => { if (activeTier && seatsComplete) setCurrentStep(4); }}
+              className="flex items-center gap-2 rounded-xl bg-teal-500 px-6 py-3 text-xs font-bold text-slate-950 transition hover:bg-teal-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <span>Proceed to Attendee Checkout</span>
               <ChevronRight className="h-4 w-4" />
@@ -844,46 +744,49 @@ export default function InteractiveTicketFlow({
               <div className="rounded-2xl border border-white/10 bg-[#111622] p-6 shadow-md">
                 <h2 className="text-base font-bold text-white">Attendee Information</h2>
                 <p className="text-xs text-slate-400">
-                  Ticket passes will be issued under this person&apos;s legal name.
+                  {attendee ? "These details come from your attendee account and cannot be changed here." : "Sign in to display your attendee information."}
                 </p>
 
                 <div className="mt-4 space-y-4">
                   <div>
-                    <label className="block text-xs font-medium text-slate-300">
+                    <label htmlFor="ticket-holder-name" className="block text-xs font-medium text-slate-300">
                       Primary Ticket Holder Name
                     </label>
                     <input
                       type="text"
+                      id="ticket-holder-name"
                       value={ticketHolderName}
-                      onChange={(e) => setTicketHolderName(e.target.value)}
-                      placeholder="Jamie Dela Cruz"
+                      readOnly
+                      placeholder="Not available"
                       className="mt-1.5 w-full rounded-xl border border-white/10 bg-[#0B0F19] px-4 py-3 text-sm text-white focus:border-teal-400 focus:outline-none"
                     />
                   </div>
 
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
-                      <label className="block text-xs font-medium text-slate-300">
+                      <label htmlFor="attendee-email" className="block text-xs font-medium text-slate-300">
                         Email Address
                       </label>
                       <input
                         type="email"
+                        id="attendee-email"
                         value={attendeeEmail}
-                        onChange={(e) => setAttendeeEmail(e.target.value)}
-                        placeholder="jamie.delacruz@soundwave.ph"
+                        readOnly
+                        placeholder="Not available"
                         className="mt-1.5 w-full rounded-xl border border-white/10 bg-[#0B0F19] px-4 py-3 text-sm text-white focus:border-teal-400 focus:outline-none"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-slate-300">
+                      <label htmlFor="attendee-phone" className="block text-xs font-medium text-slate-300">
                         Mobile Phone Number
                       </label>
                       <input
                         type="tel"
+                        id="attendee-phone"
                         value={attendeePhone}
-                        onChange={(e) => setAttendeePhone(e.target.value)}
-                        placeholder="+63 917 555 0123"
+                        readOnly
+                        placeholder="Not provided"
                         className="mt-1.5 w-full rounded-xl border border-white/10 bg-[#0B0F19] px-4 py-3 text-sm text-white focus:border-teal-400 focus:outline-none"
                       />
                     </div>
@@ -895,12 +798,14 @@ export default function InteractiveTicketFlow({
               <div className="rounded-2xl border border-white/10 bg-[#111622] p-6 shadow-md">
                 <h2 className="text-base font-bold text-white">Select Payment Method</h2>
                 <p className="text-xs text-slate-400">
-                  Instant ticket issuance upon confirmation.
+                  Simulation only. No payment will be charged.
                 </p>
 
                 <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
                   {/* GCash */}
-                  <label
+                  <button
+                    type="button"
+                    aria-pressed={paymentMethod === "GCash"}
                     onClick={() => setPaymentMethod("GCash")}
                     className={`cursor-pointer rounded-xl border p-4 text-center transition-all ${
                       paymentMethod === "GCash"
@@ -912,10 +817,12 @@ export default function InteractiveTicketFlow({
                     <span className="mt-0.5 block text-[10px] text-slate-500">
                       e-Wallet / QR
                     </span>
-                  </label>
+                  </button>
 
                   {/* Maya */}
-                  <label
+                  <button
+                    type="button"
+                    aria-pressed={paymentMethod === "Maya"}
                     onClick={() => setPaymentMethod("Maya")}
                     className={`cursor-pointer rounded-xl border p-4 text-center transition-all ${
                       paymentMethod === "Maya"
@@ -927,10 +834,12 @@ export default function InteractiveTicketFlow({
                     <span className="mt-0.5 block text-[10px] text-slate-500">
                       Direct Wallet
                     </span>
-                  </label>
+                  </button>
 
                   {/* Card */}
-                  <label
+                  <button
+                    type="button"
+                    aria-pressed={paymentMethod === "Card"}
                     onClick={() => setPaymentMethod("Card")}
                     className={`cursor-pointer rounded-xl border p-4 text-center transition-all ${
                       paymentMethod === "Card"
@@ -942,7 +851,7 @@ export default function InteractiveTicketFlow({
                     <span className="mt-0.5 block text-[10px] text-slate-500">
                       Visa / Mastercard
                     </span>
-                  </label>
+                  </button>
                 </div>
               </div>
             </div>
@@ -955,32 +864,46 @@ export default function InteractiveTicketFlow({
                 <div className="mt-4 space-y-3 divide-y divide-white/10 text-xs">
                   <div className="pb-3">
                     <p className="font-semibold text-white">{concertTitle}</p>
-                    <p className="text-slate-400">{selectedEvent.venueName}</p>
-                    <p className="text-slate-400">{selectedEvent.date}</p>
+                    <p className="mt-1 text-slate-400">{artistPerformer}</p>
+                    <p className="mt-1 text-slate-400">{venueLocation}</p>
+                    <p className="mt-1 text-slate-400">{eventDate} · {eventTime}</p>
                   </div>
 
                   <div className="py-3 space-y-1">
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Allocated Seat:</span>
-                      <span className="font-semibold text-teal-300">
-                        {selectedSeat.label}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Entrance:</span>
-                      <span className="text-slate-300">{selectedSeat.gate}</span>
-                    </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between gap-4">
                       <span className="text-slate-400">Tier:</span>
-                      <span className="text-slate-300">{selectedSeat.tier}</span>
+                      <span className="text-right text-slate-300">{activeTier?.name}</span>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <span className="text-slate-400">Ticket quantity:</span>
+                      <span className="text-slate-300">{ticketQuantity}</span>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <span className="text-slate-400">Price per ticket:</span>
+                      <span className="text-slate-300">PHP {(activeTier?.price ?? 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="pt-2">
+                      <p className="text-slate-400">{requiresSeats ? `Selected seats (${selectedSeats.length}):` : "Admission:"}</p>
+                      {requiresSeats ? (
+                        <ul className="mt-2 space-y-1 text-teal-300">
+                          {selectedSeats.map((seat) => <li key={seat.id}>{seat.label}</li>)}
+                        </ul>
+                      ) : <p className="mt-1 text-teal-300">General admission</p>}
                     </div>
                   </div>
 
                   <div className="pt-3 space-y-2">
+                    <div className="flex justify-between text-slate-400">
+                      <span>Subtotal ({ticketQuantity} × PHP {(activeTier?.price ?? 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })})</span>
+                      <span>PHP {totalAmount.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="flex justify-between text-slate-400">
+                      <span>Processing Fee</span><span className="text-emerald-400">Waived (0.00)</span>
+                    </div>
                     <div className="flex justify-between text-slate-300">
                       <span>Total Amount</span>
                       <span className="text-base font-extrabold text-[#2dd4bf]">
-                        PHP {totalAmount.toLocaleString()}.00
+                        PHP {totalAmount.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-500">
@@ -989,10 +912,11 @@ export default function InteractiveTicketFlow({
                   </div>
                 </div>
 
+                {paymentMessage && <p role="status" className="mt-4 text-sm text-amber-300">{paymentMessage}</p>}
                 {/* Confirm & Pay Button */}
                 <button
                   type="button"
-                  disabled={isProcessingPayment}
+                  disabled={isProcessingPayment || !activeTier || ticketQuantity < 1 || !seatsComplete}
                   onClick={handleConfirmBooking}
                   className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-teal-500 py-3.5 text-xs font-bold text-slate-950 transition hover:bg-teal-400 disabled:opacity-50"
                 >
@@ -1001,7 +925,7 @@ export default function InteractiveTicketFlow({
                   ) : (
                     <>
                       <ShieldCheck className="h-4 w-4" />
-                      <span>Confirm & Pay PHP {totalAmount.toLocaleString()}.00</span>
+                      <span>Open PayMongo demo · PHP {totalAmount.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </>
                   )}
                 </button>
@@ -1025,10 +949,11 @@ export default function InteractiveTicketFlow({
       {/* ================= STEP 5: CONFIRMED BOOKING PASS (EXACTLY MATCHING IMAGE 2) ================= */}
       {currentStep === 5 && (
         <div className="space-y-6">
+          {paymentMessage && <p role="status" className="text-sm text-amber-200">{paymentMessage}</p>}
           <ConfirmedETicket
             data={eTicketData}
             showActions={true}
-            onBookAnother={() => setCurrentStep(1)}
+            onBookAnother={() => { setPaymentMessage(""); setCurrentStep(1); }}
           />
         </div>
       )}

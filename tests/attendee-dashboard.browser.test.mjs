@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { spawn } from 'node:child_process';
-import { cpSync, mkdtempSync, symlinkSync } from 'node:fs';
+import { cpSync, mkdtempSync, symlinkSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { root } from './load-typescript.mjs';
@@ -56,6 +56,12 @@ test('the attendee dashboard remains visible after the browser account check', {
     'next-env.d.ts', 'next.config.ts', 'postcss.config.mjs', 'tailwind.config.ts']) {
     cpSync(path.join(root, entry), path.join(appDirectory, entry), { recursive: true });
   }
+  // Account/navigation coverage should not depend on downloading Google Fonts.
+  const layoutPath = path.join(appDirectory, 'src/app/layout.tsx');
+  writeFileSync(layoutPath, readFileSync(layoutPath, 'utf8')
+    .replace(/import \{ Inter, Space_Grotesk, Geist \} from "next\/font\/google";\r?\n/, '')
+    .replace(/const (?:inter|spaceGrotesk|geist) = [\s\S]*?\}\);\r?\n/g, '')
+    .replace('className={`${inter.variable} ${spaceGrotesk.variable} ${geist.variable}`}', ''));
   symlinkSync(path.join(root, 'node_modules'), path.join(appDirectory, 'node_modules'),
     process.platform === 'win32' ? 'junction' : 'dir');
   const options = { cwd: appDirectory, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
@@ -140,4 +146,20 @@ test('the attendee dashboard remains visible after the browser account check', {
     assert.doesNotMatch(body, /Checking your current account/);
   }
   assert.ok(accountReads >= 4, `Expected server and browser account reads, got ${accountReads}`);
+
+  for (const [route, heading] of [
+    ['/dashboard/tickets', 'My Tickets'],
+    ['/dashboard/booking-history', 'Booking History & Receipts'],
+    ['/dashboard/profile', 'Profile'],
+  ]) {
+    // Exercise sidebar navigation and a direct page load for each route.
+    await evaluate(`document.querySelector('a[href="${route}"]').click()`);
+    await until(async () => (await evaluate('location.pathname')) === route
+      && (await evaluate('document.querySelector("main h1")?.textContent')) === heading
+      && !(await text()).includes('Checking your current account'), `sidebar ${route}`, 20000);
+    await cdp.send('Page.navigate', { url: `${origin}${route}` });
+    await until(async () => (await evaluate('document.querySelector("main h1")?.textContent')) === heading
+      && !(await text()).includes('Checking your current account'), `direct ${route}`, 20000);
+    assert.doesNotMatch(await text(), /This feature is unavailable|Browse public events/);
+  }
 });

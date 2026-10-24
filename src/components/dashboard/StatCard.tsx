@@ -4,7 +4,7 @@ export default function StatCard({ label, value, badge, footnote }: DashboardSta
   return (
     <div className="flex min-w-0 flex-col gap-3 rounded-2xl border border-[#2c3644] bg-[#0b0c10] p-5">
       <p className="text-[13px] font-medium text-[#c5c6c7]">{label}</p>
-      <div className="flex items-baseline justify-between gap-2">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="whitespace-nowrap font-[family-name:var(--font-outfit)] text-[28px] font-bold text-white">
           {value}
         </p>

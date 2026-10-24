@@ -18,6 +18,13 @@ export function isEventPayload(v: unknown): v is EventDetails {
   if (!record(v.organizer) || !text(v.organizer.name) || (v.organizer.description !== undefined && !text(v.organizer.description))) return false;
   if (!["PUBLISHED", "CANCELLED", "COMPLETED"].includes(String(v.status))) return false;
   if (!Array.isArray(v.categories) || !v.categories.every(c => record(c) && text(c.id) && text(c.name) && (c.description === undefined || text(c.description)) && typeof c.price === "number" && Number.isFinite(c.price) && c.price >= 0 && ["ACTIVE", "DISABLED"].includes(String(c.status)) && ["AVAILABLE", "SOLD_OUT", "NOT_YET_OPEN", "SALE_ENDED"].includes(String(c.availability)) && (c.remaining === undefined || (typeof c.remaining === "number" && Number.isInteger(c.remaining) && c.remaining >= 0)) && optionalDate(c.salesStartAt) && optionalDate(c.salesEndAt))) return false;
+  for (const category of v.categories) {
+    if (!record(category)) return false;
+    if (category.admissionMode !== undefined && !["ASSIGNED_SEATING", "GENERAL_ADMISSION"].includes(String(category.admissionMode))) return false;
+    if (category.seats !== undefined && (!Array.isArray(category.seats) || !category.seats.every(seat =>
+      record(seat) && [seat.id, seat.section, seat.row, seat.seatNumber, seat.label].every(text)
+    ))) return false;
+  }
   if (v.playlist !== undefined) {
     const p = v.playlist;
     if (!record(p) || !text(p.label) || !text(p.title) || !image(p.coverUrl) || !Array.isArray(p.tracks)) return false;

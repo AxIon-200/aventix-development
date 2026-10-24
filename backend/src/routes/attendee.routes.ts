@@ -1,18 +1,11 @@
 import { Router } from "express";
-import {
-  getAttendeeDashboard,
-  getAttendeeTickets,
-  getAttendeeBookings,
-} from "../controllers/attendee.controller.js";
-import { requireRole } from "../middlewares/role.middleware.js";
+import { getAttendeeDashboard } from "../controllers/attendee.controller.js";
+import { requireRoles } from "../lib/authorization.js";
+import type { createAuth } from "../lib/auth.js";
 
-const router = Router();
-
-// Protected routes for ATTENDEE (or higher)
-router.use(requireRole("ATTENDEE", "ADMINISTRATOR"));
-
-router.get("/dashboard", getAttendeeDashboard);
-router.get("/tickets", getAttendeeTickets);
-router.get("/bookings", getAttendeeBookings);
-
-export default router;
+export function attendeeRouter(auth: ReturnType<typeof createAuth>) {
+  const router = Router();
+  router.use(requireRoles(auth, ["ATTENDEE"]));
+  router.get("/dashboard", getAttendeeDashboard);
+  return router;
+}

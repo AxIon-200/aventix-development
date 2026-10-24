@@ -76,8 +76,8 @@ export default function WorkspaceScreen({ role, title, returnTo, initial, accoun
 
   const session = account.session;
   const attendeeWorkspace = role === "ATTENDEE" && session?.role === "ATTENDEE" && !account.loading && !account.unavailable;
-  const content = <main id="main-content" onClickCapture={attendeeWorkspace ? undefined : confirmNavigation} className="mx-auto min-h-screen max-w-4xl space-y-6 px-6 py-16">
-    <Link href="/events" className="inline-block text-[#66fcf1] underline">Browse public events</Link>
+  const content = <main id="main-content" onClickCapture={attendeeWorkspace ? undefined : confirmNavigation} className={attendeeWorkspace && children ? "space-y-6 p-4 sm:p-6 lg:p-8" : "mx-auto min-h-screen max-w-4xl space-y-6 px-6 py-16"}>
+    {!attendeeWorkspace && <Link href="/events" className="inline-block text-[#66fcf1] underline">Browse public events</Link>}
     {account.loading ? <p role="status">Checking your current account…</p>
       : account.unavailable ? <section className="space-y-4">
         <h1 className="text-3xl font-semibold">Workspace unavailable</h1>
@@ -96,10 +96,10 @@ export default function WorkspaceScreen({ role, title, returnTo, initial, accoun
         <Link href={workspaceNavigation[session.role][0].href} className="text-[#66fcf1] underline">Go to your permitted workspace</Link>
       </section>
       : <>
-        <header className="space-y-2">
+        {(!attendeeWorkspace || !children) && <header className="space-y-2">
           <h1 className="text-3xl font-semibold">{title}</h1>
           {accountScreen !== "profile" && <p>Signed in as {session.displayName} · {session.email}</p>}
-        </header>
+        </header>}
         {role !== "ATTENDEE" && <nav aria-label="Workspace" className="flex flex-wrap gap-4 border-y border-slate-700 py-4">
           {workspaceNavigation[role].map(item => <Link key={item.href} href={item.href} prefetch={false} className="text-[#66fcf1] underline">{item.label}</Link>)}
         </nav>}
