@@ -50,11 +50,13 @@ test('verification and recovery work in the localhost browser with real backend 
   let resetMode = 'normal';
   let termsMode = 'normal';
   let consentMode = 'normal';
+  let applicationMode = 'normal';
   let verifyRequests = 0;
   let resendRequests = 0;
   let recoveryRequests = 0;
   let resetRequests = 0;
   let consentRequests = 0;
+  let applicationRequests = 0;
   const requestPaths = [];
   const mutationOrigins = [];
   const proxy = createServer((req, res) => {
@@ -65,21 +67,28 @@ test('verification and recovery work in the localhost browser with real backend 
     const recovering = req.url === '/api/auth/request-password-reset';
     const resetting = req.url === '/api/auth/reset-password';
     const accepting = req.url === '/api/auth/accept-terms';
+    const applying = req.url === '/api/v1/organizer-applications';
     if (verifying) verifyRequests++;
     if (resending) resendRequests++;
     if (recovering) recoveryRequests++;
     if (resetting) resetRequests++;
     if (accepting) consentRequests++;
+    if (applying) applicationRequests++;
     if (req.url === '/api/v1/terms' && termsMode === 'unavailable') {
       res.writeHead(503, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: { code: 'INTERNAL_ERROR' } })); return;
     }
-    if ((verifying && verificationMode === 'throttled') || (resending && resendMode === 'throttled') || (recovering && recoveryMode === 'throttled') || (resetting && resetMode === 'throttled') || (accepting && consentMode === 'throttled')) {
+    if ((verifying && verificationMode === 'throttled') || (resending && resendMode === 'throttled') || (recovering && recoveryMode === 'throttled') || (resetting && resetMode === 'throttled') || (accepting && consentMode === 'throttled') || (applying && applicationMode === 'throttled')) {
       res.writeHead(429, { 'Content-Type': 'application/json', 'Retry-After': '37' });
       res.end(JSON.stringify({ error: { code: 'RATE_LIMITED' } })); return;
     }
     const upstream = httpRequest({ hostname: '127.0.0.1', port: ready.port, path: req.url, method: req.method, headers: req.headers }, response => {
-      if ((verifying && verificationMode === 'lost') || (resending && resendMode === 'lost') || (recovering && recoveryMode === 'lost') || (resetting && resetMode === 'lost') || (accepting && consentMode === 'lost')) { response.resume(); response.on('end', () => res.destroy()); return; }
+      if ((verifying && verificationMode === 'lost') || (resending && resendMode === 'lost') || (recovering && recoveryMode === 'lost') || (resetting && resetMode === 'lost') || (accepting && consentMode === 'lost') || (applying && applicationMode === 'lost')) { response.resume(); response.on('end', () => res.destroy()); return; }
+      if (applying && applicationMode === 'unusable') {
+        response.resume();
+        response.on('end', () => { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ unexpected: true })); });
+        return;
+      }
       res.writeHead(response.statusCode, response.headers); response.pipe(res);
     });
     upstream.on('error', () => res.destroy()); req.pipe(upstream);
@@ -124,7 +133,7 @@ test('verification and recovery work in the localhost browser with real backend 
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
   const evaluate = async expression => {
     const result = await cdp.send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
-    if (result.exceptionDetails) throw Error('Browser evaluation failed');
+    if (result.exceptionDetails) throw Error(`Browser evaluation failed: ${result.exceptionDetails.exception?.description ?? result.exceptionDetails.text}`);
     return result.result.value;
   };
   const navigate = url => cdp.send('Page.navigate', { url });
@@ -135,9 +144,17 @@ test('verification and recovery work in the localhost browser with real backend 
       throw error;
     }
   };
-  const click = label => evaluate(`Array.from(document.querySelectorAll('button')).find(button => button.textContent.trim() === ${JSON.stringify(label)}).click()`);
+  const click = async label => {
+    const expression = `Array.from(document.querySelectorAll('button')).find(button => button.textContent.trim() === ${JSON.stringify(label)})`;
+    await until(() => evaluate(`Boolean(${expression})`), label);
+    await evaluate(`${expression}.click()`);
+  };
   const clickLink = label => until(() => evaluate(`(() => { const link = Array.from(document.querySelectorAll('a')).find(a => a.textContent.trim() === ${JSON.stringify(label)}); if (!link) return false; link.click(); return true; })()`), label);
   const fill = (name, value) => evaluate(`document.querySelector('[name="${name}"]').value = ${JSON.stringify(value)}`);
+  const fillSearch = async value => {
+    await evaluate('document.querySelector("#organizer-search").focus()');
+    await cdp.send('Input.insertText', { text: value });
+  };
   const submit = async password => { await fill('currentPassword', password); await click('Verify email'); };
   const reset = async password => { await fill('newPassword', password); await fill('confirmPassword', password); await click('Reset password'); };
   const recover = async email => {
@@ -153,6 +170,10 @@ test('verification and recovery work in the localhost browser with real backend 
 
   const checkTerms = async () => {
     await text('current terms (version');
+    await evaluate('document.querySelector("input[name=terms]").click()');
+  };
+  const checkOrganizerTerms = async () => {
+    await text('current terms, including the concert organizer conditions (version aventix-prototype-2026-10-24-v2)');
     await evaluate('document.querySelector("input[name=terms]").click()');
   };
   const register = async fixture => {
@@ -209,6 +230,244 @@ test('verification and recovery work in the localhost browser with real backend 
     assert.ok(mutationOrigins.length >= 3 && mutationOrigins.every(value => value === origin));
     await cdp.send('Network.clearBrowserCookies');
   });
+
+  const applyAsOrganizer = async fixture => {
+    await navigate(`${origin}/register/organizer`);
+    await text('Apply as an Organizer');
+    await checkOrganizerTerms();
+    for (const [name, value] of Object.entries({ firstName: 'Browser', lastName: 'Organizer',
+      email: fixture.email, organizationName: 'Manila Live',
+      organizationDescription: 'We organize live music events around Manila.',
+      password: fixture.password, confirmPassword: fixture.password })) await fill(name, value);
+    await click('Submit Organizer Application');
+  };
+
+  await command('termsVersion', { version: 'aventix-prototype-2026-10-24-v2' });
+
+  await scenario('a rejected organizer submission shows its rate limit without claiming uncertain creation', async () => {
+    const fixture = await command('registrationFixture');
+    const before = applicationRequests;
+    applicationMode = 'throttled';
+    try {
+      await applyAsOrganizer(fixture);
+      await text('Too many attempts. Please wait before trying again. Try again in 37 seconds.');
+      assert.equal(await evaluate('(document.body?.innerText ?? "").includes("We could not confirm whether your application was saved")'), false);
+      assert.equal(await evaluate('document.querySelector("[name=email]").value'), fixture.email);
+      assert.equal(await evaluate('document.querySelector("[name=password]").value'), '');
+      assert.equal(await evaluate('document.querySelector("button[type=submit]").disabled'), false);
+      assert.equal(applicationRequests, before + 1);
+      assert.equal((await command('messages', { email: fixture.email })).length, 0);
+    } finally { applicationMode = 'normal'; }
+  });
+
+  await scenario('organizer form explains consent and validates fields on mobile without submitting', async () => {
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+    try {
+      await navigate(`${origin}/register/organizer`);
+      await text('Apply as an Organizer');
+      await text('current terms, including the concert organizer conditions (version aventix-prototype-2026-10-24-v2)');
+      assert.equal(await evaluate('document.querySelector("button[type=submit]").disabled'), true);
+      assert.equal(await evaluate('document.documentElement.scrollWidth <= window.innerWidth + 1'), true);
+      await checkOrganizerTerms();
+      for (const [name, value] of Object.entries({ firstName: 'Browser', lastName: 'Organizer',
+        email: 'mobile-organizer@example.com', organizationName: 'X', organizationDescription: 'short',
+        password: 'long organizer passphrase', confirmPassword: 'long organizer passphrase' })) await fill(name, value);
+      const before = applicationRequests;
+      await click('Submit Organizer Application');
+      await text('Use 2–150 Unicode characters.');
+      await text('Use 20–2,000 Unicode characters.');
+      assert.equal(applicationRequests, before);
+    } finally {
+      await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
+    }
+  });
+
+  await scenario('organizer applies, verifies, and sees pending review without a login session', async () => {
+    const fixture = await command('registrationFixture');
+    await applyAsOrganizer(fixture);
+    await text('Your organizer application was saved');
+    assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);
+    const mail = await command('messages', { email: fixture.email });
+    assert.equal(mail.length, 1);
+    await navigate(mail[0].url); await text('Current password');
+    await submit(fixture.password); await text('Your email has been verified');
+    await navigate(`${origin}/login`); await text('Welcome back');
+    await fill('email', fixture.email); await fill('password', 'incorrect password'); await click('Login');
+    await text('The email address or password is incorrect.');
+    assert.equal(await evaluate('Boolean(document.querySelector("dialog[open]"))'), false);
+    await fill('password', fixture.password); await click('Login');
+    await until(() => evaluate('Boolean(document.querySelector("dialog[open]"))'), 'pending application status dialog');
+    assert.equal(await evaluate('document.querySelector("dialog[open]")?.innerText.includes("Being reviewed")'), true);
+    assert.equal(await evaluate('document.querySelector("dialog[open]")?.innerText.includes("awaiting administrator approval")'), true);
+    assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);
+  });
+
+  let reviewAdministrator;
+  await scenario('administrator finds a verified application, approves it, and sees durable history', async () => {
+    const applicant = await command('registrationFixture');
+    await applyAsOrganizer(applicant);
+    await text('Your organizer application was saved');
+    const verification = await command('messages', { email: applicant.email });
+    await navigate(verification[0].url);
+    await text('Current password');
+    await submit(applicant.password);
+    await text('Your email has been verified');
+    const administrator = await command('adminFixture');
+    reviewAdministrator = administrator;
+    await navigate(`${origin}/login`);
+    await text('Welcome back');
+    await fill('email', administrator.email);
+    await fill('password', administrator.password);
+    await click('Login');
+    await until(() => evaluate('location.pathname === "/admin/dashboard"'), 'administrator login');
+    await navigate(`${origin}/admin/organizers`);
+    await text('Organizer applications');
+    await until(() => evaluate('Boolean(document.querySelector("#organizer-search"))'), 'review search');
+    await until(() => evaluate('document.querySelectorAll("tbody tr").length > 0'), 'loaded review rows');
+    await fillSearch(applicant.email);
+    try {
+      await until(() => evaluate(`document.querySelector('#organizer-search')?.value === ${JSON.stringify(applicant.email)}
+        && Array.from(document.querySelectorAll('button')).some(button => button.textContent.trim() === 'Search')`), 'organizer search input', 5000);
+    } catch (error) {
+      console.error('Review search state:', await evaluate('JSON.stringify({path:location.pathname,searchLength:document.querySelector("#organizer-search")?.value.length,buttons:Array.from(document.querySelectorAll("button")).map(button=>button.textContent.trim()).slice(0,20)})'));
+      throw error;
+    }
+    await click('Search');
+    await text(applicant.email);
+    await until(() => evaluate('document.querySelectorAll("tbody tr").length === 1'), 'matching organizer');
+    await click('View details');
+    await text('Submitted application');
+    await text('We organize live music events around Manila.');
+    await click('Approve');
+    await text('Approve this application?');
+    await click('Confirm decision');
+    await text('Decision saved and email accepted by the provider.');
+    await text('Decision history');
+    await until(() => evaluate('(document.body?.innerText ?? "").includes("PENDING → APPROVED")'), 'approved decision history');
+    assert.deepEqual((await command('decisionMessages', { email: applicant.email })).map(message => message.kind), ['APPROVED']);
+    await click('Suspend');
+    await text('Suspend organizer access?');
+    await evaluate(`(() => { const input = document.querySelector('#decision-reason');
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(input, 'Access paused for review');
+      input.dispatchEvent(new Event('input', { bubbles: true })); })()`);
+    await until(() => evaluate('!Array.from(document.querySelectorAll("button")).find(button => button.textContent.trim() === "Confirm decision").disabled'), 'suspension reason');
+    await click('Confirm decision');
+    await until(() => evaluate('(document.body?.innerText ?? "").includes("APPROVED → SUSPENDED")'), 'suspension history');
+    await click('Reinstate');
+    await text('A fresh login will be required.');
+    await click('Confirm decision');
+    await until(() => evaluate('(document.body?.innerText ?? "").includes("SUSPENDED → APPROVED")'), 'reinstatement history');
+    assert.deepEqual((await command('decisionMessages', { email: applicant.email })).map(message => message.kind), ['APPROVED', 'SUSPENDED', 'REINSTATED']);
+    await cdp.send('Network.clearBrowserCookies');
+    await navigate(`${origin}/login`);
+    await text('Welcome back');
+    await fill('email', applicant.email);
+    await fill('password', applicant.password);
+    await click('Login');
+    await until(() => evaluate('location.pathname === "/organizer/dashboard"'), 'approved organizer login');
+    await cdp.send('Network.clearBrowserCookies');
+  });
+
+  await scenario('administrator rejects another verified application with a final reason', async () => {
+    const applicant = await command('registrationFixture');
+    await applyAsOrganizer(applicant);
+    await text('Your organizer application was saved');
+    const verification = await command('messages', { email: applicant.email });
+    await navigate(verification[0].url);
+    await text('Current password');
+    await submit(applicant.password);
+    await text('Your email has been verified');
+    await navigate(`${origin}/login`);
+    await text('Welcome back');
+    await fill('email', reviewAdministrator.email);
+    await fill('password', reviewAdministrator.password);
+    await click('Login');
+    await until(() => evaluate('location.pathname === "/admin/dashboard"'), 'administrator login for rejection');
+    await navigate(`${origin}/admin/organizers`);
+    await text('Organizer applications');
+    await until(() => evaluate('Boolean(document.querySelector("#organizer-search"))'), 'rejection search');
+    await until(() => evaluate('document.querySelectorAll("tbody tr").length > 0'), 'review rows for rejection');
+    await fillSearch(applicant.email);
+    await until(() => evaluate(`document.querySelector('#organizer-search')?.value === ${JSON.stringify(applicant.email)}`), 'rejection search input');
+    await click('Search');
+    await until(() => evaluate('document.querySelectorAll("tbody tr").length === 1'), 'matching rejection applicant');
+    await click('View details');
+    await text('Submitted application');
+    await click('Reject');
+    await text('Reject this application permanently?');
+    await evaluate(`(() => { const input = document.querySelector('#decision-reason');
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(input, 'The music event plan is incomplete');
+      input.dispatchEvent(new Event('input', { bubbles: true })); })()`);
+    await until(() => evaluate('!Array.from(document.querySelectorAll("button")).find(button => button.textContent.trim() === "Confirm decision").disabled'), 'rejection reason');
+    await click('Confirm decision');
+    await until(() => evaluate('(document.body?.innerText ?? "").includes("PENDING → REJECTED")'), 'rejection history');
+    assert.deepEqual((await command('decisionMessages', { email: applicant.email })).map(message => ({ kind: message.kind, reason: message.reason })),
+      [{ kind: 'REJECTED', reason: 'The music event plan is incomplete' }]);
+    await cdp.send('Network.clearBrowserCookies');
+    await navigate(`${origin}/login`);
+    await text('Welcome back');
+    await fill('email', applicant.email);
+    await fill('password', applicant.password);
+    await click('Login');
+    await until(() => evaluate('Boolean(document.querySelector("dialog[open]"))'), 'rejected application status dialog');
+    assert.equal(await evaluate('document.querySelector("dialog[open]")?.innerText.includes("Rejected")'), true);
+    assert.equal(await evaluate('document.querySelector("dialog[open]")?.innerText.includes("This decision is final for this account")'), true);
+    assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);
+  });
+
+  await scenario('lost organizer submission response preserves the non-password draft and does not retry', async () => {
+    const fixture = await command('registrationFixture');
+    const before = applicationRequests;
+    applicationMode = 'lost';
+    try {
+      await applyAsOrganizer(fixture);
+      await text('We could not confirm whether your application was saved');
+      assert.equal(applicationRequests, before + 1);
+      assert.equal(await evaluate('document.querySelector("[name=email]").value'), fixture.email);
+      assert.equal(await evaluate('document.querySelector("[name=organizationName]").value'), 'Manila Live');
+      assert.equal(await evaluate('document.querySelector("[name=password]").value'), '');
+      assert.equal(await evaluate('document.querySelector("[name=confirmPassword]").value'), '');
+      await text('Request another verification email');
+      assert.equal((await command('messages', { email: fixture.email })).length, 1);
+    } finally { applicationMode = 'normal'; }
+  });
+
+  await scenario('unusable organizer submission response preserves the draft and does not retry', async () => {
+    const fixture = await command('registrationFixture');
+    const before = applicationRequests;
+    applicationMode = 'unusable';
+    try {
+      await applyAsOrganizer(fixture);
+      await text('We could not confirm whether your application was saved');
+      assert.equal(applicationRequests, before + 1);
+      assert.equal(await evaluate('document.querySelector("[name=email]").value'), fixture.email);
+      assert.equal(await evaluate('document.querySelector("[name=organizationName]").value'), 'Manila Live');
+      assert.equal(await evaluate('document.querySelector("[name=password]").value'), '');
+      assert.equal(await evaluate('document.querySelector("[name=confirmPassword]").value'), '');
+      assert.equal((await command('messages', { email: fixture.email })).length, 1);
+    } finally { applicationMode = 'normal'; }
+  });
+
+  await scenario('failed organizer verification email leaves a saved application and offers resend', async () => {
+    const fixture = await command('registrationFixture');
+    await command('delivery', { enabled: false });
+    try {
+      await applyAsOrganizer(fixture);
+      await text('Your organizer application was saved, but the verification email could not be sent');
+      await text('Wait at least one minute after applying');
+      await text('Request another verification email');
+      assert.equal((await command('messages', { email: fixture.email })).length, 0);
+      assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);
+    } finally { await command('delivery', { enabled: true }); }
+    await command('advance', { milliseconds: 60000 });
+    await clickLink('Request another verification email');
+    await text('Email for verification');
+    await fill('resendEmail', fixture.email); await click('Request verification email');
+    await text('If this address is eligible, a verification email will be sent.');
+    assert.equal((await command('messages', { email: fixture.email })).length, 1);
+  });
+
+  await command('termsVersion', { version: 'verification-browser-fixture' });
 
   await scenario('failed initial delivery keeps the account, duplicate registration is rejected, and resend supplies a link', async () => {
     const fixture = await command('registrationFixture');

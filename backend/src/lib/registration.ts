@@ -5,6 +5,7 @@ import type { BetterAuthPlugin } from "better-auth";
 import { z } from "zod";
 import type { SendVerificationEmail } from "./verification-email.js";
 import type { SendAuthEmail } from "./auth-email.js";
+import type { SendOrganizerDecisionEmail } from "./organizer-decision-email.js";
 import { env } from "../config/env.js";
 import { Prisma } from "../generated/prisma/client.js";
 import type { CurrentTerms } from "../config/terms.js";
@@ -22,6 +23,7 @@ export interface RegistrationOptions {
   terms?: CurrentTerms;
   sendVerificationEmail: SendVerificationEmail;
   sendPasswordResetEmail?: SendAuthEmail;
+  sendOrganizerDecisionEmail?: SendOrganizerDecisionEmail;
   now: () => Date;
 }
 
@@ -31,6 +33,12 @@ const input = z.object({
   password: z.string().refine(value => value.isWellFormed() && [...value].length >= 15 && [...value].length <= 128),
   phoneNumber: profilePhone.optional(),
   termsAccepted: z.literal(true), termsVersion: z.string(),
+}).strict();
+const organizationText = (min: number, max: number) => z.string().trim().refine(value =>
+  value.isWellFormed() && !value.includes("\u0000") && [...value].length >= min && [...value].length <= max);
+const organizerInput = input.extend({
+  organizationName: organizationText(2, 150),
+  organizationDescription: organizationText(20, 2000),
 }).strict();
 
 class DuplicateEmail extends Error {}
@@ -75,6 +83,25 @@ export function registrationPlugin(options: RegistrationOptions) {
       return { request: new Request(request, { body, headers }) };
     },
     schema: {
+      organizerProfile: { fields: {
+        userId: { type: "string", required: true, unique: true, references: { model: "user", field: "id" } },
+        organizationName: { type: "string", required: true },
+        description: { type: "string", required: false },
+        approvalStatus: { type: "string", required: true },
+        approvedAt: { type: "date", required: false },
+        approvedById: { type: "string", required: false },
+        createdAt: { type: "date", required: true }, updatedAt: { type: "date", required: true },
+      } },
+      organizerApplication: { fields: {
+        userId: { type: "string", required: true, unique: true, references: { model: "user", field: "id" } },
+        organizerProfileId: { type: "string", required: true, unique: true,
+          references: { model: "organizerProfile", field: "id" } },
+        firstName: { type: "string", required: true }, lastName: { type: "string", required: true },
+        email: { type: "string", required: true }, phoneNumber: { type: "string", required: false },
+        organizationName: { type: "string", required: true }, organizationDescription: { type: "string", required: true },
+        termsVersion: { type: "string", required: true }, termsAcceptedAt: { type: "date", required: true },
+        submittedAt: { type: "date", required: true },
+      } },
       activityLog: { fields: {
         userId: { type: "string", required: true, references: { model: "user", field: "id" } },
         action: { type: "string", required: true }, entityType: { type: "string", required: true },
@@ -98,6 +125,68 @@ export function registrationPlugin(options: RegistrationOptions) {
       ...sessionEndpoints(options),
       ...termsAcceptanceEndpoints(options),
       ...profileEndpoints(options),
+      registerOrganizer: createAuthEndpoint("/organizer-application", { method: "POST", body: z.unknown() }, async ctx => {
+        const parsed = organizerInput.safeParse(ctx.body);
+        if (!parsed.success) return errorResponse(400, "VALIDATION_ERROR", "Invalid organizer application input");
+        if (!options.terms) return errorResponse(503, "INTERNAL_ERROR", "Current terms are unavailable");
+        const body = parsed.data;
+        if (body.termsVersion !== options.terms.version) {
+          return errorResponse(409, "TERMS_VERSION_OUTDATED", "Current terms version is required");
+        }
+        let token: string;
+        try {
+          const existing = await ctx.context.internalAdapter.findUserByEmail(body.email);
+          if (existing) throw new DuplicateEmail();
+          const password = await ctx.context.password.hash(body.password);
+          token = await runWithTransaction(ctx.context.adapter, async () => {
+            const adapter = await getCurrentAdapter(ctx.context.adapter);
+            const now = options.now();
+            const user = await ctx.context.internalAdapter.createUser({
+              email: body.email, name: `${body.firstName} ${body.lastName}`,
+              firstName: body.firstName, lastName: body.lastName,
+              phoneNumber: body.phoneNumber ?? null,
+              role: "ORGANIZER", status: "ACTIVE", emailVerified: false,
+              termsVersion: options.terms!.version, termsAcceptedAt: now,
+            }, { method: "email-password" });
+            await ctx.context.internalAdapter.linkAccount({
+              userId: user.id, providerId: "credential", accountId: user.id, password,
+            });
+            const profileId = randomUUID();
+            await adapter.create({ model: "organizerProfile", forceAllowId: true, data: {
+              id: profileId, userId: user.id,
+              organizationName: body.organizationName, description: body.organizationDescription,
+              approvalStatus: "PENDING", createdAt: now, updatedAt: now,
+            } });
+            await adapter.create({ model: "organizerApplication", forceAllowId: true, data: {
+              id: randomUUID(), userId: user.id, organizerProfileId: profileId,
+              firstName: body.firstName, lastName: body.lastName, email: body.email,
+              phoneNumber: body.phoneNumber ?? null,
+              organizationName: body.organizationName, organizationDescription: body.organizationDescription,
+              termsVersion: options.terms!.version, termsAcceptedAt: now, submittedAt: now,
+            } });
+            const token = await issueVerificationLink(adapter, user.id, now);
+            await adapter.create({ model: "emailCooldown", forceAllowId: true, data: {
+              id: randomUUID(), email: body.email, purpose: "EMAIL_VERIFICATION", attemptedAt: now,
+            } });
+            return token;
+          });
+        } catch (error) {
+          if (error instanceof DuplicateEmail || (error instanceof Prisma.PrismaClientKnownRequestError
+            && error.code === "P2002" && error.meta?.modelName === "User")) {
+            return errorResponse(409, "EMAIL_ALREADY_REGISTERED", "Email is already registered");
+          }
+          console.error("Organizer application persistence failed", { correlationId: randomUUID() });
+          return errorResponse(500, "INTERNAL_ERROR", "Request could not be completed");
+        }
+        try {
+          await options.sendVerificationEmail({ to: body.email, url: verificationUrl(token) });
+        } catch {
+          console.error("Verification email delivery failed", { correlationId: randomUUID() });
+          return errorResponse(503, "ACCOUNT_CREATED_EMAIL_FAILED",
+            "Organizer application was saved, but verification email could not be sent. Request another verification email.");
+        }
+        return Response.json({ data: { verificationRequired: true, administratorApprovalRequired: true } }, { status: 201 });
+      }),
       registerAttendee: createAuthEndpoint("/register", { method: "POST", body: z.unknown() }, async ctx => {
         const parsed = input.safeParse(ctx.body);
         if (!parsed.success) return errorResponse(400, "VALIDATION_ERROR", "Invalid registration input");

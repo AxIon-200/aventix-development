@@ -35,10 +35,13 @@ model User {
   authLinks           AuthLink[]
   ticketVerifications TicketVerification[]
   activityLogs        ActivityLog[]
+  contactMessages     ContactMessage[]
 
   // Aventix organizer relationships
   organizerProfile   OrganizerProfile?  @relation("OrganizerOwner")
+  organizerApplication OrganizerApplication?
   approvedOrganizers OrganizerProfile[] @relation("OrganizerApprover")
+  organizerDecisions OrganizerDecision[] @relation("OrganizerDecisionActor")
 
   uploadedEventMedia EventMedia[]
   bookings           Booking[]
@@ -152,6 +155,7 @@ model OrganizerProfile {
   organizationName String
   description      String?
   approvalStatus   OrganizerStatus @default(PENDING)
+  decisionVersion  Int             @default(0)
   approvedAt       DateTime?
   approvedById     String?         @db.Uuid
   createdAt        DateTime        @default(now())
@@ -161,8 +165,69 @@ model OrganizerProfile {
   approvedBy User? @relation("OrganizerApprover", fields: [approvedById], references: [id])
 
   events Event[]
+  application OrganizerApplication?
+  decisions OrganizerDecision[]
 
   @@index([approvalStatus])
+}
+
+// Legacy organizer profiles have no submitted application evidence.
+model OrganizerApplication {
+  id                 String   @id @default(uuid()) @db.Uuid
+  userId             String   @unique @db.Uuid
+  organizerProfileId String   @unique @db.Uuid
+  firstName          String
+  lastName           String
+  email              String
+  phoneNumber       String?
+  organizationName   String
+  organizationDescription String
+  termsVersion       String
+  termsAcceptedAt    DateTime
+  submittedAt        DateTime
+
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizerProfile OrganizerProfile @relation(fields: [organizerProfileId], references: [id], onDelete: Cascade)
+}
+
+enum OrganizerEmailStatus {
+  PENDING
+  SENDING
+  ACCEPTED
+  FAILED
+  UNCERTAIN
+  SUPERSEDED
+}
+
+model OrganizerDecision {
+  id                 String          @id @default(uuid()) @db.Uuid
+  organizerProfileId String          @db.Uuid
+  actorId            String          @db.Uuid
+  previousStatus     OrganizerStatus
+  resultingStatus    OrganizerStatus
+  reason             String?
+  version            Int
+  decidedAt          DateTime
+
+  organizerProfile OrganizerProfile @relation(fields: [organizerProfileId], references: [id], onDelete: Restrict)
+  actor            User             @relation("OrganizerDecisionActor", fields: [actorId], references: [id], onDelete: Restrict)
+  notification     OrganizerDecisionNotification?
+
+  @@unique([organizerProfileId, version])
+  @@index([actorId])
+  @@index([decidedAt])
+}
+
+model OrganizerDecisionNotification {
+  id           String               @id @default(uuid()) @db.Uuid
+  decisionId   String               @unique @db.Uuid
+  status       OrganizerEmailStatus @default(PENDING)
+  attempts     Int                  @default(0)
+  claimedAt    DateTime?
+  attemptedAt  DateTime?
+  updatedAt    DateTime             @updatedAt
+
+  decision OrganizerDecision @relation(fields: [decisionId], references: [id], onDelete: Restrict)
 }
 
 model Venue {
@@ -513,5 +578,20 @@ model ActivityLog {
   @@index([userId])
   @@index([action])
   @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+model ContactMessage {
+  id          String   @id @default(uuid()) @db.Uuid
+  attendeeId  String   @db.Uuid
+  senderName  String
+  senderEmail String
+  subject     String   @db.VarChar(150)
+  message     String
+  createdAt   DateTime @default(now())
+
+  attendee User @relation(fields: [attendeeId], references: [id], onDelete: Restrict)
+
+  @@index([attendeeId, createdAt])
   @@index([createdAt])
 }

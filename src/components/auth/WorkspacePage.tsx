@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, type ReactNode } from "react";
 import { currentServerAccount } from "@/lib/auth/server";
 import { AuthClientError, type AccountRole } from "@/lib/auth/client";
 import { authHref } from "@/lib/auth/destination";
@@ -10,8 +10,8 @@ import WorkspaceScreen from "./WorkspaceScreen";
  * WorkspaceScreen checks the exact role during SSR and again on browser refresh.
  * Future data access must independently authorize through Express.
  */
-export default async function WorkspacePage({ role, title, returnTo }: {
-  role: AccountRole; title: string; returnTo?: string;
+export default async function WorkspacePage({ role, title, returnTo, accountScreen, children }: {
+  role: AccountRole; title: string; returnTo?: string; accountScreen?: "profile" | "settings"; children?: ReactNode;
 }) {
   let initial: AccountState;
   try {
@@ -22,6 +22,6 @@ export default async function WorkspacePage({ role, title, returnTo }: {
   }
   if (!initial.unavailable && !initial.session) redirect(authHref("/login", returnTo));
   return <Suspense fallback={<main id="main-content" className="px-6 py-16"><p role="status">Checking your current account…</p></main>}>
-    <WorkspaceScreen role={role} title={title} returnTo={returnTo} initial={initial} />
+    <WorkspaceScreen role={role} title={title} returnTo={returnTo} initial={initial} accountScreen={accountScreen}>{children}</WorkspaceScreen>
   </Suspense>;
 }

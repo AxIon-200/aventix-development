@@ -1,6 +1,6 @@
 import { prisma } from "./prisma.js";
 import type { UserRole } from "../generated/prisma/client.js";
-import { accountAccessError } from "./account-access.js";
+import { accountAccessError, organizationAccessError } from "./account-access.js";
 
 export async function readCurrentAccountSession(token: string, now: () => Date, roles: readonly UserRole[]) {
   return prisma.$transaction(async tx => {
@@ -17,7 +17,11 @@ export async function readCurrentAccountSession(token: string, now: () => Date, 
     const user = await tx.user.findUnique({ where: { id: session.userId } });
     if (!user) return null;
     const credential = await tx.account.findFirst({ where: { userId: user.id, providerId: "credential" } });
-    const denied = accountAccessError(user, credential, { roles });
+    let denied = accountAccessError(user, credential, { roles });
+    if (!denied && user.role === "ORGANIZER") {
+      const organization = await tx.organizerProfile.findUnique({ where: { userId: user.id } });
+      denied = organizationAccessError(organization?.approvalStatus);
+    }
     return { user, denied };
   }, { isolationLevel: "ReadCommitted" });
 }

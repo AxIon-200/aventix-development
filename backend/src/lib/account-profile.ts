@@ -1,9 +1,9 @@
 import { SELF_SERVICE_ROLES } from "./role-permissions.js";
 import { createAuthEndpoint } from "better-auth/api";
 import { z } from "zod";
-import type { Account, Session, User } from "../generated/prisma/client.js";
+import type { Account, OrganizerProfile, Session, User } from "../generated/prisma/client.js";
 import type { RegistrationOptions } from "./registration.js";
-import { accountAccessError, publicProfile } from "./account-access.js";
+import { accountAccessError, organizationAccessError, publicProfile } from "./account-access.js";
 import { withAccountLock } from "./account-lifecycle.js";
 import { errorResponse } from "./auth-response.js";
 import { profileName, profilePhone } from "./profile-input.js";
@@ -39,6 +39,13 @@ export function profileEndpoints(options: RegistrationOptions) {
           ] });
           const denied = accountAccessError(user, credential, { roles: SELF_SERVICE_ROLES });
           if (denied) return denied;
+          if (user.role === "ORGANIZER") {
+            const organization = await tx.findOne<OrganizerProfile>({ model: "organizerProfile", where: [
+              { field: "userId", value: user.id },
+            ] });
+            const organizationDenied = organizationAccessError(organization?.approvalStatus);
+            if (organizationDenied) return organizationDenied;
+          }
           const changes = parsed.data;
           const nameChanged = changes.firstName !== undefined || changes.lastName !== undefined;
           const updated = await tx.update<User>({ model: "user", where: [{ field: "id", value: user.id }],

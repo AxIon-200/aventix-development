@@ -14,6 +14,8 @@ type DataListProps<T, F extends Record<string, string>> = {
   getRowId: (row: T) => string;
   noun: string; // plural, lowercase: "organizers", "bookings"
   searchPlaceholder?: string;
+  searchInputId?: string;
+  onSearchSubmit?: () => void;
   filters?: FilterConfig[];
   emptyTitle: string;
   emptyDescription?: string;
@@ -29,6 +31,8 @@ export function DataList<T, F extends Record<string, string>>({
   getRowId,
   noun,
   searchPlaceholder,
+  searchInputId,
+  onSearchSubmit,
   filters,
   emptyTitle,
   emptyDescription,
@@ -48,6 +52,8 @@ export function DataList<T, F extends Record<string, string>>({
         search={list.searchInput}
         onSearchChange={list.setSearchInput}
         searchPlaceholder={searchPlaceholder}
+        searchInputId={searchInputId}
+        onSearchSubmit={onSearchSubmit}
         filters={filters}
         filterValues={list.filters}
         onFilterChange={list.setFilter}

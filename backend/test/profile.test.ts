@@ -42,6 +42,9 @@ async function fixture(role = "ATTENDEE") {
       role, status: "ACTIVE", emailVerified: true, phoneNumber: "+639171234567",
       termsVersion: terms.version, termsAcceptedAt: new Date(),
       accounts: { create: { accountId: id, providerId: "credential", password: await hashExactPassword(password) } } } });
+    if (role === "ORGANIZER") await prisma.organizerProfile.create({ data: {
+      userId: id, organizationName: "Controlled approved organizer", approvalStatus: "APPROVED",
+    } });
   }
   const login = await post(app, "/login", { email, password });
   expect(login.status).toBe(200);
@@ -52,6 +55,7 @@ async function fixture(role = "ATTENDEE") {
 
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 afterAll(async () => {
+  await prisma.organizerProfile.deleteMany({ where: { user: { email: { in: emails } } } });
   await prisma.user.deleteMany({ where: { email: { in: emails } } });
   await prisma.emailCooldown.deleteMany({ where: { email: { in: emails } } });
   await prisma.authRateLimit.deleteMany({ where: { expiresAt: { gte: new Date("2095-01-01"), lt: new Date("2095-02-01") } } });

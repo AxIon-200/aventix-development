@@ -5,7 +5,7 @@ import { submitClass } from "./auth/FormField";
 
 export default function OrganizerModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   return <Dialog open={isOpen} onClose={onClose} title="Organizer applications">
-    <p className="my-6 text-sm text-[#c5c6c7]">Applications are awaiting the team’s onboarding policy. No application has been submitted.</p>
-    <Link href="/register/organizer" className={submitClass}>View form preview</Link>
+    <p className="my-6 text-sm text-[#c5c6c7]">Create a separate organizer account, verify its email, and wait for administrator approval before logging in.</p>
+    <Link href="/register/organizer" className={submitClass}>Apply as an organizer</Link>
   </Dialog>;
 }

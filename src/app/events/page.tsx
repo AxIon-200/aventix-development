@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import PageShell from "@/components/layout/PageShell";
-import DemoNotice from "@/components/events/DemoNotice";
 import EventsBrowser from "@/components/events/EventsBrowser";
 import { getEvents } from "@/lib/events-api";
 
@@ -25,7 +24,6 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
           <p className="mt-2 text-[17px] text-[#c5c6c7]">Discover concerts and live experiences happening across the Philippines.</p>
         </div>
       </section>
-      <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-16"><DemoNotice /></div>
       <EventsBrowser key={JSON.stringify([initialQuery, location, date, category])} events={events} initialQuery={initialQuery} initialLocation={typeof location === "string" ? location : undefined} initialDate={typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : undefined} initialCategory={typeof category === "string" ? category : undefined} />
     </PageShell>
   );

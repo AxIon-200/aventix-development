@@ -1,6 +1,6 @@
 import { AuthClientError } from "./errors";
-import { accountFromProfile, accountDestination, isObject } from "./profile";
-import type { PublicAuthClient } from "./client";
+import { accountFromProfile, accountDestination, isObject, personalProfileFromResponse } from "./profile";
+import type { ProfileChanges, PublicAuthClient } from "./client";
 import { accountRequest } from "./transport";
 import { notifyAccountChange as notify } from "./session-events";
 
@@ -58,6 +58,40 @@ export function createBetterAuthClient(transport: typeof fetch = (...args) => fe
   };
   return {
     getSession,
+    getProfile: async () => {
+      if (logoutBlocked) throw new AuthClientError("LOGOUT_UNCERTAIN");
+      const profile = personalProfileFromResponse(await request("/api/v1/me"));
+      if (logoutBlocked) throw new AuthClientError("LOGOUT_UNCERTAIN");
+      return profile;
+    },
+    updateProfile: async (changes: ProfileChanges) => {
+      if (logoutBlocked) throw new AuthClientError("LOGOUT_UNCERTAIN");
+      const body: Record<string, unknown> = {};
+      if (changes.firstName !== undefined) body.firstName = changes.firstName.trim();
+      if (changes.lastName !== undefined) body.lastName = changes.lastName.trim();
+      if (changes.phoneNumber !== undefined) body.phoneNumber = changes.phoneNumber;
+      if (Object.keys(body).length === 0) throw new AuthClientError("VALIDATION_ERROR");
+      let result: unknown;
+      try { result = await accountRequest(transport, "/api/v1/me", body, undefined, "PATCH"); }
+      catch (error) {
+        if (error instanceof AuthClientError && ["UNAVAILABLE", "INVALID_RESPONSE"].includes(error.code)) throw new AuthClientError("REQUEST_UNCERTAIN", error.retryAfter);
+        throw error;
+      }
+      try {
+        const profile = personalProfileFromResponse(result);
+        if (logoutBlocked) throw new AuthClientError("LOGOUT_UNCERTAIN");
+        return profile;
+      } catch (error) {
+        if (error instanceof AuthClientError && error.code === "LOGOUT_UNCERTAIN") throw error;
+        throw new AuthClientError("REQUEST_UNCERTAIN");
+      }
+    },
+    changePassword: async ({ currentPassword, newPassword }) => {
+      if (logoutBlocked) throw new AuthClientError("LOGOUT_UNCERTAIN");
+      const result = await requestCompletion("/api/auth/change-password", { currentPassword, newPassword });
+      if (!isObject(result) || !isObject(result.data) || result.data.passwordChanged !== true) throw new AuthClientError("REQUEST_UNCERTAIN");
+      if (logoutBlocked) throw new AuthClientError("LOGOUT_UNCERTAIN");
+    },
     requestPasswordReset: async ({ email }) => {
       const result = await requestCompletion("/api/auth/request-password-reset", { email: email.trim().toLowerCase() });
       if (!isObject(result) || !isObject(result.data) || result.data.message !== "If an account exists for this address, a password-reset email will be sent.") throw new AuthClientError("REQUEST_UNCERTAIN");
@@ -106,6 +140,22 @@ export function createBetterAuthClient(transport: typeof fetch = (...args) => fe
         throw error;
       }
       if (!isObject(result) || !isObject(result.data) || result.data.verificationRequired !== true) throw new AuthClientError("REQUEST_UNCERTAIN");
+    },
+    registerOrganizer: async data => {
+      let result: unknown;
+      try {
+        result = await request("/api/v1/organizer-applications", {
+          firstName: data.firstName.trim(), lastName: data.lastName.trim(), email: data.email.trim().toLowerCase(),
+          password: data.password, ...(data.phoneNumber === "" || data.phoneNumber === undefined ? {} : { phoneNumber: data.phoneNumber }),
+          organizationName: data.organizationName.trim(), organizationDescription: data.organizationDescription.trim(),
+          termsAccepted: data.termsAccepted, termsVersion: data.termsVersion,
+        });
+      } catch (error) {
+        if (error instanceof AuthClientError && ["UNAVAILABLE", "INVALID_RESPONSE"].includes(error.code)) throw new AuthClientError("REQUEST_UNCERTAIN", error.retryAfter);
+        throw error;
+      }
+      if (!isObject(result) || !isObject(result.data) || result.data.verificationRequired !== true
+        || result.data.administratorApprovalRequired !== true) throw new AuthClientError("REQUEST_UNCERTAIN");
     },
     login: async data => {
       const email = data.email.trim().toLowerCase();

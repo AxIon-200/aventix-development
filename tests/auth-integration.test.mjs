@@ -34,6 +34,28 @@ test('current account permits only supported eligible profiles and exact role na
  await assert.rejects(mismatch.login({email:user().email,password:'exact password'}),e=>e.code==='INVALID_RESPONSE');
 });
 
+test('personal account read returns live fields for the current identity only', async () => {
+ const calls=[];
+ const client=createBetterAuthClient(async(url,options)=>{
+  calls.push({url,options});
+  return profile({...user(),firstName:'Ana',lastName:'Reyes',name:'Ana Reyes',phoneNumber:'+639171234567'});
+ });
+ assert.deepEqual(await client.getProfile(),{
+  id:'u1',firstName:'Ana',lastName:'Reyes',name:'Ana Reyes',email:'review+tag@example.invalid',phoneNumber:'+639171234567',role:'ATTENDEE',
+ });
+ assert.deepEqual(calls.map(call=>call.url),['/api/v1/me']);
+ assert.equal(calls[0].options.cache,'no-store');
+ assert.equal(calls[0].options.credentials,'include');
+ assert.equal(calls[0].options.method,'GET');
+ for(const [reply,code] of [
+  [json({error:{code:'AUTHENTICATION_REQUIRED'}},401),'AUTHENTICATION_REQUIRED'],
+  [json({error:{code:'EMAIL_VERIFICATION_REQUIRED'}},403),'EMAIL_VERIFICATION_REQUIRED'],
+  [json({error:{code:'ACCOUNT_DISABLED'}},403),'ACCOUNT_DISABLED'],
+  [json({error:{code:'INTERNAL_ERROR'}},503),'UNAVAILABLE'],
+  [profile({...user(),phoneNumber:7}),'INVALID_RESPONSE'],
+ ]) await assert.rejects(createBetterAuthClient(async()=>reply).getProfile(),error=>error.code===code);
+});
+
 test('API errors preserve gates, safe validation and retry guidance without displaying provider text', async () => {
  for (const [code,status] of [['INVALID_CREDENTIALS',401],['ACCOUNT_DISABLED',403],['EMAIL_VERIFICATION_REQUIRED',403],['TERMS_ACCEPTANCE_REQUIRED',403],['PASSWORD_RESET_REQUIRED',403]]) {
   const client=createBetterAuthClient(async()=>json({error:{code,message:'secret provider text'}},status));

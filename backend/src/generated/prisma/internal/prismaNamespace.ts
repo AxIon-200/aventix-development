@@ -405,6 +405,9 @@ export const ModelName = {
   Account: 'Account',
   Verification: 'Verification',
   OrganizerProfile: 'OrganizerProfile',
+  OrganizerApplication: 'OrganizerApplication',
+  OrganizerDecision: 'OrganizerDecision',
+  OrganizerDecisionNotification: 'OrganizerDecisionNotification',
   Venue: 'Venue',
   Event: 'Event',
   EventMedia: 'EventMedia',
@@ -416,7 +419,8 @@ export const ModelName = {
   Payment: 'Payment',
   Ticket: 'Ticket',
   TicketVerification: 'TicketVerification',
-  ActivityLog: 'ActivityLog'
+  ActivityLog: 'ActivityLog',
+  ContactMessage: 'ContactMessage'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -432,7 +436,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "authLink" | "emailCooldown" | "authRateLimit" | "session" | "account" | "verification" | "organizerProfile" | "venue" | "event" | "eventMedia" | "ticketCategory" | "eventSeat" | "booking" | "bookingItem" | "bookingSeat" | "payment" | "ticket" | "ticketVerification" | "activityLog"
+    modelProps: "user" | "authLink" | "emailCooldown" | "authRateLimit" | "session" | "account" | "verification" | "organizerProfile" | "organizerApplication" | "organizerDecision" | "organizerDecisionNotification" | "venue" | "event" | "eventMedia" | "ticketCategory" | "eventSeat" | "booking" | "bookingItem" | "bookingSeat" | "payment" | "ticket" | "ticketVerification" | "activityLog" | "contactMessage"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1025,6 +1029,228 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.OrganizerProfileCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.OrganizerProfileCountAggregateOutputType> | number
+        }
+      }
+    }
+    OrganizerApplication: {
+      payload: Prisma.$OrganizerApplicationPayload<ExtArgs>
+      fields: Prisma.OrganizerApplicationFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.OrganizerApplicationFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerApplicationPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.OrganizerApplicationFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerApplicationPayload>
+        }
+        findFirst: {
+          args: Prisma.OrganizerApplicationFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerApplicationPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.OrganizerApplicationFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerApplicationPayload>
+        }
+        findMany: {
+          args: Prisma.OrganizerApplicationFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerApplicationPayload>[]
+        }
+        create: {
+          args: Prisma.OrganizerApplicationCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerApplicationPayload>
+        }
+        createMany: {
+          args: Prisma.OrganizerApplicationCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.OrganizerApplicationCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerApplicationPayload>[]
+        }
+        delete: {
+          args: Prisma.OrganizerApplicationDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerApplicationPayload>
+        }
+        update: {
+          args: Prisma.OrganizerApplicationUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerApplicationPayload>
+        }
+        deleteMany: {
+          args: Prisma.OrganizerApplicationDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.OrganizerApplicationUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.OrganizerApplicationUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerApplicationPayload>[]
+        }
+        upsert: {
+          args: Prisma.OrganizerApplicationUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerApplicationPayload>
+        }
+        aggregate: {
+          args: Prisma.OrganizerApplicationAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateOrganizerApplication>
+        }
+        groupBy: {
+          args: Prisma.OrganizerApplicationGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.OrganizerApplicationGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.OrganizerApplicationCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.OrganizerApplicationCountAggregateOutputType> | number
+        }
+      }
+    }
+    OrganizerDecision: {
+      payload: Prisma.$OrganizerDecisionPayload<ExtArgs>
+      fields: Prisma.OrganizerDecisionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.OrganizerDecisionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerDecisionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.OrganizerDecisionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerDecisionPayload>
+        }
+        findFirst: {
+          args: Prisma.OrganizerDecisionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerDecisionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.OrganizerDecisionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerDecisionPayload>
+        }
+        findMany: {
+          args: Prisma.OrganizerDecisionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerDecisionPayload>[]
+        }
+        create: {
+          args: Prisma.OrganizerDecisionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerDecisionPayload>
+        }
+        createMany: {
+          args: Prisma.OrganizerDecisionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.OrganizerDecisionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerDecisionPayload>[]
+        }
+        delete: {
+          args: Prisma.OrganizerDecisionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerDecisionPayload>
+        }
+        update: {
+          args: Prisma.OrganizerDecisionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerDecisionPayload>
+        }
+        deleteMany: {
+          args: Prisma.OrganizerDecisionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.OrganizerDecisionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.OrganizerDecisionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerDecisionPayload>[]
+        }
+        upsert: {
+          args: Prisma.OrganizerDecisionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerDecisionPayload>
+        }
+        aggregate: {
+          args: Prisma.OrganizerDecisionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateOrganizerDecision>
+        }
+        groupBy: {
+          args: Prisma.OrganizerDecisionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.OrganizerDecisionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.OrganizerDecisionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.OrganizerDecisionCountAggregateOutputType> | number
+        }
+      }
+    }
+    OrganizerDecisionNotification: {
+      payload: Prisma.$OrganizerDecisionNotificationPayload<ExtArgs>
+      fields: Prisma.OrganizerDecisionNotificationFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.OrganizerDecisionNotificationFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerDecisionNotificationPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.OrganizerDecisionNotificationFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerDecisionNotificationPayload>
+        }
+        findFirst: {
+          args: Prisma.OrganizerDecisionNotificationFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerDecisionNotificationPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.OrganizerDecisionNotificationFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerDecisionNotificationPayload>
+        }
+        findMany: {
+          args: Prisma.OrganizerDecisionNotificationFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerDecisionNotificationPayload>[]
+        }
+        create: {
+          args: Prisma.OrganizerDecisionNotificationCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerDecisionNotificationPayload>
+        }
+        createMany: {
+          args: Prisma.OrganizerDecisionNotificationCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.OrganizerDecisionNotificationCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerDecisionNotificationPayload>[]
+        }
+        delete: {
+          args: Prisma.OrganizerDecisionNotificationDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerDecisionNotificationPayload>
+        }
+        update: {
+          args: Prisma.OrganizerDecisionNotificationUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerDecisionNotificationPayload>
+        }
+        deleteMany: {
+          args: Prisma.OrganizerDecisionNotificationDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.OrganizerDecisionNotificationUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.OrganizerDecisionNotificationUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerDecisionNotificationPayload>[]
+        }
+        upsert: {
+          args: Prisma.OrganizerDecisionNotificationUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OrganizerDecisionNotificationPayload>
+        }
+        aggregate: {
+          args: Prisma.OrganizerDecisionNotificationAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateOrganizerDecisionNotification>
+        }
+        groupBy: {
+          args: Prisma.OrganizerDecisionNotificationGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.OrganizerDecisionNotificationGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.OrganizerDecisionNotificationCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.OrganizerDecisionNotificationCountAggregateOutputType> | number
         }
       }
     }
@@ -1916,6 +2142,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    ContactMessage: {
+      payload: Prisma.$ContactMessagePayload<ExtArgs>
+      fields: Prisma.ContactMessageFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ContactMessageFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactMessagePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ContactMessageFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactMessagePayload>
+        }
+        findFirst: {
+          args: Prisma.ContactMessageFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactMessagePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ContactMessageFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactMessagePayload>
+        }
+        findMany: {
+          args: Prisma.ContactMessageFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactMessagePayload>[]
+        }
+        create: {
+          args: Prisma.ContactMessageCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactMessagePayload>
+        }
+        createMany: {
+          args: Prisma.ContactMessageCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ContactMessageCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactMessagePayload>[]
+        }
+        delete: {
+          args: Prisma.ContactMessageDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactMessagePayload>
+        }
+        update: {
+          args: Prisma.ContactMessageUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactMessagePayload>
+        }
+        deleteMany: {
+          args: Prisma.ContactMessageDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ContactMessageUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ContactMessageUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactMessagePayload>[]
+        }
+        upsert: {
+          args: Prisma.ContactMessageUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactMessagePayload>
+        }
+        aggregate: {
+          args: Prisma.ContactMessageAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateContactMessage>
+        }
+        groupBy: {
+          args: Prisma.ContactMessageGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ContactMessageGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ContactMessageCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ContactMessageCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -2059,6 +2359,7 @@ export const OrganizerProfileScalarFieldEnum = {
   organizationName: 'organizationName',
   description: 'description',
   approvalStatus: 'approvalStatus',
+  decisionVersion: 'decisionVersion',
   approvedAt: 'approvedAt',
   approvedById: 'approvedById',
   createdAt: 'createdAt',
@@ -2066,6 +2367,51 @@ export const OrganizerProfileScalarFieldEnum = {
 } as const
 
 export type OrganizerProfileScalarFieldEnum = (typeof OrganizerProfileScalarFieldEnum)[keyof typeof OrganizerProfileScalarFieldEnum]
+
+
+export const OrganizerApplicationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  organizerProfileId: 'organizerProfileId',
+  firstName: 'firstName',
+  lastName: 'lastName',
+  email: 'email',
+  phoneNumber: 'phoneNumber',
+  organizationName: 'organizationName',
+  organizationDescription: 'organizationDescription',
+  termsVersion: 'termsVersion',
+  termsAcceptedAt: 'termsAcceptedAt',
+  submittedAt: 'submittedAt'
+} as const
+
+export type OrganizerApplicationScalarFieldEnum = (typeof OrganizerApplicationScalarFieldEnum)[keyof typeof OrganizerApplicationScalarFieldEnum]
+
+
+export const OrganizerDecisionScalarFieldEnum = {
+  id: 'id',
+  organizerProfileId: 'organizerProfileId',
+  actorId: 'actorId',
+  previousStatus: 'previousStatus',
+  resultingStatus: 'resultingStatus',
+  reason: 'reason',
+  version: 'version',
+  decidedAt: 'decidedAt'
+} as const
+
+export type OrganizerDecisionScalarFieldEnum = (typeof OrganizerDecisionScalarFieldEnum)[keyof typeof OrganizerDecisionScalarFieldEnum]
+
+
+export const OrganizerDecisionNotificationScalarFieldEnum = {
+  id: 'id',
+  decisionId: 'decisionId',
+  status: 'status',
+  attempts: 'attempts',
+  claimedAt: 'claimedAt',
+  attemptedAt: 'attemptedAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type OrganizerDecisionNotificationScalarFieldEnum = (typeof OrganizerDecisionNotificationScalarFieldEnum)[keyof typeof OrganizerDecisionNotificationScalarFieldEnum]
 
 
 export const VenueScalarFieldEnum = {
@@ -2257,6 +2603,19 @@ export const ActivityLogScalarFieldEnum = {
 export type ActivityLogScalarFieldEnum = (typeof ActivityLogScalarFieldEnum)[keyof typeof ActivityLogScalarFieldEnum]
 
 
+export const ContactMessageScalarFieldEnum = {
+  id: 'id',
+  attendeeId: 'attendeeId',
+  senderName: 'senderName',
+  senderEmail: 'senderEmail',
+  subject: 'subject',
+  message: 'message',
+  createdAt: 'createdAt'
+} as const
+
+export type ContactMessageScalarFieldEnum = (typeof ContactMessageScalarFieldEnum)[keyof typeof ContactMessageScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -2364,6 +2723,20 @@ export type EnumOrganizerStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$
  * Reference to a field of type 'OrganizerStatus[]'
  */
 export type ListEnumOrganizerStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OrganizerStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'OrganizerEmailStatus'
+ */
+export type EnumOrganizerEmailStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OrganizerEmailStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'OrganizerEmailStatus[]'
+ */
+export type ListEnumOrganizerEmailStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OrganizerEmailStatus[]'>
     
 
 
@@ -2693,6 +3066,9 @@ export type GlobalOmitConfig = {
   account?: Prisma.AccountOmit
   verification?: Prisma.VerificationOmit
   organizerProfile?: Prisma.OrganizerProfileOmit
+  organizerApplication?: Prisma.OrganizerApplicationOmit
+  organizerDecision?: Prisma.OrganizerDecisionOmit
+  organizerDecisionNotification?: Prisma.OrganizerDecisionNotificationOmit
   venue?: Prisma.VenueOmit
   event?: Prisma.EventOmit
   eventMedia?: Prisma.EventMediaOmit
@@ -2705,6 +3081,7 @@ export type GlobalOmitConfig = {
   ticket?: Prisma.TicketOmit
   ticketVerification?: Prisma.TicketVerificationOmit
   activityLog?: Prisma.ActivityLogOmit
+  contactMessage?: Prisma.ContactMessageOmit
 }
 
 /* Types for Logging */

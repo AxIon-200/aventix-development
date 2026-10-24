@@ -1,5 +1,5 @@
 import { AuthClientError } from "./errors";
-import type { AccountRole, AccountSession } from "./client";
+import type { AccountRole, AccountSession, PersonalAccountProfile } from "./client";
 import { safeReturnTo } from "./destination";
 
 export const isObject = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
@@ -8,7 +8,7 @@ const date = (value: unknown) => typeof value === "string" && Number.isFinite(Da
 const isAccountRole = (value: unknown): value is AccountRole => value === "ATTENDEE" || value === "ORGANIZER" || value === "ADMINISTRATOR";
 
 /** Only a permitted, eligible /me profile supplies identity and UI permissions. */
-export function accountFromProfile(value: unknown): AccountSession {
+export function personalProfileFromResponse(value: unknown): PersonalAccountProfile {
   if (!isObject(value) || !isObject(value.data) || !isObject(value.data.user)) throw new AuthClientError("INVALID_RESPONSE");
   const user = value.data.user;
   if (!text(user.id) || !text(user.name) || !text(user.firstName) || !text(user.lastName) || !text(user.email)
@@ -17,6 +17,12 @@ export function accountFromProfile(value: unknown): AccountSession {
     || user.status !== "ACTIVE" || user.emailVerified !== true || !text(user.termsVersion)
     || !date(user.termsAcceptedAt) || !date(user.createdAt) || !date(user.updatedAt)
     || !(user.phoneNumber === null || typeof user.phoneNumber === "string")) throw new AuthClientError("INVALID_RESPONSE");
+  return { id: user.id, firstName: user.firstName, lastName: user.lastName, name: user.name,
+    email: user.email, phoneNumber: user.phoneNumber, role: user.role };
+}
+
+export function accountFromProfile(value: unknown): AccountSession {
+  const user = personalProfileFromResponse(value);
   const navigation = user.role === "ATTENDEE" ? [
     { label: "Events", href: "/events" },
     { label: "My Tickets", href: "/dashboard/tickets" },

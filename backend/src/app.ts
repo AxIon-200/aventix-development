@@ -7,6 +7,10 @@ import { createAuth } from "./lib/auth.js";
 import { sendVerificationEmail } from "./lib/verification-email.js";
 import type { SendVerificationEmail } from "./lib/verification-email.js";
 import type { SendAuthEmail } from "./lib/auth-email.js";
+import type { SendOrganizerDecisionEmail } from "./lib/organizer-decision-email.js";
+import { contactRouter } from "./routes/contact.routes.js";
+import type { SaveContactMessage } from "./lib/contact-message.js";
+import { organizerReviewRouter } from "./lib/organizer-review.js";
 import apiRouter from "./routes/index.js";
 import { env } from "./config/env.js";
 import { loadCurrentTerms } from "./config/terms.js";
@@ -18,6 +22,8 @@ export interface AppOptions {
   terms?: CurrentTerms;
   sendVerificationEmail?: SendVerificationEmail;
   sendPasswordResetEmail?: SendAuthEmail;
+  sendOrganizerDecisionEmail?: SendOrganizerDecisionEmail;
+  saveContactMessage?: SaveContactMessage;
   now?: () => Date;
   registrationLimit?: number;
   verificationLimit?: number;
@@ -51,6 +57,7 @@ export function createApp(options: AppOptions = {}) {
   };
   const auth = createAuth({ ...(terms ? { terms } : {}),
     ...(options.sendPasswordResetEmail ? { sendPasswordResetEmail: options.sendPasswordResetEmail } : {}),
+    ...(options.sendOrganizerDecisionEmail ? { sendOrganizerDecisionEmail: options.sendOrganizerDecisionEmail } : {}),
     sendVerificationEmail: options.sendVerificationEmail ?? sendVerificationEmail,
     now,
   });
@@ -166,7 +173,58 @@ export function createApp(options: AppOptions = {}) {
     res.json({ data: terms });
   });
 
+  const parseOrganizerBody = express.json({ limit: "16kb", strict: false });
+  app.all("/api/v1/organizer-applications", async (req, res, next) => {
+    res.set("Cache-Control", "no-store");
+    if (req.method !== "POST") {
+      res.set("Allow", "POST").status(405).json({ error: { code: "METHOD_NOT_ALLOWED", message: "Method is not allowed" } });
+      return;
+    }
+    try {
+      const retryAfter = await claimAuthIp(req.ip ?? req.socket.remoteAddress ?? "unknown", now(),
+        "organizer-application", registrationLimit, aggregateLimit);
+      if (retryAfter !== null) {
+        res.set("Retry-After", String(retryAfter)).status(429).json({ error: { code: "RATE_LIMITED", message: "Too many requests" } });
+        return;
+      }
+    } catch {
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Request could not be completed" } });
+      return;
+    }
+    if (req.get("Origin") !== env.FRONTEND_URL) {
+      res.status(403).json({ error: { code: "ORIGIN_NOT_ALLOWED", message: "Request origin is not allowed" } });
+      return;
+    }
+    if (!req.is("application/json")) {
+      res.status(415).json({ error: { code: "UNSUPPORTED_MEDIA_TYPE", message: "JSON content type is required" } });
+      return;
+    }
+    parseOrganizerBody(req, res, next);
+  }, async (req, res) => {
+    try {
+      const response = await auth.api.registerOrganizer({ body: req.body, asResponse: true });
+      res.status(response.status).json(await response.json());
+    } catch {
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Request could not be completed" } });
+    }
+  });
+  app.use("/api/v1/organizer-applications", ((error, _req, res, _next) => {
+    const tooLarge = error?.type === "entity.too.large";
+    res.status(tooLarge ? 413 : 400).json({ error: {
+      code: tooLarge ? "PAYLOAD_TOO_LARGE" : "VALIDATION_ERROR",
+      message: tooLarge ? "Request body is too large" : "Invalid JSON body",
+    } });
+  }) satisfies ErrorRequestHandler);
+
   app.use(express.json());
+
+  app.use("/api/v1/contact", contactRouter(auth, options.saveContactMessage));
+
+  app.use("/api/v1/admin/organizers", organizerReviewRouter(auth, {
+    ...(terms ? { terms } : {}), now,
+    sendVerificationEmail: options.sendVerificationEmail ?? sendVerificationEmail,
+    ...(options.sendOrganizerDecisionEmail ? { sendOrganizerDecisionEmail: options.sendOrganizerDecisionEmail } : {}),
+  }));
 
   app.use("/api/v1", apiRouter);
 

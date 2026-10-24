@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { getEvents } from "@/lib/events-api";
 import EventCard from "@/components/events/EventCard";
-import DemoNotice from "@/components/events/DemoNotice";
 
 /** Retained for the legacy booking-entry component's public prop shape. */
 export interface EventItem { id: string; month: string; day: string; year: string; title: string; artist: string; venue: string; price: string; imageUrl: string }
@@ -20,7 +19,6 @@ export default async function TrendingEvents() {
         <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
       </Link>
     </div>
-    <DemoNotice />
     {events.length ? <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">{events.slice(0, 4).map(event => <EventCard key={event.id} event={event} />)}</ul> : <p className="py-8 text-[#c5c6c7]">No events have been published yet. Check back soon.</p>}
   </section>;
 }

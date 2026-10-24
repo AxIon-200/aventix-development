@@ -1,44 +1,61 @@
-export type OrganizerStatus = "approved" | "review" | "rejected" | "inactive";
+export type OrganizerStatus = "awaiting-verification" | "pending" | "approved" | "rejected" | "suspended";
 export type OrganizerStatusFilter = OrganizerStatus | "all";
-
-// The decision an admin can make from the table / details modal.
-export type OrganizerDecision = "approved" | "rejected";
-
+export type OrganizerDecision = "APPROVED" | "REJECTED" | "SUSPENDED";
 export type OrganizerFilters = { status: OrganizerStatusFilter };
 
-// One row of the table (GET /admin/organizers)
 export type Organizer = {
   id: string;
-  organizerCode: string; // display id, e.g. "ORG-201"
-  name: string;
+  organizationName: string;
+  applicantName: string;
   email: string;
   status: OrganizerStatus;
+  version: number;
+  submittedAt: string | null;
   eventsCount: number;
-  avatarUrl?: string | null;
 };
 
-export type OrganizerEventRow = {
+export type OrganizerDecisionRecord = {
   id: string;
-  title: string;
-  date: string; // ISO
-  status: "published" | "draft";
+  actorId: string;
+  previousStatus: string;
+  resultingStatus: string;
+  reason: string | null;
+  version: number;
+  decidedAt: string;
+  emailStatus: "PENDING" | "SENDING" | "ACCEPTED" | "FAILED" | "UNCERTAIN" | "SUPERSEDED";
+  emailAttempts: number;
 };
 
-// GET /admin/organizers/:id (details modal)
-export type OrganizerDetails = Organizer & {
-  phone?: string | null;
-  appliedAt: string; // ISO
-  publishedEvents: number;
-  draftEvents: number;
-  ticketsSold: number;
-  rejectionReason?: string | null;
-  recentEvents: OrganizerEventRow[]; // up to 5
+export type OrganizerDetails = {
+  id: string;
+  organizationName: string;
+  status: OrganizerStatus;
+  version: number;
+  approvedAt: string | null;
+  currentContact: {
+    firstName: string; lastName: string; email: string; phoneNumber: string | null;
+    emailVerified: boolean; status: string;
+  };
+  application: {
+    firstName: string; lastName: string; email: string; phoneNumber: string | null;
+    organizationName: string; organizationDescription: string; submittedAt: string;
+  } | null;
+  decisions: OrganizerDecisionRecord[];
+  recentEvents: { id: string; name: string; status: string; eventDate: string | null; createdAt: string }[];
 };
 
-// GET /admin/organizers/stats
 export type OrganizerStats = {
   total: number;
-  needsReview: number;
+  awaitingVerification: number;
+  pending: number;
   approved: number;
-  totalEvents: number; // published + draft
+  rejected: number;
+  suspended: number;
+};
+
+export type DecisionResult = {
+  status: OrganizerDecision;
+  version: number;
+  decisionId: string;
+  emailStatus: OrganizerDecisionRecord["emailStatus"];
 };

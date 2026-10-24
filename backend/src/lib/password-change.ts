@@ -2,9 +2,9 @@ import { SELF_SERVICE_ROLES } from "./role-permissions.js";
 import { randomUUID } from "node:crypto";
 import { createAuthEndpoint } from "better-auth/api";
 import { z } from "zod";
-import type { Account, Session, User } from "../generated/prisma/client.js";
+import type { Account, OrganizerProfile, Session, User } from "../generated/prisma/client.js";
 import type { RegistrationOptions } from "./registration.js";
-import { accountAccessError } from "./account-access.js";
+import { accountAccessError, organizationAccessError } from "./account-access.js";
 import { withAccountLock } from "./account-lifecycle.js";
 import { errorResponse } from "./auth-response.js";
 
@@ -42,6 +42,13 @@ export function passwordChangeEndpoints(options: RegistrationOptions) {
           ] });
           const denied = accountAccessError(user, credential, { roles: SELF_SERVICE_ROLES });
           if (denied) return denied;
+          if (user.role === "ORGANIZER") {
+            const organization = await tx.findOne<OrganizerProfile>({ model: "organizerProfile", where: [
+              { field: "userId", value: user.id },
+            ] });
+            const organizationDenied = organizationAccessError(organization?.approvalStatus);
+            if (organizationDenied) return organizationDenied;
+          }
           const { currentPassword, newPassword } = parsed.data;
           if (!await ctx.context.password.verify({ hash: credential!.password!, password: currentPassword })) {
             return errorResponse(401, "CURRENT_PASSWORD_INCORRECT", "Current password is incorrect");

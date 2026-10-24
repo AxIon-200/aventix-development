@@ -1,6 +1,5 @@
 import type { EventDetails } from "@/types/event";
 import { isEventPayload } from "./event-payload";
-import { MOCK_EVENTS } from "./mock-events";
 
 export class EventRequestError extends Error {
   constructor(message: string, public readonly status?: number) {
@@ -9,22 +8,25 @@ export class EventRequestError extends Error {
   }
 }
 
-const API_URL = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ??
+  (process.env.NODE_ENV === "development" ? "http://localhost:5000/api/v1" : undefined);
+
+function eventsApiUrl() {
+  if (!API_URL) throw new EventRequestError("The events API URL is not configured.");
+  return API_URL.replace(/\/$/, "");
+}
 
 /**
  * Fetch one event by id. Returns `null` when the API says it does not exist
  * (404), throws EventRequestError for any other failure. While no API URL is
- * configured it serves the temporary mock list instead.
+ * configured it uses the local backend in development.
  */
 export async function getEventById(id: string): Promise<EventDetails | null> {
-  if (!API_URL) {
-    return MOCK_EVENTS.find((e) => e.id === id) ?? null;
-  }
-
+  const baseUrl = eventsApiUrl();
   let res: Response;
   try {
     // Availability changes with every sale, so never serve a cached copy.
-    res = await fetch(`${API_URL.replace(/\/$/, "")}/events/${encodeURIComponent(id)}`, {
+    res = await fetch(`${baseUrl}/events/${encodeURIComponent(id)}`, {
       cache: "no-store",
       signal: AbortSignal.timeout(15000),
       headers: { Accept: "application/json" },
@@ -43,13 +45,12 @@ export async function getEventById(id: string): Promise<EventDetails | null> {
   return event;
 }
 
-/** Fetch all public events (GET /events). Mock list while no API URL is configured. */
+/** Fetch all public events from the backend (GET /api/v1/events). */
 export async function getEvents(): Promise<EventDetails[]> {
-  if (!API_URL) return MOCK_EVENTS;
-
+  const baseUrl = eventsApiUrl();
   let res: Response;
   try {
-    res = await fetch(`${API_URL.replace(/\/$/, "")}/events`, { cache: "no-store", signal: AbortSignal.timeout(15000), headers: { Accept: "application/json" } });
+    res = await fetch(`${baseUrl}/events`, { cache: "no-store", signal: AbortSignal.timeout(15000), headers: { Accept: "application/json" } });
   } catch {
     throw new EventRequestError("Could not reach the events service.");
   }

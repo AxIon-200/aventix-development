@@ -246,6 +246,23 @@ export type UuidNullableWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedStringNullableFilter<$PrismaModel>
 }
 
+export type EnumOrganizerEmailStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.OrganizerEmailStatus | Prisma.EnumOrganizerEmailStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.OrganizerEmailStatus[] | Prisma.ListEnumOrganizerEmailStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.OrganizerEmailStatus[] | Prisma.ListEnumOrganizerEmailStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumOrganizerEmailStatusFilter<$PrismaModel> | $Enums.OrganizerEmailStatus
+}
+
+export type EnumOrganizerEmailStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.OrganizerEmailStatus | Prisma.EnumOrganizerEmailStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.OrganizerEmailStatus[] | Prisma.ListEnumOrganizerEmailStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.OrganizerEmailStatus[] | Prisma.ListEnumOrganizerEmailStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumOrganizerEmailStatusWithAggregatesFilter<$PrismaModel> | $Enums.OrganizerEmailStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumOrganizerEmailStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumOrganizerEmailStatusFilter<$PrismaModel>
+}
+
 export type DecimalNullableFilter<$PrismaModel = never> = {
   equals?: runtime.Decimal | runtime.DecimalJsLike | number | string | Prisma.DecimalFieldRefInput<$PrismaModel> | null
   in?: runtime.Decimal[] | runtime.DecimalJsLike[] | number[] | string[] | Prisma.ListDecimalFieldRefInput<$PrismaModel> | null
@@ -770,6 +787,23 @@ export type NestedUuidNullableWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
   _min?: Prisma.NestedStringNullableFilter<$PrismaModel>
   _max?: Prisma.NestedStringNullableFilter<$PrismaModel>
+}
+
+export type NestedEnumOrganizerEmailStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.OrganizerEmailStatus | Prisma.EnumOrganizerEmailStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.OrganizerEmailStatus[] | Prisma.ListEnumOrganizerEmailStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.OrganizerEmailStatus[] | Prisma.ListEnumOrganizerEmailStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumOrganizerEmailStatusFilter<$PrismaModel> | $Enums.OrganizerEmailStatus
+}
+
+export type NestedEnumOrganizerEmailStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.OrganizerEmailStatus | Prisma.EnumOrganizerEmailStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.OrganizerEmailStatus[] | Prisma.ListEnumOrganizerEmailStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.OrganizerEmailStatus[] | Prisma.ListEnumOrganizerEmailStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumOrganizerEmailStatusWithAggregatesFilter<$PrismaModel> | $Enums.OrganizerEmailStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumOrganizerEmailStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumOrganizerEmailStatusFilter<$PrismaModel>
 }
 
 export type NestedDecimalNullableFilter<$PrismaModel = never> = {

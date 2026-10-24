@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 const CHANNELS = [
   { title: "Email", body: "support@aventix.ph" },
   { title: "Organizer Support", body: "organizers@aventix.ph" },
-  { title: "Response Time", body: "We aim to reply within 1–2 business days." },
+  { title: "Attendee Messages", body: "Submitted messages are saved for support review." },
 ];
 
 const FAQ = [
@@ -30,7 +30,7 @@ export default function ContactPage() {
               Let’s talk about live music.
             </h1>
             <p className="mt-4 max-w-[590px] text-base leading-7 text-[#c5c6c7]">
-              Questions about tickets, events, organizers, or your Aventix experience? Send us a message and our team will get back to you.
+              Questions about tickets, events, organizers, or your Aventix experience? Submit an attendee message for support review.
             </p>
           </div>
           <div
@@ -75,7 +75,7 @@ export default function ContactPage() {
               Tell us what’s on your mind.
             </h2>
             <p className="mt-[18px] max-w-[440px] text-base text-[#c5c6c7]">
-              Whether you need help with a booking, want to ask about an event, or are interested in becoming an organizer, use the form and we’ll route your message to the right team.
+              Signed-in attendees can ask about a booking, an event, or their Aventix experience here. Organizer inquiries can use the organizer support email above.
             </p>
             <div className="mt-[18px] max-w-[440px] rounded-xl border border-[#2c3644] bg-[#1f2833] p-[18px] text-base text-[#c5c6c7]">
               Aventix Support
@@ -93,7 +93,7 @@ export default function ContactPage() {
           <ul className="mt-4 flex flex-col gap-4">
             {FAQ.map((q) => (
               <li key={q} className="rounded-[14px] border border-[#2c3644] bg-[#1f2833] px-[22px] py-[18px] text-sm font-semibold text-white">
-                <details><summary className="cursor-pointer">{q}</summary><p className="mt-3 text-sm font-normal leading-6 text-[#c5c6c7]">{q.startsWith("Need") ? "Include the event name and your booking reference when contacting support. Never send passwords or payment card details." : q.startsWith("Want") ? "Organizer onboarding is awaiting the team’s agreed policy. The public organizer form is currently a preview." : "Approved refund and policy documents have not been published in this preview. Contact support for event-specific guidance."}</p></details>
+                <details><summary className="cursor-pointer">{q}</summary><p className="mt-3 text-sm font-normal leading-6 text-[#c5c6c7]">{q.startsWith("Need") ? "Include the event name and your booking reference when contacting support. Never send passwords or payment card details." : q.startsWith("Want") ? "Apply from the organizer application form, verify your email, and wait for administrator approval before logging in." : "Approved refund and policy documents have not been published in this preview. Contact support for event-specific guidance."}</p></details>
               </li>
             ))}
           </ul>

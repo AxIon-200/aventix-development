@@ -37,6 +37,9 @@ async function identity(role: typeof roles[number]) {
   await prisma.user.create({ data: { id, email, name: "Role Owner", firstName: "Role", lastName: "Owner",
     role, emailVerified: true, termsVersion: terms.version, termsAcceptedAt: options.now(),
     accounts: { create: { accountId: id, providerId: "credential", password: await hashExactPassword(password) } } } });
+  if (role === "ORGANIZER") await prisma.organizerProfile.create({ data: {
+    userId: id, organizationName: "Controlled approved organizer", approvalStatus: "APPROVED",
+  } });
   return { id, email };
 }
 
@@ -49,8 +52,19 @@ async function login(app: ReturnType<typeof createApp>, email: string) {
 
 afterEach(() => vi.useRealTimers());
 afterAll(async () => {
+  await prisma.organizerProfile.deleteMany({ where: { user: { email: { in: emails } } } });
   await prisma.user.deleteMany({ where: { email: { in: emails } } });
   await prisma.authRateLimit.deleteMany({ where: { expiresAt: { gte: new Date("2098-01-01"), lt: new Date("2098-02-01") } } });
+});
+
+it("fails closed when an organizer has no organization profile", async () => {
+  const app = fixtureApp();
+  const owner = await identity("ORGANIZER");
+  await prisma.organizerProfile.delete({ where: { userId: owner.id } });
+  const denied = await post(app, "/login", { email: owner.email, password });
+  expect(denied.status).toBe(403);
+  expect(denied.body.error.code).toBe("ORGANIZATION_UNAVAILABLE");
+  expect(denied.headers["set-cookie"]).toBeUndefined();
 });
 
 it.each(roles)("enforces every explicit role pair and shared self-service for %s", async role => {
@@ -114,12 +128,17 @@ it("keeps unfinished business operations unavailable to guests and every account
     for (const [method, path] of [
       ["get", "/attendee/dashboard"], ["get", "/attendee/tickets"], ["get", "/attendee/bookings"],
       ["get", "/organizer/dashboard"], ["get", "/organizer/events"], ["post", "/organizer/check-in"],
-      ["get", "/admin/dashboard/overview"], ["get", "/admin/users"], ["get", "/admin/organizers"], ["get", "/admin/bookings"],
+      ["get", "/admin/dashboard/overview"], ["get", "/admin/users"], ["get", "/admin/bookings"],
     ] as const) {
       const pending = request(app)[method](`/api/v1${path}`);
       const response = await (cookie ? pending.set("Cookie", cookie) : pending);
       expect(response.status, `${method} ${path}`).toBe(404);
     }
+  }
+  for (const [index, cookie] of cookies.entries()) {
+    const pending = request(app).get("/api/v1/admin/organizers");
+    const response = await (cookie ? pending.set("Cookie", cookie) : pending);
+    expect(response.status).toBe(index === 0 ? 401 : index === roles.indexOf("ADMINISTRATOR") + 1 ? 200 : 403);
   }
 });
 

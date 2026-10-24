@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import RelatedEvents from "@/components/event/RelatedEvents";
-import DemoNotice from "@/components/events/DemoNotice";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import EventHero from "@/components/event/EventHero";
@@ -37,7 +36,6 @@ export default async function EventDetailsPage({ params }: Props) {
     <div className="flex min-h-screen flex-col bg-[#0b0c10] font-sans text-white">
       <Navbar searchEvents={[event]} />
       <main id="main-content" className="flex-1">
-        <div className="mx-auto max-w-[1440px] px-4 pt-6 sm:px-6 lg:px-16"><DemoNotice /></div>
         <EventHero event={event} booking={booking} />
         <EventSectionNav hasPlaylist={!!event.playlist} hasLineup={event.performers.length > 1} />
         <TicketCategories event={event} booking={booking} />

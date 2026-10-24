@@ -109,6 +109,8 @@ These are proposed conventions for new business APIs; existing approved auth con
 
 ### S02 — Edit the current account and change its password
 
+Design decisions: [S02 current-account profile and password](backend/docs/specs/s02-current-account-profile-and-password.md).
+
 **Outcome:** A user updates allowed personal fields and changes a known password. Recovery request/reset integration now belongs to S01; this slice reuses that flow. **Dependencies:** S01.
 
 **Backend/API:** Reuse `GET/PATCH /me` and `POST /api/auth/change-password`, plus S01's recovery flow; existing lifecycle/session invalidation code and audits.
@@ -124,14 +126,16 @@ These are proposed conventions for new business APIs; existing approved auth con
 
 ### S03 — Apply as an organizer and receive an administrator decision
 
-**Outcome:** A new, separate organizer identity enters review and an administrator approves or rejects the organization. **Dependencies:** S01–S02; organizer onboarding policy decision.
+Design decisions: [S03 organizer application and administrator decision](backend/docs/specs/s03-organizer-application-and-decision.md). Implementation specification: [S03 specification](backend/docs/specs/s03-organizer-application-and-decision-spec.md). The confirmed design governs applicant access, final rejection, and suspension behavior for this slice.
 
-**Data/API:** Extend `OrganizerProfile` for rejection reason/application fields and durable decision history as needed. Proposed `POST /organizer-applications`; `GET /organizer/profile`; admin `GET /admin/organizers`, `/stats`, `/:id`, `/export`; `PATCH /admin/organizers/:id/status`.
+**Outcome:** A new, separate organizer identity enters review and an administrator approves or rejects the organization. **Dependencies:** S01–S02; confirmed S03 design.
 
-1. Specify whether the separate organizer account is created at application or approval, its verification/consent requirements, and rejected/resubmission behavior. Do not convert an existing attendee or reuse their normalized email. Decide whether username/type fields are needed before enabling them.
-2. Persist the application and identity atomically where applicable. Use an explicit restricted pending-organizer policy, so review access never implies publishing privileges.
-3. Implement paginated/searchable admin review, counts, recent owned events, and CSV. Record approver, timestamp, rejection reason, and audit; guard competing decisions.
-4. Replace the disabled application preview and admin mock service only after that contract exists; show actual pending/approved/rejected/suspended states in the organizer workspace.
+**Data/API:** Extend `OrganizerProfile` with immutable application evidence, decision versions/history, reasons, and durable notification state. Proposed `POST /organizer-applications`; admin `GET /admin/organizers`, `/stats`, `/:id`, `/export`; `PATCH /admin/organizers/:id/status`; decision-specific email retry. See the S03 specification for the full API contract.
+
+1. Create the separate organizer account and organization profile at application with genuine current-terms consent; require email verification before administrator review. Do not convert an existing attendee or reuse their normalized email. Omit username/type. Rejection is final for that account, with no correction or resubmission.
+2. Persist the application snapshot and identity atomically. Pending and rejected applicants cannot log in; correct credentials explain their status without a session. Approved organizers use the existing account eligibility checks and current organization approval.
+3. Implement paginated/searchable admin review, counts, recent owned events, and CSV. Record administrator, timestamp, reasons, immutable history, and audit; guard competing decisions. Include suspension with session revocation and reinstatement requiring fresh login, without changing existing events, sales, or attendee access.
+4. Replace the disabled application preview and admin mock service with the confirmed contract. Deliver decisions by email, surface delivery failures to administrators, and retry only current decisions without replaying state changes. Handle uncertain application and decision submissions truthfully.
 
 **Done when:** A real application appears in admin review; approval unlocks the approved organizer actions; rejection reason persists; an unapproved/other organizer cannot publish; an existing attendee's identity remains unchanged.
 
@@ -425,7 +429,7 @@ Audit writes, ownership checks, and failure handling belong in each producing sl
 | --- | --- | --- |
 | Application API transport and environment variables | S01/S05 | Keep `/api/auth` and `/api/v1` distinct; use one application API client convention and explicitly support authenticated server rendering. Verify cookies/origins for the chosen topology. |
 | Reviewed terms, email sender, link destinations | Real-user S01/S02 | Use the existing Phase 1 configuration/operational documentation; fixture terms/mail substitutes are for tests only. |
-| Organizer identity/application/reapplication lifecycle | S03 | Separate organizer identity with server-controlled approval; no attendee promotion. |
+| Organizer identity/application/decision lifecycle | S03 | Separate organizer identity with server-controlled approval; final rejection, no resubmission or attendee promotion. |
 | Music taxonomy and published-event DTO/status mapping | S04/S05 | Preserve concert/gig/music-festival scope; model sellability separately from editorial publication where appropriate. |
 | Assigned seating versus general admission | S04/S06 | Ship assigned seating first to match current validators; explicitly extend contracts before seatless sales. |
 | Hold duration, purchase/category limits, fees, free events | S06/S07 | Server-owned configuration; one fixed deadline; schema's default purchase limit is not evidence that all business decisions are finalized. |

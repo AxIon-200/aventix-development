@@ -1,8 +1,7 @@
 import type { EventDetails } from "@/types/event";
 
 /**
- * TEMPORARY fallback used only while NEXT_PUBLIC_API_URL is unset (the public
- * events API is not available yet). Remove once GET /events/:id is live.
+ * Event payload fixture used by frontend unit tests only.
  */
 const baseVenue = {
   name: "SM Mall of Asia Arena",
