@@ -1,12 +1,14 @@
 import type { TicketStatus } from "@/lib/dashboard";
 
 const styles: Record<TicketStatus, string> = {
+  demo: "bg-amber-400/15 text-amber-200",
   confirmed: "bg-[#10b981]/[0.12] text-[#10b981]",
   pending: "bg-[#fabf24]/15 text-[#fabf24]",
   cancelled: "bg-red-500/15 text-red-400",
 };
 
 const labels: Record<TicketStatus, string> = {
+  demo: "Simulation",
   confirmed: "Confirmed",
   pending: "Pending",
   cancelled: "Cancelled",

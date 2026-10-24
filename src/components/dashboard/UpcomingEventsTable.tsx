@@ -56,7 +56,7 @@ export default function UpcomingEventsTable({ events }: { events: UpcomingEvent[
               </td>
               <td className="p-4">
                 <Link
-                  href={`/dashboard/tickets/${event.ticketId}`}
+                  href="/dashboard/tickets"
                   className="font-semibold text-[#66fcf1] hover:underline"
                 >
                   View Ticket

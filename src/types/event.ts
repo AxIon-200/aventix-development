@@ -8,6 +8,14 @@ export type EventStatus = "PUBLISHED" | "CANCELLED" | "COMPLETED";
 export type CategoryStatus = "ACTIVE" | "DISABLED";
 export type CategoryAvailability = "AVAILABLE" | "NOT_YET_OPEN" | "SALE_ENDED" | "SOLD_OUT";
 
+export interface EventSeat {
+  id: string;
+  section: string;
+  row: string;
+  seatNumber: string;
+  label: string;
+}
+
 export interface TicketCategory {
   id: string;
   name: string; // e.g. General Admission, VIP, VVIP
@@ -16,6 +24,8 @@ export interface TicketCategory {
   status: CategoryStatus;
   availability: CategoryAvailability;
   remaining?: number;
+  admissionMode?: "ASSIGNED_SEATING" | "GENERAL_ADMISSION";
+  seats?: EventSeat[]; // Only enabled seats without an active booking or hold.
   salesStartAt?: string; // ISO
   salesEndAt?: string; // ISO
 }

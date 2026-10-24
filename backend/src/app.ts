@@ -12,6 +12,7 @@ import { contactRouter } from "./routes/contact.routes.js";
 import type { SaveContactMessage } from "./lib/contact-message.js";
 import { organizerReviewRouter } from "./lib/organizer-review.js";
 import apiRouter from "./routes/index.js";
+import { attendeeRouter } from "./routes/attendee.routes.js";
 import { env } from "./config/env.js";
 import { loadCurrentTerms } from "./config/terms.js";
 import type { CurrentTerms } from "./config/terms.js";
@@ -227,6 +228,7 @@ export function createApp(options: AppOptions = {}) {
   }));
 
   app.use("/api/v1", apiRouter);
+  app.use("/api/v1/attendee", attendeeRouter(auth));
 
   return app;
 }

@@ -1,11 +1,36 @@
 import { prisma } from "../lib/prisma.js";
+import type { Prisma } from "../generated/prisma/client.js";
 
 const eventInclude = {
   venue: true,
   organizer: true,
   media: { orderBy: { displayOrder: "asc" as const } },
-  ticketCategories: { orderBy: { price: "asc" as const } },
-} as const;
+  ticketCategories: {
+    orderBy: { price: "asc" as const },
+    include: {
+      seats: {
+        where: { enabled: true },
+        orderBy: [{ row: "asc" as const }, { seatNumber: "asc" as const }],
+        include: {
+          bookingSeats: {
+            select: {
+              allocationStatus: true,
+              bookingItem: { select: { booking: { select: { status: true, expiresAt: true } } } },
+            },
+          },
+        },
+      },
+      bookingItems: {
+        where: {
+          booking: {
+            status: { in: ["CONFIRMED", "PENDING_PAYMENT"] },
+          },
+        },
+        select: { quantity: true, booking: { select: { status: true, expiresAt: true } } },
+      },
+    },
+  },
+} satisfies Prisma.EventInclude;
 
 type PublicEventRow = NonNullable<Awaited<ReturnType<typeof findEvent>>>;
 
@@ -13,8 +38,9 @@ function availability(
   event: PublicEventRow,
   category: PublicEventRow["ticketCategories"][number],
   now: Date,
+  remaining: number | undefined,
 ) {
-  if (event.status === "SOLD_OUT" || category.maxCapacity === 0) return "SOLD_OUT";
+  if (event.status === "SOLD_OUT" || remaining === 0) return "SOLD_OUT";
   const start = category.saleStartAt ?? event.ticketSaleStart;
   const end = category.saleEndAt ?? event.ticketSaleEnd;
   if (start && now < start) return "NOT_YET_OPEN";
@@ -52,17 +78,35 @@ function toPublicEvent(event: PublicEventRow) {
     status: event.status === "SOLD_OUT" ? "PUBLISHED" : event.status,
     ...(event.ticketSaleStart ? { salesStartAt: event.ticketSaleStart.toISOString() } : {}),
     ...(event.ticketSaleEnd ? { salesEndAt: event.ticketSaleEnd.toISOString() } : {}),
-    categories: event.ticketCategories.map((category) => ({
-      id: category.id,
-      name: category.name,
-      ...(category.description ? { description: category.description } : {}),
-      price: category.price.toNumber(),
-      status: category.status,
-      availability: availability(event, category, now),
-      ...(event.status === "SOLD_OUT" ? { remaining: 0 } : {}),
-      ...(category.saleStartAt ? { salesStartAt: category.saleStartAt.toISOString() } : {}),
-      ...(category.saleEndAt ? { salesEndAt: category.saleEndAt.toISOString() } : {}),
-    })),
+    categories: event.ticketCategories.map((category) => {
+      const seats = category.seats.filter((seat) => !seat.bookingSeats.some((allocation) => {
+        const booking = allocation.bookingItem.booking;
+        return allocation.allocationStatus !== "RELEASED" &&
+          (booking.status === "CONFIRMED" || (booking.status === "PENDING_PAYMENT" && booking.expiresAt > now));
+      })).map((seat) => ({
+        id: seat.id, section: seat.section ?? "", row: seat.row ?? "",
+        seatNumber: seat.seatNumber, label: seat.displayLabel,
+      }));
+      const reserved = category.bookingItems.reduce((total, item) =>
+        total + (item.booking.status === "CONFIRMED" || item.booking.expiresAt > now ? item.quantity : 0), 0);
+      const remaining = event.status === "SOLD_OUT" ? 0
+        : category.admissionMode === "ASSIGNED_SEATING"
+          ? Math.min(seats.length, category.maxCapacity === null ? seats.length : Math.max(0, category.maxCapacity - reserved))
+          : category.maxCapacity === null ? undefined : Math.max(0, category.maxCapacity - reserved);
+      return {
+        id: category.id,
+        name: category.name,
+        ...(category.description ? { description: category.description } : {}),
+        price: category.price.toNumber(),
+        status: category.status,
+        admissionMode: category.admissionMode,
+        ...(category.admissionMode === "ASSIGNED_SEATING" ? { seats } : {}),
+        availability: availability(event, category, now, remaining),
+        ...(remaining !== undefined ? { remaining } : {}),
+        ...(category.saleStartAt ? { salesStartAt: category.saleStartAt.toISOString() } : {}),
+        ...(category.saleEndAt ? { salesEndAt: category.saleEndAt.toISOString() } : {}),
+      };
+    }),
   };
 }
 

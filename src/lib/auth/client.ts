@@ -25,6 +25,7 @@ export interface AccountSession {
   role: AccountRole;
   displayName: string;
   email?: string;
+  phoneNumber?: string | null;
   /** Effective booking eligibility from the shared backend/session client. */
   canBook: boolean;
   navigation?: { label: string; href: string }[];
