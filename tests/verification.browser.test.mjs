@@ -151,6 +151,10 @@ test('verification and recovery work in the localhost browser with real backend 
   };
   const clickLink = label => until(() => evaluate(`(() => { const link = Array.from(document.querySelectorAll('a')).find(a => a.textContent.trim() === ${JSON.stringify(label)}); if (!link) return false; link.click(); return true; })()`), label);
   const fill = (name, value) => evaluate(`document.querySelector('[name="${name}"]').value = ${JSON.stringify(value)}`);
+  const fillSearch = async value => {
+    await evaluate('document.querySelector("#organizer-search").focus()');
+    await cdp.send('Input.insertText', { text: value });
+  };
   const submit = async password => { await fill('currentPassword', password); await click('Verify email'); };
   const reset = async password => { await fill('newPassword', password); await fill('confirmPassword', password); await click('Reset password'); };
   const recover = async email => {
@@ -166,6 +170,10 @@ test('verification and recovery work in the localhost browser with real backend 
 
   const checkTerms = async () => {
     await text('current terms (version');
+    await evaluate('document.querySelector("input[name=terms]").click()');
+  };
+  const checkOrganizerTerms = async () => {
+    await text('current terms, including the concert organizer conditions (version aventix-prototype-2026-10-24-v2)');
     await evaluate('document.querySelector("input[name=terms]").click()');
   };
   const register = async fixture => {
@@ -226,13 +234,15 @@ test('verification and recovery work in the localhost browser with real backend 
   const applyAsOrganizer = async fixture => {
     await navigate(`${origin}/register/organizer`);
     await text('Apply as an Organizer');
-    await checkTerms();
+    await checkOrganizerTerms();
     for (const [name, value] of Object.entries({ firstName: 'Browser', lastName: 'Organizer',
       email: fixture.email, organizationName: 'Manila Live',
       organizationDescription: 'We organize live music events around Manila.',
       password: fixture.password, confirmPassword: fixture.password })) await fill(name, value);
     await click('Submit Organizer Application');
   };
+
+  await command('termsVersion', { version: 'aventix-prototype-2026-10-24-v2' });
 
   await scenario('a rejected organizer submission shows its rate limit without claiming uncertain creation', async () => {
     const fixture = await command('registrationFixture');
@@ -255,10 +265,10 @@ test('verification and recovery work in the localhost browser with real backend 
     try {
       await navigate(`${origin}/register/organizer`);
       await text('Apply as an Organizer');
-      await text('current terms (version');
+      await text('current terms, including the concert organizer conditions (version aventix-prototype-2026-10-24-v2)');
       assert.equal(await evaluate('document.querySelector("button[type=submit]").disabled'), true);
       assert.equal(await evaluate('document.documentElement.scrollWidth <= window.innerWidth + 1'), true);
-      await checkTerms();
+      await checkOrganizerTerms();
       for (const [name, value] of Object.entries({ firstName: 'Browser', lastName: 'Organizer',
         email: 'mobile-organizer@example.com', organizationName: 'X', organizationDescription: 'short',
         password: 'long organizer passphrase', confirmPassword: 'long organizer passphrase' })) await fill(name, value);
@@ -284,8 +294,11 @@ test('verification and recovery work in the localhost browser with real backend 
     await navigate(`${origin}/login`); await text('Welcome back');
     await fill('email', fixture.email); await fill('password', 'incorrect password'); await click('Login');
     await text('The email address or password is incorrect.');
+    assert.equal(await evaluate('Boolean(document.querySelector("dialog[open]"))'), false);
     await fill('password', fixture.password); await click('Login');
-    await text('awaiting administrator approval');
+    await until(() => evaluate('Boolean(document.querySelector("dialog[open]"))'), 'pending application status dialog');
+    assert.equal(await evaluate('document.querySelector("dialog[open]")?.innerText.includes("Being reviewed")'), true);
+    assert.equal(await evaluate('document.querySelector("dialog[open]")?.innerText.includes("awaiting administrator approval")'), true);
     assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);
   });
 
@@ -311,7 +324,7 @@ test('verification and recovery work in the localhost browser with real backend 
     await text('Organizer applications');
     await until(() => evaluate('Boolean(document.querySelector("#organizer-search"))'), 'review search');
     await until(() => evaluate('document.querySelectorAll("tbody tr").length > 0'), 'loaded review rows');
-    await fill('search', applicant.email);
+    await fillSearch(applicant.email);
     try {
       await until(() => evaluate(`document.querySelector('#organizer-search')?.value === ${JSON.stringify(applicant.email)}
         && Array.from(document.querySelectorAll('button')).some(button => button.textContent.trim() === 'Search')`), 'organizer search input', 5000);
@@ -371,8 +384,11 @@ test('verification and recovery work in the localhost browser with real backend 
     await click('Login');
     await until(() => evaluate('location.pathname === "/admin/dashboard"'), 'administrator login for rejection');
     await navigate(`${origin}/admin/organizers`);
+    await text('Organizer applications');
+    await until(() => evaluate('Boolean(document.querySelector("#organizer-search"))'), 'rejection search');
     await until(() => evaluate('document.querySelectorAll("tbody tr").length > 0'), 'review rows for rejection');
-    await fill('search', applicant.email);
+    await fillSearch(applicant.email);
+    await until(() => evaluate(`document.querySelector('#organizer-search')?.value === ${JSON.stringify(applicant.email)}`), 'rejection search input');
     await click('Search');
     await until(() => evaluate('document.querySelectorAll("tbody tr").length === 1'), 'matching rejection applicant');
     await click('View details');
@@ -393,7 +409,9 @@ test('verification and recovery work in the localhost browser with real backend 
     await fill('email', applicant.email);
     await fill('password', applicant.password);
     await click('Login');
-    await text('This decision is final for this account');
+    await until(() => evaluate('Boolean(document.querySelector("dialog[open]"))'), 'rejected application status dialog');
+    assert.equal(await evaluate('document.querySelector("dialog[open]")?.innerText.includes("Rejected")'), true);
+    assert.equal(await evaluate('document.querySelector("dialog[open]")?.innerText.includes("This decision is final for this account")'), true);
     assert.equal((await cdp.send('Network.getAllCookies')).cookies.length, 0);
   });
 
@@ -448,6 +466,8 @@ test('verification and recovery work in the localhost browser with real backend 
     await text('If this address is eligible, a verification email will be sent.');
     assert.equal((await command('messages', { email: fixture.email })).length, 1);
   });
+
+  await command('termsVersion', { version: 'verification-browser-fixture' });
 
   await scenario('failed initial delivery keeps the account, duplicate registration is rejected, and resend supplies a link', async () => {
     const fixture = await command('registrationFixture');

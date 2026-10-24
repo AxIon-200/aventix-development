@@ -91,8 +91,10 @@ async function command(input: { action: string; milliseconds?: number; enabled?:
     return {};
   }
   if (input.action === "termsVersion") {
-    assert.ok(input.version?.startsWith("verification-browser-fixture"));
+    assert.ok(input.version?.startsWith("verification-browser-fixture") || input.version === "aventix-prototype-2026-10-24-v2");
     terms.version = input.version;
+    terms.documentUrl = `${env.FRONTEND_URL}/legal/${input.version === "aventix-prototype-2026-10-24-v2"
+      ? "aventix-prototype-terms-2026-10-24-v2.html" : "aventix-prototype-terms-2026-10-22-v1.html"}`;
     app = createFixtureApp();
     return {};
   }

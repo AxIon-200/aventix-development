@@ -156,3 +156,8 @@ export type TicketVerification = Prisma.TicketVerificationModel
  * 
  */
 export type ActivityLog = Prisma.ActivityLogModel
+/**
+ * Model ContactMessage
+ * 
+ */
+export type ContactMessage = Prisma.ContactMessageModel

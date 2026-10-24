@@ -8,6 +8,8 @@ import { sendVerificationEmail } from "./lib/verification-email.js";
 import type { SendVerificationEmail } from "./lib/verification-email.js";
 import type { SendAuthEmail } from "./lib/auth-email.js";
 import type { SendOrganizerDecisionEmail } from "./lib/organizer-decision-email.js";
+import { contactRouter } from "./routes/contact.routes.js";
+import type { SaveContactMessage } from "./lib/contact-message.js";
 import { organizerReviewRouter } from "./lib/organizer-review.js";
 import apiRouter from "./routes/index.js";
 import { env } from "./config/env.js";
@@ -21,6 +23,7 @@ export interface AppOptions {
   sendVerificationEmail?: SendVerificationEmail;
   sendPasswordResetEmail?: SendAuthEmail;
   sendOrganizerDecisionEmail?: SendOrganizerDecisionEmail;
+  saveContactMessage?: SaveContactMessage;
   now?: () => Date;
   registrationLimit?: number;
   verificationLimit?: number;
@@ -214,6 +217,8 @@ export function createApp(options: AppOptions = {}) {
   }) satisfies ErrorRequestHandler);
 
   app.use(express.json());
+
+  app.use("/api/v1/contact", contactRouter(auth, options.saveContactMessage));
 
   app.use("/api/v1/admin/organizers", organizerReviewRouter(auth, {
     ...(terms ? { terms } : {}), now,

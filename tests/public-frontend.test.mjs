@@ -7,7 +7,7 @@ const { safeReturnTo, authHref } = load('src/lib/auth/destination.ts');
 const { validPhone, attendeePayload, passwordError, validEmail } = load('src/lib/auth/validation.ts');
 const { getBookingState, bookingHref, isCategoryBookable } = load('src/lib/event-booking.ts');
 const { isEventPayload } = load('src/lib/event-payload.ts');
-const { MOCK_EVENTS } = load('src/lib/mock-events.ts');
+const { MOCK_EVENTS } = load('tests/fixtures/mock-events.ts');
 const { matchesDate } = load('src/lib/event-filters.ts');
 
 test('booking return survives auth links without admitting external or privileged destinations', () => {

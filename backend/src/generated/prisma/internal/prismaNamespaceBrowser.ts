@@ -73,7 +73,8 @@ export const ModelName = {
   Payment: 'Payment',
   Ticket: 'Ticket',
   TicketVerification: 'TicketVerification',
-  ActivityLog: 'ActivityLog'
+  ActivityLog: 'ActivityLog',
+  ContactMessage: 'ContactMessage'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -438,6 +439,19 @@ export const ActivityLogScalarFieldEnum = {
 } as const
 
 export type ActivityLogScalarFieldEnum = (typeof ActivityLogScalarFieldEnum)[keyof typeof ActivityLogScalarFieldEnum]
+
+
+export const ContactMessageScalarFieldEnum = {
+  id: 'id',
+  attendeeId: 'attendeeId',
+  senderName: 'senderName',
+  senderEmail: 'senderEmail',
+  subject: 'subject',
+  message: 'message',
+  createdAt: 'createdAt'
+} as const
+
+export type ContactMessageScalarFieldEnum = (typeof ContactMessageScalarFieldEnum)[keyof typeof ContactMessageScalarFieldEnum]
 
 
 export const SortOrder = {

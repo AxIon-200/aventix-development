@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 const CHANNELS = [
   { title: "Email", body: "support@aventix.ph" },
   { title: "Organizer Support", body: "organizers@aventix.ph" },
-  { title: "Response Time", body: "We aim to reply within 1–2 business days." },
+  { title: "Attendee Messages", body: "Submitted messages are saved for support review." },
 ];
 
 const FAQ = [
@@ -30,7 +30,7 @@ export default function ContactPage() {
               Let’s talk about live music.
             </h1>
             <p className="mt-4 max-w-[590px] text-base leading-7 text-[#c5c6c7]">
-              Questions about tickets, events, organizers, or your Aventix experience? Send us a message and our team will get back to you.
+              Questions about tickets, events, organizers, or your Aventix experience? Submit an attendee message for support review.
             </p>
           </div>
           <div
@@ -75,7 +75,7 @@ export default function ContactPage() {
               Tell us what’s on your mind.
             </h2>
             <p className="mt-[18px] max-w-[440px] text-base text-[#c5c6c7]">
-              Whether you need help with a booking, want to ask about an event, or are interested in becoming an organizer, use the form and we’ll route your message to the right team.
+              Signed-in attendees can ask about a booking, an event, or their Aventix experience here. Organizer inquiries can use the organizer support email above.
             </p>
             <div className="mt-[18px] max-w-[440px] rounded-xl border border-[#2c3644] bg-[#1f2833] p-[18px] text-base text-[#c5c6c7]">
               Aventix Support

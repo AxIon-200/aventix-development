@@ -35,6 +35,7 @@ model User {
   authLinks           AuthLink[]
   ticketVerifications TicketVerification[]
   activityLogs        ActivityLog[]
+  contactMessages     ContactMessage[]
 
   // Aventix organizer relationships
   organizerProfile   OrganizerProfile?  @relation("OrganizerOwner")
@@ -577,5 +578,20 @@ model ActivityLog {
   @@index([userId])
   @@index([action])
   @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+model ContactMessage {
+  id          String   @id @default(uuid()) @db.Uuid
+  attendeeId  String   @db.Uuid
+  senderName  String
+  senderEmail String
+  subject     String   @db.VarChar(150)
+  message     String
+  createdAt   DateTime @default(now())
+
+  attendee User @relation(fields: [attendeeId], references: [id], onDelete: Restrict)
+
+  @@index([attendeeId, createdAt])
   @@index([createdAt])
 }

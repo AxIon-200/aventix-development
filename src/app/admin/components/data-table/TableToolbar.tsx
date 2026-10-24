@@ -8,6 +8,8 @@ type TableToolbarProps = {
   search: string;
   onSearchChange: (value: string) => void;
   searchPlaceholder?: string;
+  searchInputId?: string;
+  onSearchSubmit?: () => void;
   filters?: FilterConfig[];
   filterValues: Record<string, string>;
   onFilterChange: (key: string, value: string) => void;
@@ -20,6 +22,8 @@ export function TableToolbar({
   search,
   onSearchChange,
   searchPlaceholder = "Search…",
+  searchInputId,
+  onSearchSubmit,
   filters = [],
   filterValues,
   onFilterChange,
@@ -56,6 +60,8 @@ export function TableToolbar({
         {" "}
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
         <input
+          id={searchInputId}
+          name={searchInputId ? "search" : undefined}
           ref={inputRef}
           type="text"
           value={search}
@@ -80,6 +86,7 @@ export function TableToolbar({
           </kbd>
         )}{" "}
       </div>
+      {onSearchSubmit && <button type="button" onClick={() => { onSearchChange(inputRef.current?.value ?? search); onSearchSubmit(); }} className="rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-200 hover:bg-white/5">Search</button>}
       {filters.map((f) => (
         <div key={f.key} className="relative">
           {" "}

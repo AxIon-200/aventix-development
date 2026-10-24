@@ -9,6 +9,7 @@ import { AuthClientError, authErrorMessage, publicAuthClient, type PublicAuthCli
 import { validEmail } from "@/lib/auth/validation";
 import { authHref, safeReturnTo } from "@/lib/auth/destination";
 import AccountGate from "./AccountGate";
+import OrganizerStatusDialog, { type OrganizerApplicationStatus } from "./OrganizerStatusDialog";
 
 type Mode = "login" | "forgot";
 const titles: Record<Mode, [string, string]> = {
@@ -22,6 +23,7 @@ export default function AuthForm({ mode, returnTo, client = publicAuthClient }: 
   const [message, setMessage] = useState("");
   const [gate, setGate] = useState<import("@/lib/auth/client").AuthErrorCode>();
   const [gateEmail, setGateEmail] = useState("");
+  const [organizerStatus, setOrganizerStatus] = useState<OrganizerApplicationStatus | null>(null);
   const [uncertain, setUncertain] = useState(false);
   const [success, setSuccess] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -48,6 +50,7 @@ export default function AuthForm({ mode, returnTo, client = publicAuthClient }: 
     const next: Record<string, string> = {};
     setMessage("");
     setGate(undefined);
+    setOrganizerStatus(null);
     setUncertain(false);
     if (!validEmail(get("email"))) next.email = "Enter a valid email address.";
     if (mode === "login" && !get("password")) next.password = "Enter your password.";
@@ -73,7 +76,10 @@ export default function AuthForm({ mode, returnTo, client = publicAuthClient }: 
         setMessage("If an account exists for this address, a password-reset email will be sent.");
       }
     } catch (error) {
-      setMessage(authErrorMessage(error));
+      const status = error instanceof AuthClientError && error.code === "ORGANIZATION_PENDING" ? "pending"
+        : error instanceof AuthClientError && error.code === "ORGANIZATION_REJECTED" ? "rejected" : null;
+      setOrganizerStatus(status);
+      setMessage(status ? "" : authErrorMessage(error));
       if (error instanceof AuthClientError) {
         setErrors(error.fieldErrors);
         setUncertain(error.code === "REQUEST_UNCERTAIN" || error.code === "INVALID_RESPONSE");
@@ -104,5 +110,6 @@ export default function AuthForm({ mode, returnTo, client = publicAuthClient }: 
       <button type="submit" disabled={busy || !configured} className={submitClass}>{busy ? "Please wait…" : mode === "login" ? "Login" : "Request recovery link"}</button>
     </form>}
     {!success && <p className={`${styles.footer} text-center text-[13px] text-[#9fa3a8]`}>{mode === "login" ? <>New to Aventix? <Link className="hover:text-[#66fcf1]" href={authHref("/register", destination)}>Create an account</Link></> : <>Back to <Link className="hover:text-[#66fcf1]" href={authHref("/login", destination)}>Log in</Link></>}</p>}
+    {mode === "login" && <OrganizerStatusDialog status={organizerStatus} onClose={() => setOrganizerStatus(null)} />}
   </>;
 }

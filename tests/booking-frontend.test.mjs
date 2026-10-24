@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { load } from "./load-typescript.mjs";
-const { MOCK_EVENTS } = load("src/lib/mock-events.ts");
+const { MOCK_EVENTS } = load("tests/fixtures/mock-events.ts");
 const {
   validateDraft,
   remainingAllowance,
