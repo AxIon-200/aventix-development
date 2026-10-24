@@ -11,7 +11,7 @@ export default function Testimonials() {
       rating: 5,
       review:
         "“Booking my festival ticket took less than 2 minutes. The QR ticket scanned instantly at the gate — no hassle at all!”",
-      author: "Reynaldo Abrigo",
+      author: "Mika Santos",
       location: "Manila, PH",
       avatar: "/images/reynaldo.jpg",
     },
@@ -20,18 +20,18 @@ export default function Testimonials() {
       rating: 5,
       review:
         "“Aventix has the best lineup of gigs around Cebu. I found small acoustic shows I never knew existed. Love the app's vibe!”",
-      author: "Reyn Abrigo",
+      author: "Paolo Reyes",
       location: "Cebu City, PH",
-      avatar: "/images/reynaldo.jpg",
+      avatar: "/images/bosstigas.png",
     },
     {
       id: 3,
       rating: 5,
       review:
         "“Secure payment and instant ticket delivery — exactly what I needed for a last-minute concert run. Highly recommend!”",
-      author: "Rey Abrigo",
+      author: "Aira Dela Cruz",
       location: "Davao City, PH",
-      avatar: "/images/reynaldo.jpg",
+      avatar: "/images/mscaloocan.jpg",
     },
   ];
 
