@@ -63,8 +63,13 @@ function createAccountSession(client: PublicAuthClient) {
     clear,
     rejectAccess,
     navigate: (nextRoute: string) => {
-      if (route !== undefined && route !== nextRoute) retry();
+      if (route === nextRoute) return;
+      const hadRoute = route !== undefined;
       route = nextRoute;
+      if (hadRoute) retry();
+      // An account read can finish before the root navigation effect records
+      // the first route. Wake route-scoped subscribers so they see that result.
+      else listeners.forEach(listener => listener());
     },
     subscribe: (listener: () => void) => {
       listeners.add(listener);

@@ -24,7 +24,7 @@ export function personalProfileFromResponse(value: unknown): PersonalAccountProf
 export function accountFromProfile(value: unknown): AccountSession {
   const user = personalProfileFromResponse(value);
   const navigation = user.role === "ATTENDEE" ? [
-    { label: "Events", href: "/events" },
+    { label: "Dashboard", href: "/dashboard" },
     { label: "My Tickets", href: "/dashboard/tickets" },
     { label: "Booking History", href: "/dashboard/booking-history" },
     { label: "Profile", href: "/dashboard/profile" },
@@ -35,5 +35,5 @@ export function accountFromProfile(value: unknown): AccountSession {
 
 export function accountDestination(session: AccountSession, returnTo?: string): string {
   // Revalidated by the account flow at each use; no destination comes from a profile field.
-  return session.canBook ? safeReturnTo(returnTo) ?? "/events" : session.navigation?.[0]?.href ?? "/events";
+  return session.canBook ? safeReturnTo(returnTo) ?? "/dashboard" : session.navigation?.[0]?.href ?? "/events";
 }

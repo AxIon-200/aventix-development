@@ -109,7 +109,7 @@ function NavSection({
           {title}
         </p>
       )}
-      <nav className="mt-2 space-y-1">
+      <div className="mt-2 space-y-1">
         {links.map(({ href, label, icon: Icon }) => {
           const active = href === activeHref;
 
@@ -120,6 +120,7 @@ function NavSection({
               onClick={onNavigate}
               title={collapsed ? label : undefined}
               aria-label={label}
+              aria-current={active ? "page" : undefined}
               className={`flex items-center rounded-lg py-2.5 lg:py-2 text-sm transition-colors ${
                 collapsed ? "lg:justify-center lg:px-0 gap-3 px-3" : "gap-3 px-3"
               } ${
@@ -133,20 +134,31 @@ function NavSection({
             </Link>
           );
         })}
-      </nav>
+      </div>
     </div>
   );
 }
 
-export default function DashboardSidebar() {
+export default function DashboardSidebar({
+  onBeforeSignOut,
+  onSignOutStart,
+  onSignOutFailure,
+  showSignOut = true,
+}: {
+  onBeforeSignOut?: () => boolean;
+  onSignOutStart?: () => void;
+  onSignOutFailure?: () => void;
+  showSignOut?: boolean;
+} = {}) {
   const pathname = usePathname() || "";
   const activeHref = getActiveNavHref(pathname, allNavLinks);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileOpenPath, setMobileOpenPath] = useState<string | null>(null);
+  const mobileOpen = mobileOpenPath === pathname;
 
   // Sync mobile drawer state across custom events & route changes
   useEffect(() => {
-    const handleToggle = () => setMobileOpen((prev) => !prev);
-    const handleClose = () => setMobileOpen(false);
+    const handleToggle = () => setMobileOpenPath((prev) => prev === pathname ? null : pathname);
+    const handleClose = () => setMobileOpenPath(null);
 
     window.addEventListener("aventix-toggle-sidebar", handleToggle);
     window.addEventListener("aventix-close-sidebar", handleClose);
@@ -155,10 +167,6 @@ export default function DashboardSidebar() {
       window.removeEventListener("aventix-toggle-sidebar", handleToggle);
       window.removeEventListener("aventix-close-sidebar", handleClose);
     };
-  }, []);
-
-  useEffect(() => {
-    setMobileOpen(false);
   }, [pathname]);
 
   const collapsed = useSyncExternalStore(
@@ -182,7 +190,7 @@ export default function DashboardSidebar() {
       {/* Mobile Backdrop Overlay */}
       {mobileOpen && (
         <div
-          onClick={() => setMobileOpen(false)}
+          onClick={() => setMobileOpenPath(null)}
           className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden animate-in fade-in duration-200"
           aria-hidden="true"
         />
@@ -206,7 +214,7 @@ export default function DashboardSidebar() {
           >
             <Link
               href="/dashboard"
-              onClick={() => setMobileOpen(false)}
+              onClick={() => setMobileOpenPath(null)}
               aria-label="Aventix attendee dashboard"
               className="flex items-center"
             >
@@ -258,7 +266,7 @@ export default function DashboardSidebar() {
 
             {/* Mobile Close Button */}
             <button
-              onClick={() => setMobileOpen(false)}
+              onClick={() => setMobileOpenPath(null)}
               aria-label="Close sidebar menu"
               className="lg:hidden flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-white/5 hover:text-white"
             >
@@ -266,30 +274,35 @@ export default function DashboardSidebar() {
             </button>
           </div>
 
-          <NavSection
-            title="Main"
-            links={mainLinks}
-            activeHref={activeHref}
-            collapsed={collapsed}
-            onNavigate={() => setMobileOpen(false)}
-          />
-          <NavSection
-            title="Tickets & Orders"
-            links={ticketLinks}
-            activeHref={activeHref}
-            collapsed={collapsed}
-            onNavigate={() => setMobileOpen(false)}
-          />
-          <NavSection
-            title="Account"
-            links={accountLinks}
-            activeHref={activeHref}
-            collapsed={collapsed}
-            onNavigate={() => setMobileOpen(false)}
-          />
+          <nav aria-label="Workspace" className="space-y-6">
+            <NavSection
+              title="Main"
+              links={mainLinks}
+              activeHref={activeHref}
+              collapsed={collapsed}
+              onNavigate={() => setMobileOpenPath(null)}
+            />
+            <NavSection
+              title="Tickets & Orders"
+              links={ticketLinks}
+              activeHref={activeHref}
+              collapsed={collapsed}
+              onNavigate={() => setMobileOpenPath(null)}
+            />
+            <NavSection
+              title="Account"
+              links={accountLinks}
+              activeHref={activeHref}
+              collapsed={collapsed}
+              onNavigate={() => setMobileOpenPath(null)}
+            />
+          </nav>
         </div>
 
-        <SignOutButton
+        {showSignOut && <SignOutButton
+          onBeforeSignOut={onBeforeSignOut}
+          onStart={onSignOutStart}
+          onFailure={onSignOutFailure}
           title={collapsed ? "Sign Out" : undefined}
           className={`flex items-center rounded-lg py-2.5 lg:py-2 text-sm text-slate-400 hover:bg-white/5 hover:text-slate-200 ${
             collapsed ? "lg:justify-center lg:px-0 gap-3 px-3" : "gap-3 px-3"
@@ -297,7 +310,7 @@ export default function DashboardSidebar() {
         >
           <LogOut className="h-4 w-4 shrink-0" />
           <span className={`whitespace-nowrap ${collapsed ? "lg:hidden" : ""}`}>Sign Out</span>
-        </SignOutButton>
+        </SignOutButton>}
       </aside>
     </>
   );

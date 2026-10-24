@@ -10,7 +10,7 @@ test('login uses the approved envelope, normalized email, exact password and onl
  const calls=[];
  const client=createBetterAuthClient(async(url,options)=>{calls.push({url,options});return profile();});
  const result=await client.login({email:' REVIEW+tag@EXAMPLE.invalid ',password:' exact password e\u0301 ',rememberMe:true,role:'ADMINISTRATOR'});
- assert.deepEqual(result,{destination:'/events',allowBookingReturn:true});
+ assert.deepEqual(result,{destination:'/dashboard',allowBookingReturn:true});
  assert.deepEqual(calls.map(c=>c.url),['/api/auth/login','/api/v1/me']);
  assert.deepEqual(JSON.parse(calls[0].options.body),{email:'review+tag@example.invalid',password:' exact password e\u0301 '});
  for (const {options} of calls) {assert.equal(options.credentials,'include');assert.equal(options.cache,'no-store');}
@@ -19,7 +19,7 @@ test('login uses the approved envelope, normalized email, exact password and onl
 });
 
 test('current account permits only supported eligible profiles and exact role navigation', async () => {
- for (const [role,href,canBook] of [['ATTENDEE','/events',true],['ORGANIZER','/organizer/dashboard',false],['ADMINISTRATOR','/admin/dashboard',false]]) {
+ for (const [role,href,canBook] of [['ATTENDEE','/dashboard',true],['ORGANIZER','/organizer/dashboard',false],['ADMINISTRATOR','/admin/dashboard',false]]) {
   const account=await createBetterAuthClient(async()=>profile(user(role))).getSession();
   assert.equal(account.displayName,'Review User');assert.equal(account.navigation[0].href,href);assert.equal(account.canBook,canBook);
   assert.equal(account.role,role);

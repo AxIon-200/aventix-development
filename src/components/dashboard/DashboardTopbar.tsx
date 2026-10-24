@@ -7,12 +7,12 @@ import { Search, X, Compass, Menu } from "lucide-react";
 import { NotificationBell } from "@/app/admin/components/ui/NotificationBell";
 
 type DashboardTopbarProps = {
-  attendeeName?: string;
+  attendeeName?: string | null;
   roleLabel?: string;
 };
 
 export default function DashboardTopbar({
-  attendeeName = "Sherwin Cruz",
+  attendeeName = null,
   roleLabel = "Attendee User",
 }: DashboardTopbarProps) {
   const [searchOpen, setSearchOpen] = useState(false);
@@ -117,7 +117,7 @@ export default function DashboardTopbar({
         <NotificationBell />
 
         {/* Attendee Profile Info */}
-        <div className="flex shrink-0 items-center gap-2 pl-0.5 sm:pl-1">
+        {attendeeName && <div className="flex shrink-0 items-center gap-2 pl-0.5 sm:pl-1">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-teal-400/30 bg-teal-500 text-xs font-semibold text-slate-950">
             {attendeeName.slice(0, 2).toUpperCase()}
           </div>
@@ -125,7 +125,7 @@ export default function DashboardTopbar({
             <p className="text-sm font-medium text-white">{attendeeName}</p>
             <p className="text-xs text-slate-500">{roleLabel}</p>
           </div>
-        </div>
+        </div>}
       </div>
     </header>
   );
