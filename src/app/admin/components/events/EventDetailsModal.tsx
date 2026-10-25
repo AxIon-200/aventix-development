@@ -8,6 +8,7 @@ import { formatPeso } from "@/app/admin/lib/currency";
 import { Modal } from "@/app/admin/components/ui/Modal";
 import { ErrorState } from "@/app/admin/components/ui/ErrorState";
 import {
+  ALLOWED_TRANSITIONS,
   EVENT_CATEGORY_LABEL,
   EventStatusBadge,
 } from "@/app/admin/components/events/eventStatus";
@@ -15,21 +16,18 @@ import {
 type Props = {
   eventId: string | null; // null = closed
   onClose: () => void;
-  onManageAvailability: (event: Pick<AdminEvent, "id" | "title" | "status" | "attendees">) => void;
+  onManageAvailability: (event: Pick<AdminEvent, "id" | "title" | "status" | "attendees" | "updatedAt">) => void;
 };
 
 export function EventDetailsModal({ eventId, onClose, onManageAvailability }: Props) {
   const [event, setEvent] = useState<AdminEventDetails | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
     if (!eventId) return;
     let cancelled = false;
-    setEvent(null);
-    setError(null);
-    setIsLoading(true);
     getEventById(eventId)
       .then((e) => !cancelled && setEvent(e))
       .catch((e) => !cancelled && setError(e?.message ?? "Something went wrong"))
@@ -42,15 +40,15 @@ export function EventDetailsModal({ eventId, onClose, onManageAvailability }: Pr
   const facts: [string, string][] = event
     ? [
         ["Organizer", event.organizerName],
-        ["Category", EVENT_CATEGORY_LABEL[event.category]],
+        ["Category", event.category ? EVENT_CATEGORY_LABEL[event.category] : "Not set"],
         ["Date", formatDate(event.startsAt)],
         ["Venue", event.venue],
-        ["Attendees", `${event.attendees.toLocaleString()} of ${event.capacity.toLocaleString()}`],
+        ["Attendees", event.capacity === null ? `${event.attendees.toLocaleString()} (capacity not set)` : `${event.attendees.toLocaleString()} of ${event.capacity.toLocaleString()}`],
         ["Revenue", formatPeso(event.revenue)],
       ]
     : [];
 
-  const fill = event && event.capacity > 0 ? Math.min(100, Math.round((event.attendees / event.capacity) * 100)) : 0;
+  const fill = event && event.capacity !== null && event.capacity > 0 ? Math.min(100, Math.round((event.attendees / event.capacity) * 100)) : 0;
 
   return (
     <Modal
@@ -60,7 +58,7 @@ export function EventDetailsModal({ eventId, onClose, onManageAvailability }: Pr
       size="lg"
       footer={
         <>
-          {event && (
+          {event && ALLOWED_TRANSITIONS[event.status].length > 0 && (
             <button
               onClick={() => onManageAvailability(event)}
               className="rounded-lg bg-teal-500/10 px-3.5 py-2 text-sm font-medium text-teal-300 hover:bg-teal-500/20"
@@ -93,7 +91,7 @@ export function EventDetailsModal({ eventId, onClose, onManageAvailability }: Pr
       )}
 
       {!isLoading && error && (
-        <ErrorState compact title="Couldn't load event" message={error} onRetry={() => setTick((t) => t + 1)} />
+        <ErrorState compact title="Couldn't load event" message={error} onRetry={() => { setError(null); setIsLoading(true); setTick((t) => t + 1); }} />
       )}
 
       {!isLoading && event && (
@@ -121,7 +119,7 @@ export function EventDetailsModal({ eventId, onClose, onManageAvailability }: Pr
             ))}
           </dl>
 
-          <div>
+          {event.capacity !== null && <div>
             <div className="mb-1.5 flex items-center justify-between text-xs">
               <span className="font-semibold uppercase tracking-wider text-slate-500">Capacity filled</span>
               <span className="text-slate-400">{fill}%</span>
@@ -129,7 +127,7 @@ export function EventDetailsModal({ eventId, onClose, onManageAvailability }: Pr
             <div className="h-1.5 rounded-full bg-white/5">
               <div className="h-1.5 rounded-full bg-teal-400" style={{ width: `${fill}%` }} />
             </div>
-          </div>
+          </div>}
 
           <div>
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Ticket tiers</h3>
@@ -146,7 +144,7 @@ export function EventDetailsModal({ eventId, onClose, onManageAvailability }: Pr
                       <p className="text-[11px] text-slate-500">{formatPeso(t.price)} each</p>
                     </div>
                     <p className="text-sm text-slate-300">
-                      {t.sold.toLocaleString()} <span className="text-slate-600">/ {t.capacity.toLocaleString()} sold</span>
+                      {t.sold.toLocaleString()} <span className="text-slate-600">/ {t.capacity?.toLocaleString() ?? "capacity not set"} sold</span>
                     </p>
                   </li>
                 ))}

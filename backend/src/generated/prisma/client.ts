@@ -47,6 +47,11 @@ export { Prisma }
  */
 export type User = Prisma.UserModel
 /**
+ * Model AdminPreferences
+ * 
+ */
+export type AdminPreferences = Prisma.AdminPreferencesModel
+/**
  * Model AuthLink
  * 
  */

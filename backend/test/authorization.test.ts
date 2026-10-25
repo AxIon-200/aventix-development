@@ -52,6 +52,7 @@ async function login(app: ReturnType<typeof createApp>, email: string) {
 
 afterEach(() => vi.useRealTimers());
 afterAll(async () => {
+  await prisma.ticketVerification.deleteMany({ where: { verifiedBy: { email: { in: emails } } } });
   await prisma.organizerProfile.deleteMany({ where: { user: { email: { in: emails } } } });
   await prisma.user.deleteMany({ where: { email: { in: emails } } });
   await prisma.authRateLimit.deleteMany({ where: { expiresAt: { gte: new Date("2098-01-01"), lt: new Date("2098-02-01") } } });
@@ -102,6 +103,9 @@ it("checks current server-side access gates before authorizing a matching role",
     expect(result.status).toBe(403);
     expect(result.body.error.code).toBe(code);
     expect(Object.keys(result.body)).toEqual(["error"]);
+    const workspace = await request(app).get("/api/v1/organizer/dashboard").set("Cookie", cookie);
+    expect(workspace.status).toBe(403);
+    expect(workspace.body.error.code).toBe(code);
   }
 });
 
@@ -120,27 +124,36 @@ it.each(roles)("preserves the fixed %s role against public and native mutation a
   expect(profile.body.data.user).toMatchObject({ role, firstName: "Role" });
 });
 
-it("keeps unfinished business operations unavailable to guests and every account role", async () => {
+it("keeps unfinished operations unavailable and enforces roles on implemented business routes", async () => {
   const app = fixtureApp();
   const cookies: (string | undefined)[] = [undefined];
   for (const role of roles) cookies.push(await login(app, (await identity(role)).email));
-  for (const cookie of cookies) {
+  for (const [index, cookie] of cookies.entries()) {
     for (const [method, path] of [
       ["get", "/attendee/dashboard"], ["get", "/attendee/tickets"], ["get", "/attendee/bookings"],
       ["get", "/organizer/dashboard"], ["get", "/organizer/events"], ["post", "/organizer/check-in"],
-      ["get", "/admin/dashboard/overview"], ["get", "/admin/users"], ["get", "/admin/bookings"],
+      ["get", "/admin/dashboard/overview"],
     ] as const) {
       const pending = request(app)[method](`/api/v1${path}`);
+      if (method === "post") pending.set("Origin", env.FRONTEND_URL).send({ ticketCode: "AVX-unknown" });
       const response = await (cookie ? pending.set("Cookie", cookie) : pending);
-      expect(response.status, `${method} ${path}`).toBe(404);
+      const attendeeRequest = path.startsWith("/attendee/");
+      const dashboardRequest = path.startsWith("/admin/dashboard/");
+      const expected = attendeeRequest
+        ? index === 0 ? 401 : index !== roles.indexOf("ATTENDEE") + 1 ? 403 : path === "/attendee/dashboard" ? 200 : 404
+        : dashboardRequest ? index === 0 ? 401 : index === roles.indexOf("ADMINISTRATOR") + 1 ? 404 : 403
+        : index === 0 ? 401 : index === roles.indexOf("ORGANIZER") + 1 ? 200 : 403;
+      expect(response.status, `${method} ${path}`).toBe(expected);
     }
   }
   for (const [index, cookie] of cookies.entries()) {
-    const pending = request(app).get("/api/v1/admin/organizers");
-    const response = await (cookie ? pending.set("Cookie", cookie) : pending);
-    expect(response.status).toBe(index === 0 ? 401 : index === roles.indexOf("ADMINISTRATOR") + 1 ? 200 : 403);
+    for (const resource of ["organizers", "users", "events", "bookings", "payments", "payments/stats", "payments/export", "activity-logs", "activity-logs/stats", "activity-logs/export", "dashboard/stats", "dashboard/sales", "dashboard/booking-status", "dashboard/recent-events", "dashboard/recent-users", "dashboard/recent-bookings", "dashboard/export"]) {
+      const pending = request(app).get(`/api/v1/admin/${resource}`);
+      const response = await (cookie ? pending.set("Cookie", cookie) : pending);
+      expect(response.status).toBe(index === 0 ? 401 : index === roles.indexOf("ADMINISTRATOR") + 1 ? 200 : 403);
+    }
   }
-});
+}, 60000);
 
 it("never mounts demonstration routes in the production application or native handler", async () => {
   const original = { ...env };

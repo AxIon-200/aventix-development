@@ -4,6 +4,8 @@
   "description": "This directory provides the starting architectural layout for the Aventix backend application, built with **NextJs**, **PostgreSQL**, and **Prisma ORM**.",
   "main": "index.js",
   "scripts": {
+    "paymongo:webhook": "node --env-file=.env.test dist/commands/paymongo-webhook-server.js",
+    "paymongo:register": "node --env-file=.env.test dist/commands/paymongo-register-webhook.js",
     "accounts": "tsx src/commands/accounts.ts",
     "test": "vitest run",
     "test:watch": "vitest",

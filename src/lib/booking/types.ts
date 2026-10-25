@@ -45,6 +45,7 @@ export interface AllocatedSeat {
 }
 export interface BookingItem {
   ticketCategoryId: string;
+  admissionMode?: "ASSIGNED_SEATING" | "GENERAL_ADMISSION";
   name: string;
   quantity: number;
   unitPrice: number;

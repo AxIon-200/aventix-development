@@ -6,9 +6,6 @@ import {
   Music,
   PartyPopper,
   Guitar,
-  Drama,
-  Trophy,
-  Mic,
 } from "lucide-react";
 
 export interface CategoryItem {
@@ -22,9 +19,6 @@ const CATEGORIES: CategoryItem[] = [
   { id: "concerts", name: "Concerts", icon: Music, count: "48+ Events" },
   { id: "festivals", name: "Festivals", icon: PartyPopper, count: "16+ Events" },
   { id: "gigs", name: "Gigs", icon: Guitar, count: "72+ Events" },
-  { id: "theater", name: "Theater", icon: Drama, count: "24+ Events" },
-  { id: "sports", name: "Sports", icon: Trophy, count: "30+ Events" },
-  { id: "comedy", name: "Comedy", icon: Mic, count: "18+ Events" },
 ];
 
 interface BrowseCategoryProps {
@@ -39,7 +33,7 @@ export default function BrowseCategory({ onSelectCategory }: BrowseCategoryProps
     setActiveCategory(cat.id);
     if (onSelectCategory) onSelectCategory(cat);
     else {
-      const types: Record<string, string> = { concerts: "Concert", festivals: "Festival", gigs: "Gig", theater: "Theater", sports: "Sports", comedy: "Comedy" };
+      const types: Record<string, string> = { concerts: "Concert", festivals: "Festival", gigs: "Gig" };
       router.push(`/events?category=${encodeURIComponent(types[cat.id])}`);
     }
   };
@@ -57,8 +51,8 @@ export default function BrowseCategory({ onSelectCategory }: BrowseCategoryProps
           </h2>
         </div>
 
-        {/* 6 Category Cards Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+        {/* Category Cards Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 max-w-3xl mx-auto">
           {CATEGORIES.map((cat) => {
             const Icon = cat.icon;
             const isSelected = activeCategory === cat.id;

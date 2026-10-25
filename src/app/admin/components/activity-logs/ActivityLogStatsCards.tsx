@@ -43,8 +43,8 @@ export function ActivityLogStatsCards({ stats, isLoading, error, onRetry }: Prop
     >
       <StatCard label="Total Logs" value={stats.total.toLocaleString()} icon={Activity} change={note("Current records")} />
       <StatCard label="Last 24 Hours" value={stats.last24Hours.toLocaleString()} icon={Clock} change={note("Recent activity")} />
-      <StatCard label="Admin Actions" value={stats.adminActions.toLocaleString()} icon={ShieldCheck} change={note("Performed by admins")} />
-      <StatCard label="Failed" value={stats.failed.toLocaleString()} icon={AlertTriangle} change={note("Needs attention")} />
+      <StatCard label="Actions by Administrators" value={stats.adminActions.toLocaleString()} icon={ShieldCheck} change={note("Changes made by admin accounts")} />
+      <StatCard label="Failed Operations" value={stats.failed.toLocaleString()} icon={AlertTriangle} change={note("Recorded actions that did not complete")} />
     </div>
   );
 }

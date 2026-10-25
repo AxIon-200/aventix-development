@@ -125,17 +125,17 @@ export function SecuritySettings({
       <SettingRow
         id="two-factor"
         label="Two-factor authentication"
-        description="Require a verification code during administrator sign-in."
+        description="Not available yet. Administrator sign-in currently uses your password."
         control={(a) => (
-          <Toggle {...a} checked={s.twoFactor} onChange={(v) => onChange("security", "twoFactor", v)} />
+          <Toggle {...a} disabled checked={s.twoFactor} onChange={(v) => onChange("security", "twoFactor", v)} />
         )}
       />
       <SettingRow
         id="login-alerts"
         label="Login alerts"
-        description="Notify you when a new administrator session is detected."
+        description="Notifications for new sign-ins are not available yet."
         control={(a) => (
-          <Toggle {...a} checked={s.loginAlerts} onChange={(v) => onChange("security", "loginAlerts", v)} />
+          <Toggle {...a} disabled checked={s.loginAlerts} onChange={(v) => onChange("security", "loginAlerts", v)} />
         )}
       />
       <AutoLogoutRow values={values} onChange={onChange} />
@@ -232,9 +232,9 @@ export function SystemSettings({
         id="maintenance"
         label="Maintenance mode"
         badge="All users"
-        description="Temporarily restrict user-facing actions during maintenance."
+        description="Not available yet. Platform booking and checkout restrictions have not been implemented."
         control={(a) => (
-          <Toggle {...a} checked={sys.maintenanceMode} onChange={onToggleMaintenance} />
+          <Toggle {...a} disabled checked={sys.maintenanceMode} onChange={onToggleMaintenance} />
         )}
       />
     </>

@@ -2,11 +2,12 @@
 
 import React, { useRef } from "react";
 import Link from "next/link";
-import { CheckCircle2, Download, Printer, ArrowLeft, Ticket } from "lucide-react";
+import { CheckCircle2, Printer, ArrowLeft, Ticket } from "lucide-react";
 import QRCodeSVG from "./QRCodeSVG";
 
 export interface ETicketData {
   simulation?: boolean;
+  testMode?: boolean;
   eventTitle: string;
   category: string;
   organizer: string;
@@ -77,6 +78,7 @@ export default function ConfirmedETicket({
         className="w-full max-w-[620px] overflow-hidden rounded-[28px] border border-white/10 bg-[#0B0F19] text-white shadow-2xl shadow-cyan-950/40"
       >
         {data.simulation && <p className="bg-amber-400 px-6 py-3 text-center text-sm font-bold text-slate-950">DEMO PASS — No payment charged. Not valid for admission.</p>}
+        {data.testMode && <p className="bg-amber-400 px-6 py-3 text-center text-sm font-bold text-slate-950">TEST PAYMENT — No real money charged. Not valid for admission.</p>}
         {/* Ticket Header (Dark Navy / Black) */}
         <div className="relative overflow-hidden bg-[#0a101d] px-8 pt-8 pb-7">
           {/* Top Brand Bar */}

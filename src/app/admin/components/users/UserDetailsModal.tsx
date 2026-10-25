@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { UserDecision, UserDetails } from "@/app/admin/types/users";
 import { getUserById } from "@/app/admin/services/userService";
+import { useFetch } from "@/app/admin/hooks/useFetch";
 import { formatDate } from "@/app/admin/lib/format";
 import { Modal } from "@/app/admin/components/ui/Modal";
 import { ErrorState } from "@/app/admin/components/ui/ErrorState";
@@ -16,34 +16,21 @@ type Props = {
 };
 
 export function UserDetailsModal({ userId, onClose, onChangeStatus }: Props) {
-  const [user, setUser] = useState<UserDetails | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [tick, setTick] = useState(0);
+  if (!userId) return null;
+  return <AttendeeDetails key={userId} userId={userId} onClose={onClose} onChangeStatus={onChangeStatus} />;
+}
 
-  useEffect(() => {
-    if (!userId) return;
-    let cancelled = false;
-    setUser(null);
-    setError(null);
-    setIsLoading(true);
-    getUserById(userId)
-      .then((u) => !cancelled && setUser(u))
-      .catch((e) => !cancelled && setError(e?.message ?? "Something went wrong"))
-      .finally(() => !cancelled && setIsLoading(false));
-    return () => {
-      cancelled = true;
-    };
-  }, [userId, tick]);
+function AttendeeDetails({ userId, onClose, onChangeStatus }: Omit<Props, "userId"> & { userId: string }) {
+  const { data: user, isLoading, error, refetch } = useFetch(() => getUserById(userId), [userId]);
 
   const details: [string, string][] = user
     ? [
         ["Email", user.email],
         ["Phone", user.phone || "—"],
         ["Date joined", formatDate(user.joinedAt)],
-        ["Last active", formatDate(user.lastActiveAt)],
+        ["Email verification", user.emailVerified ? "Verified" : "Unverified"],
         ["Total bookings", user.totalBookings.toLocaleString()],
-        ["Tickets purchased", user.ticketsPurchased.toLocaleString()],
+        ["Tickets in confirmed bookings", user.ticketsPurchased.toLocaleString()],
       ]
     : [];
 
@@ -51,7 +38,7 @@ export function UserDetailsModal({ userId, onClose, onChangeStatus }: Props) {
     <Modal
       isOpen={userId !== null}
       onClose={onClose}
-      title="User details"
+      title="Attendee details"
       size="md"
       footer={
         <>
@@ -60,15 +47,15 @@ export function UserDetailsModal({ userId, onClose, onChangeStatus }: Props) {
               onClick={() => onChangeStatus(user, "active")}
               className="rounded-lg bg-teal-500/10 px-3.5 py-2 text-sm font-medium text-teal-300 hover:bg-teal-500/20"
             >
-              Activate
+              Enable
             </button>
           )}
-          {user && user.status !== "inactive" && (
+          {user && user.status !== "disabled" && (
             <button
-              onClick={() => onChangeStatus(user, "inactive")}
+              onClick={() => onChangeStatus(user, "disabled")}
               className="rounded-lg bg-rose-500/10 px-3.5 py-2 text-sm font-medium text-rose-300 hover:bg-rose-500/20"
             >
-              Deactivate
+              Disable
             </button>
           )}
           <button
@@ -98,7 +85,7 @@ export function UserDetailsModal({ userId, onClose, onChangeStatus }: Props) {
       )}
 
       {!isLoading && error && (
-        <ErrorState compact title="Couldn't load user" message={error} onRetry={() => setTick((t) => t + 1)} />
+        <ErrorState compact title="Couldn't load attendee" message={error} onRetry={refetch} />
       )}
 
       {!isLoading && user && (
@@ -107,7 +94,7 @@ export function UserDetailsModal({ userId, onClose, onChangeStatus }: Props) {
             <Avatar name={user.name} src={user.avatarUrl} size="lg" />
             <div>
               <p className="text-base font-semibold text-white">{user.name}</p>
-              <p className="mb-1.5 text-xs text-slate-500">{user.userCode}</p>
+              <p className="mb-1.5 break-all text-xs text-slate-500">{user.userCode}</p>
               <UserStatusBadge status={user.status} />
             </div>
           </div>

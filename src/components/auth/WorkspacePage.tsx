@@ -22,6 +22,6 @@ export default async function WorkspacePage({ role, title, returnTo, accountScre
   }
   if (!initial.unavailable && !initial.session) redirect(authHref("/login", returnTo));
   return <Suspense fallback={<main id="main-content" className="px-6 py-16"><p role="status">Checking your current account…</p></main>}>
-    <WorkspaceScreen role={role} title={title} returnTo={returnTo} initial={initial} accountScreen={accountScreen}>{children}</WorkspaceScreen>
+    <WorkspaceScreen role={role} title={title} returnTo={returnTo} initial={initial} accountScreen={accountScreen}>{!initial.unavailable && initial.session?.role === role ? children : undefined}</WorkspaceScreen>
   </Suspense>;
 }

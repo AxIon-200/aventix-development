@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Search, X, Plus, Menu } from "lucide-react";
 import { NotificationBell } from "@/app/admin/components/ui/NotificationBell";
 
@@ -12,10 +13,11 @@ type OrganizerTopbarProps = {
 };
 
 export default function OrganizerTopbar({
-  organizerName = "Mary",
+  organizerName = "Organizer",
   roleLabel = "Event Organizer",
 }: OrganizerTopbarProps) {
   const [searchOpen, setSearchOpen] = useState(false);
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -71,14 +73,16 @@ export default function OrganizerTopbar({
           }`}
         >
           {searchOpen ? (
-            <div className="flex h-9 w-full items-center gap-2 rounded-lg border border-teal-400/30 bg-[#111b24] px-2.5 shadow-lg shadow-black/10">
+            <form onSubmit={event => { event.preventDefault(); router.push(`/organizer/events?search=${encodeURIComponent(searchQuery.trim())}`); setSearchOpen(false); }} className="flex h-9 w-full items-center gap-2 rounded-lg border border-teal-400/30 bg-[#111b24] px-2.5 shadow-lg shadow-black/10">
               <Search className="h-4 w-4 shrink-0 text-teal-300" />
               <input
                 ref={searchInputRef}
                 type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search events, tickets..."
+                placeholder="Search your events..."
+                aria-label="Search your events"
+                maxLength={200}
                 className="min-w-0 flex-1 bg-transparent text-xs sm:text-sm text-white outline-none placeholder:text-slate-500"
               />
               <button
@@ -91,7 +95,7 @@ export default function OrganizerTopbar({
               >
                 <X className="h-4 w-4" />
               </button>
-            </div>
+            </form>
           ) : (
             <button
               type="button"

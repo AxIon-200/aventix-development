@@ -45,7 +45,7 @@ export function PaymentStatsCards({ stats, isLoading, error, onRetry }: Props) {
       <StatCard label="Transactions" value={stats.total.toLocaleString()} icon={CreditCard} change={note("Current records")} />
       <StatCard label="Paid" value={stats.paid.toLocaleString()} icon={CheckCircle2} change={note("Captured successfully")} />
       <StatCard label="Pending" value={stats.pending.toLocaleString()} icon={Clock} change={note("Awaiting completion")} />
-      <StatCard label="Recorded Value" value={formatPeso(stats.recordedValue)} icon={Wallet} change={note("Including refunded transactions")} />
+      <StatCard label="Recorded Value" value={formatPeso(stats.recordedValue)} icon={Wallet} change={note("All recorded attempts")} />
     </div>
   );
 }

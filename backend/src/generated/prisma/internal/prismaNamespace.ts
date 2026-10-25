@@ -398,6 +398,7 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 export const ModelName = {
   User: 'User',
+  AdminPreferences: 'AdminPreferences',
   AuthLink: 'AuthLink',
   EmailCooldown: 'EmailCooldown',
   AuthRateLimit: 'AuthRateLimit',
@@ -436,7 +437,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "authLink" | "emailCooldown" | "authRateLimit" | "session" | "account" | "verification" | "organizerProfile" | "organizerApplication" | "organizerDecision" | "organizerDecisionNotification" | "venue" | "event" | "eventMedia" | "ticketCategory" | "eventSeat" | "booking" | "bookingItem" | "bookingSeat" | "payment" | "ticket" | "ticketVerification" | "activityLog" | "contactMessage"
+    modelProps: "user" | "adminPreferences" | "authLink" | "emailCooldown" | "authRateLimit" | "session" | "account" | "verification" | "organizerProfile" | "organizerApplication" | "organizerDecision" | "organizerDecisionNotification" | "venue" | "event" | "eventMedia" | "ticketCategory" | "eventSeat" | "booking" | "bookingItem" | "bookingSeat" | "payment" | "ticket" | "ticketVerification" | "activityLog" | "contactMessage"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -511,6 +512,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.UserCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.UserCountAggregateOutputType> | number
+        }
+      }
+    }
+    AdminPreferences: {
+      payload: Prisma.$AdminPreferencesPayload<ExtArgs>
+      fields: Prisma.AdminPreferencesFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AdminPreferencesFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminPreferencesPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AdminPreferencesFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminPreferencesPayload>
+        }
+        findFirst: {
+          args: Prisma.AdminPreferencesFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminPreferencesPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AdminPreferencesFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminPreferencesPayload>
+        }
+        findMany: {
+          args: Prisma.AdminPreferencesFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminPreferencesPayload>[]
+        }
+        create: {
+          args: Prisma.AdminPreferencesCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminPreferencesPayload>
+        }
+        createMany: {
+          args: Prisma.AdminPreferencesCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AdminPreferencesCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminPreferencesPayload>[]
+        }
+        delete: {
+          args: Prisma.AdminPreferencesDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminPreferencesPayload>
+        }
+        update: {
+          args: Prisma.AdminPreferencesUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminPreferencesPayload>
+        }
+        deleteMany: {
+          args: Prisma.AdminPreferencesDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AdminPreferencesUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AdminPreferencesUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminPreferencesPayload>[]
+        }
+        upsert: {
+          args: Prisma.AdminPreferencesUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminPreferencesPayload>
+        }
+        aggregate: {
+          args: Prisma.AdminPreferencesAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAdminPreferences>
+        }
+        groupBy: {
+          args: Prisma.AdminPreferencesGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AdminPreferencesGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AdminPreferencesCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AdminPreferencesCountAggregateOutputType> | number
         }
       }
     }
@@ -2276,6 +2351,15 @@ export const UserScalarFieldEnum = {
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
 
 
+export const AdminPreferencesScalarFieldEnum = {
+  userId: 'userId',
+  settings: 'settings',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AdminPreferencesScalarFieldEnum = (typeof AdminPreferencesScalarFieldEnum)[keyof typeof AdminPreferencesScalarFieldEnum]
+
+
 export const AuthLinkScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -2358,6 +2442,10 @@ export const OrganizerProfileScalarFieldEnum = {
   userId: 'userId',
   organizationName: 'organizationName',
   description: 'description',
+  contactEmail: 'contactEmail',
+  payoutBankName: 'payoutBankName',
+  payoutAccountEncrypted: 'payoutAccountEncrypted',
+  payoutAccountLast4: 'payoutAccountLast4',
   approvalStatus: 'approvalStatus',
   decisionVersion: 'decisionVersion',
   approvedAt: 'approvedAt',
@@ -2501,6 +2589,8 @@ export type EventSeatScalarFieldEnum = (typeof EventSeatScalarFieldEnum)[keyof t
 export const BookingScalarFieldEnum = {
   id: 'id',
   bookingReference: 'bookingReference',
+  checkoutKey: 'checkoutKey',
+  checkoutHash: 'checkoutHash',
   userId: 'userId',
   eventId: 'eventId',
   status: 'status',
@@ -2547,6 +2637,7 @@ export const PaymentScalarFieldEnum = {
   bookingId: 'bookingId',
   provider: 'provider',
   providerReference: 'providerReference',
+  checkoutUrl: 'checkoutUrl',
   paymentMethod: 'paymentMethod',
   amount: 'amount',
   status: 'status',
@@ -2624,6 +2715,13 @@ export const SortOrder = {
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
 
 
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
+
+
 export const NullableJsonNullValueInput = {
   DbNull: DbNull,
   JsonNull: JsonNull
@@ -2695,6 +2793,20 @@ export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel
  * Reference to a field of type 'DateTime[]'
  */
 export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Json'
+ */
+export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+    
+
+
+/**
+ * Reference to a field of type 'QueryMode'
+ */
+export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
     
 
 
@@ -2881,20 +2993,6 @@ export type ListEnumTicketVerificationResultFieldRefInput<$PrismaModel> = FieldR
 
 
 /**
- * Reference to a field of type 'Json'
- */
-export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
-    
-
-
-/**
- * Reference to a field of type 'QueryMode'
- */
-export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
-    
-
-
-/**
  * Reference to a field of type 'Float'
  */
 export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -3059,6 +3157,7 @@ export interface PrismaClientOptionsWithAdapter extends PrismaClientBaseOptions 
 export type PrismaClientOptions = PrismaClientOptionsWithAccelerateUrl | PrismaClientOptionsWithAdapter
 export type GlobalOmitConfig = {
   user?: Prisma.UserOmit
+  adminPreferences?: Prisma.AdminPreferencesOmit
   authLink?: Prisma.AuthLinkOmit
   emailCooldown?: Prisma.EmailCooldownOmit
   authRateLimit?: Prisma.AuthRateLimitOmit

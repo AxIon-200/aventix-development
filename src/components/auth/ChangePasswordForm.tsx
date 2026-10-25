@@ -7,9 +7,10 @@ import { authHref } from "@/lib/auth/destination";
 import { passwordError } from "@/lib/auth/validation";
 import FormField, { submitClass } from "./FormField";
 
-export default function ChangePasswordForm({ session, returnTo, onAccessRejected }: {
+export default function ChangePasswordForm({ session, returnTo, onAccessRejected, onChanged }: {
   session: AccountSession; returnTo: string;
   onAccessRejected: (code: AuthErrorCode, expectedUserId: string) => void;
+  onChanged?: () => void;
 }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [outcome, setOutcome] = useState<"confirmed" | "uncertain" | null>(null);
@@ -48,6 +49,7 @@ export default function ChangePasswordForm({ session, returnTo, onAccessRejected
       await publicAuthClient.changePassword({ currentPassword, newPassword });
       form.reset();
       setOutcome("confirmed");
+      onChanged?.();
     } catch (cause) {
       const error = cause instanceof AuthClientError ? cause : new AuthClientError("REQUEST_UNCERTAIN");
       if (["AUTHENTICATION_REQUIRED", "ACCOUNT_DISABLED", "EMAIL_VERIFICATION_REQUIRED",

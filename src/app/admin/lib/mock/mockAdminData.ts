@@ -27,11 +27,11 @@ export const mockDashboardStats: DashboardStats = {
 };
 
 export const mockSalesAnalytics: SalesDataPoint[] = [
-  { label: "Aug 17", ticketsSold: 1800, revenueIndex: 900 },
-  { label: "Aug 24", ticketsSold: 2400, revenueIndex: 1200 },
-  { label: "Aug 31", ticketsSold: 3100, revenueIndex: 1500 },
-  { label: "Sep 07", ticketsSold: 2900, revenueIndex: 1400 },
-  { label: "Sep 14", ticketsSold: 3400, revenueIndex: 1700 },
+  { date: "2026-08-17", label: "Aug 17", ticketsSold: 1800, revenue: 900 },
+  { date: "2026-08-24", label: "Aug 24", ticketsSold: 2400, revenue: 1200 },
+  { date: "2026-08-31", label: "Aug 31", ticketsSold: 3100, revenue: 1500 },
+  { date: "2026-09-07", label: "Sep 07", ticketsSold: 2900, revenue: 1400 },
+  { date: "2026-09-14", label: "Sep 14", ticketsSold: 3400, revenue: 1700 },
 ];
 
 export const mockBookingStatus: BookingStatusBreakdown = {
@@ -39,11 +39,12 @@ export const mockBookingStatus: BookingStatusBreakdown = {
   completed: 19,
   pending: 13,
   cancelled: 10,
+  expired: 0, refunded: 0, total: 100,
 };
 
 export const mockRecentEvents: RecentEventRow[] = [
-  { id: "evt-1", title: "Summer Sound Fest", date: "2026-12-05", status: "upcoming" },
-  { id: "evt-2", title: "Indie Night Live", date: "2026-11-14", status: "upcoming" },
+  { id: "evt-1", title: "Summer Sound Fest", date: "2026-12-05", status: "published" },
+  { id: "evt-2", title: "Indie Night Live", date: "2026-11-14", status: "published" },
 ];
 
 export const mockRecentUsers: RecentUserRow[] = [

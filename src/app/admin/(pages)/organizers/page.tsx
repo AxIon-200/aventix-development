@@ -77,8 +77,8 @@ export default function OrganizersPage() {
       searchPlaceholder="Search organizer applications" searchInputId="organizer-search" onSearchSubmit={() => list.refetch()}
       filters={FILTERS} emptyTitle="No organizer applications yet"
       emptyDescription="Applications will appear here after submission." />
-    <OrganizerDetailsModal key={viewId ?? "closed"} organizerId={viewId} onClose={() => setViewId(null)} onDecide={requestDecision} onNotice={setNotice} />
-    <OrganizerDecisionDialog key={target ? `${target.id}:${target.version}:${target.decision}` : "closed"} target={target} isLoading={updating} onConfirm={confirmDecision}
+    <OrganizerDetailsModal key={`organizer-details:${viewId ?? "closed"}`} organizerId={viewId} onClose={() => setViewId(null)} onDecide={requestDecision} onNotice={setNotice} />
+    <OrganizerDecisionDialog key={target ? `organizer-decision:${target.id}:${target.version}:${target.decision}` : "organizer-decision:closed"} target={target} isLoading={updating} onConfirm={confirmDecision}
       onCancel={() => { if (!updating && target) { setTarget(null); setViewId(target.id); } }} />
   </div>;
 }

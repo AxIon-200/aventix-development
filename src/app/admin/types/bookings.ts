@@ -1,10 +1,10 @@
-export type BookingStatus = "confirmed" | "pending" | "completed" | "cancelled";
+export type BookingStatus = "confirmed" | "pending" | "completed" | "cancelled" | "expired" | "refunded";
 export type BookingStatusFilter = BookingStatus | "all";
 
-export type PaymentStatus = "paid" | "pending" | "refunded";
+export type PaymentStatus = "paid" | "pending" | "refunded" | "failed";
 
 // What an admin can set a payment to from the table / details modal.
-export type PaymentDecision = Exclude<PaymentStatus, "pending">;
+export type PaymentDecision = "paid" | "refunded";
 
 export type BookingFilters = {
   status: BookingStatusFilter;
@@ -35,7 +35,7 @@ export type BookingLineItem = {
 // GET /admin/bookings/:id (details modal)
 export type AdminBookingDetails = AdminBooking & {
   customerPhone?: string | null;
-  eventStartsAt: string; // ISO
+  eventStartsAt: string | null; // ISO when scheduled
   eventVenue: string;
   paymentMethod?: string | null; // "GCash", "Card", ...
   paidAt?: string | null;
@@ -49,7 +49,7 @@ export type BookingStats = {
   total: number;
   confirmed: number;
   pending: number;
-  totalValue: number; // sum of `amount` for bookings that are not cancelled
+  totalValue: number; // sum of confirmed and unexpired pending booking amounts
 };
 
 // GET /admin/bookings/event-options  (fills the "All event" dropdown)

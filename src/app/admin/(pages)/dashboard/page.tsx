@@ -1,5 +1,10 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { ErrorState } from "@/app/admin/components/ui/ErrorState";
+import { downloadBlob } from "@/app/admin/lib/download";
+
 import {
   Users,
   Store,
@@ -12,6 +17,7 @@ import {
 } from "lucide-react";
 import { useFetch } from "@/app/admin/hooks/useFetch";
 import {
+  exportDashboard,
   getDashboardStats,
   getRecentEvents,
   getRecentUsers,
@@ -23,21 +29,30 @@ import { BookingStatusCard } from "@/app/admin/components/dashboard/BookingStatu
 import { RecentTable } from "@/app/admin/components/dashboard/RecentTable";
 
 export default function AdminDashboardPage() {
-  const { data: stats, isLoading: statsLoading } = useFetch(
+  const router = useRouter();
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  async function exportReport() {
+    setExporting(true); setExportError(null);
+    try { downloadBlob(await exportDashboard(), "dashboard-report.csv"); }
+    catch (error) { setExportError(error instanceof Error ? error.message : "Could not export report."); }
+    finally { setExporting(false); }
+  }
+  const { data: stats, isLoading: statsLoading, error: statsError, refetch: retryStats } = useFetch(
     () => getDashboardStats(),
-    []
+    [], true
   );
-  const { data: events, isLoading: eventsLoading } = useFetch(
+  const { data: events, isLoading: eventsLoading, error: eventsError, refetch: retryEvents } = useFetch(
     () => getRecentEvents(),
-    []
+    [], true
   );
-  const { data: users, isLoading: usersLoading } = useFetch(
+  const { data: users, isLoading: usersLoading, error: usersError, refetch: retryUsers } = useFetch(
     () => getRecentUsers(),
-    []
+    [], true
   );
-  const { data: bookings, isLoading: bookingsLoading } = useFetch(
+  const { data: bookings, isLoading: bookingsLoading, error: bookingsError, refetch: retryBookings } = useFetch(
     () => getRecentBookings(),
-    []
+    [], true
   );
 
   return (
@@ -55,13 +70,14 @@ export default function AdminDashboardPage() {
             bookings, and revenue from one control center.
           </p>
         </div>
-        <button className="flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-200 hover:bg-white/5">
+        <button onClick={exportReport} disabled={exporting} className="flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-200 hover:bg-white/5 disabled:opacity-50">
           <Download className="h-4 w-4" />
-          Export report
+          {exporting ? "Exporting..." : "Export report"}
         </button>
       </div>
 
-      {statsLoading || !stats ? (
+      {exportError && <p role="alert" className="text-sm text-red-400">{exportError}</p>}
+      {statsError ? <ErrorState message={statsError} onRetry={retryStats} /> : statsLoading || !stats ? (
         <div className="grid grid-cols-4 gap-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="h-28 animate-pulse rounded-xl bg-white/5" />
@@ -87,21 +103,27 @@ export default function AdminDashboardPage() {
         <BookingStatusCard />
       </div>
 
+      {(eventsError || usersError || bookingsError) && (
+        <ErrorState message={eventsError ?? usersError ?? bookingsError ?? undefined}
+          onRetry={() => { retryEvents(); retryUsers(); retryBookings(); }} />
+      )}
       <div className="grid grid-cols-3 gap-4">
         <RecentTable
           title="Recent events"
+          onViewAll={() => router.push("/admin/events")}
           rows={events}
           isLoading={eventsLoading}
           getRowId={(e) => e.id}
           emptyMessage="No events yet"
           columns={[
             { header: "Event", render: (e) => e.title },
-            { header: "Date", render: (e) => new Date(e.date).toLocaleDateString() },
+            { header: "Date", render: (e) => e.date ? new Date(e.date).toLocaleDateString() : "Not scheduled" },
             { header: "Status", render: (e) => <span className="capitalize">{e.status}</span> },
           ]}
         />
         <RecentTable
           title="Recent users"
+          onViewAll={() => router.push("/admin/users")}
           rows={users}
           isLoading={usersLoading}
           getRowId={(u) => u.id}
@@ -114,6 +136,7 @@ export default function AdminDashboardPage() {
         />
         <RecentTable
           title="Recent bookings"
+          onViewAll={() => router.push("/admin/bookings")}
           rows={bookings}
           isLoading={bookingsLoading}
           getRowId={(b) => b.id}

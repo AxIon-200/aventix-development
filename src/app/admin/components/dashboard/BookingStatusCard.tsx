@@ -1,6 +1,7 @@
 "use client";
 
 import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
+import { ErrorState } from "@/app/admin/components/ui/ErrorState";
 import { useFetch } from "@/app/admin/hooks/useFetch";
 import { getBookingStatusBreakdown } from "@/app/admin/services/dashboardService";
 
@@ -9,10 +10,12 @@ const COLORS: Record<string, string> = {
   Completed: "#38BDF8",
   Pending: "#FACC15",
   Cancelled: "#64748B",
+  Expired: "#F97316",
+  Refunded: "#A78BFA",
 };
 
 export function BookingStatusCard() {
-  const { data, isLoading } = useFetch(() => getBookingStatusBreakdown(), []);
+  const { data, isLoading, error, refetch } = useFetch(() => getBookingStatusBreakdown(), [], true);
 
   const rows = data
     ? [
@@ -20,6 +23,8 @@ export function BookingStatusCard() {
         { name: "Completed", value: data.completed },
         { name: "Pending", value: data.pending },
         { name: "Cancelled", value: data.cancelled },
+        { name: "Expired", value: data.expired },
+        { name: "Refunded", value: data.refunded },
       ]
     : [];
 
@@ -31,11 +36,11 @@ export function BookingStatusCard() {
           <p className="text-xs text-slate-500">Current booking mix</p>
         </div>
         <span className="rounded-full bg-teal-500/10 px-2.5 py-1 text-[11px] font-medium text-teal-400">
-          Confirmed
+          All statuses
         </span>
       </div>
 
-      {isLoading || !data ? (
+      {error ? <ErrorState compact message={error} onRetry={refetch} /> : isLoading || !data ? (
         <div className="mt-6 h-40 w-full animate-pulse rounded-lg bg-white/5" />
       ) : (
         <div className="mt-4 flex items-center gap-6">
@@ -57,7 +62,7 @@ export function BookingStatusCard() {
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-lg font-semibold text-white">100%</span>
+              <span className="text-lg font-semibold text-white">{data.total.toLocaleString()}</span>
               <span className="text-[10px] text-slate-500">all bookings</span>
             </div>
           </div>
@@ -70,13 +75,13 @@ export function BookingStatusCard() {
                   <div
                     className="h-1.5 rounded-full"
                     style={{
-                      width: `${row.value}%`,
+                      width: `${data.total ? row.value / data.total * 100 : 0}%`,
                       backgroundColor: COLORS[row.name],
                     }}
                   />
                 </div>
                 <span className="w-8 text-right text-slate-300">
-                  {row.value}%
+                  {data.total ? (row.value / data.total * 100).toFixed(1) : "0"}%
                 </span>
               </div>
             ))}

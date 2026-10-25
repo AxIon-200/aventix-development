@@ -39,6 +39,7 @@ export type PaymentMinAggregateOutputType = {
   bookingId: string | null
   provider: string | null
   providerReference: string | null
+  checkoutUrl: string | null
   paymentMethod: string | null
   amount: runtime.Decimal | null
   status: $Enums.PaymentStatus | null
@@ -56,6 +57,7 @@ export type PaymentMaxAggregateOutputType = {
   bookingId: string | null
   provider: string | null
   providerReference: string | null
+  checkoutUrl: string | null
   paymentMethod: string | null
   amount: runtime.Decimal | null
   status: $Enums.PaymentStatus | null
@@ -73,6 +75,7 @@ export type PaymentCountAggregateOutputType = {
   bookingId: number
   provider: number
   providerReference: number
+  checkoutUrl: number
   paymentMethod: number
   amount: number
   status: number
@@ -100,6 +103,7 @@ export type PaymentMinAggregateInputType = {
   bookingId?: true
   provider?: true
   providerReference?: true
+  checkoutUrl?: true
   paymentMethod?: true
   amount?: true
   status?: true
@@ -117,6 +121,7 @@ export type PaymentMaxAggregateInputType = {
   bookingId?: true
   provider?: true
   providerReference?: true
+  checkoutUrl?: true
   paymentMethod?: true
   amount?: true
   status?: true
@@ -134,6 +139,7 @@ export type PaymentCountAggregateInputType = {
   bookingId?: true
   provider?: true
   providerReference?: true
+  checkoutUrl?: true
   paymentMethod?: true
   amount?: true
   status?: true
@@ -238,6 +244,7 @@ export type PaymentGroupByOutputType = {
   bookingId: string
   provider: string
   providerReference: string | null
+  checkoutUrl: string | null
   paymentMethod: string | null
   amount: runtime.Decimal
   status: $Enums.PaymentStatus
@@ -278,6 +285,7 @@ export type PaymentWhereInput = {
   bookingId?: Prisma.UuidFilter<"Payment"> | string
   provider?: Prisma.StringFilter<"Payment"> | string
   providerReference?: Prisma.StringNullableFilter<"Payment"> | string | null
+  checkoutUrl?: Prisma.StringNullableFilter<"Payment"> | string | null
   paymentMethod?: Prisma.StringNullableFilter<"Payment"> | string | null
   amount?: Prisma.DecimalFilter<"Payment"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumPaymentStatusFilter<"Payment"> | $Enums.PaymentStatus
@@ -296,6 +304,7 @@ export type PaymentOrderByWithRelationInput = {
   bookingId?: Prisma.SortOrder
   provider?: Prisma.SortOrder
   providerReference?: Prisma.SortOrderInput | Prisma.SortOrder
+  checkoutUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   paymentMethod?: Prisma.SortOrderInput | Prisma.SortOrder
   amount?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -318,6 +327,7 @@ export type PaymentWhereUniqueInput = Prisma.AtLeast<{
   bookingId?: Prisma.UuidFilter<"Payment"> | string
   provider?: Prisma.StringFilter<"Payment"> | string
   providerReference?: Prisma.StringNullableFilter<"Payment"> | string | null
+  checkoutUrl?: Prisma.StringNullableFilter<"Payment"> | string | null
   paymentMethod?: Prisma.StringNullableFilter<"Payment"> | string | null
   amount?: Prisma.DecimalFilter<"Payment"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumPaymentStatusFilter<"Payment"> | $Enums.PaymentStatus
@@ -336,6 +346,7 @@ export type PaymentOrderByWithAggregationInput = {
   bookingId?: Prisma.SortOrder
   provider?: Prisma.SortOrder
   providerReference?: Prisma.SortOrderInput | Prisma.SortOrder
+  checkoutUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   paymentMethod?: Prisma.SortOrderInput | Prisma.SortOrder
   amount?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -361,6 +372,7 @@ export type PaymentScalarWhereWithAggregatesInput = {
   bookingId?: Prisma.UuidWithAggregatesFilter<"Payment"> | string
   provider?: Prisma.StringWithAggregatesFilter<"Payment"> | string
   providerReference?: Prisma.StringNullableWithAggregatesFilter<"Payment"> | string | null
+  checkoutUrl?: Prisma.StringNullableWithAggregatesFilter<"Payment"> | string | null
   paymentMethod?: Prisma.StringNullableWithAggregatesFilter<"Payment"> | string | null
   amount?: Prisma.DecimalWithAggregatesFilter<"Payment"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumPaymentStatusWithAggregatesFilter<"Payment"> | $Enums.PaymentStatus
@@ -377,6 +389,7 @@ export type PaymentCreateInput = {
   id?: string
   provider: string
   providerReference?: string | null
+  checkoutUrl?: string | null
   paymentMethod?: string | null
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.PaymentStatus
@@ -395,6 +408,7 @@ export type PaymentUncheckedCreateInput = {
   bookingId: string
   provider: string
   providerReference?: string | null
+  checkoutUrl?: string | null
   paymentMethod?: string | null
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.PaymentStatus
@@ -411,6 +425,7 @@ export type PaymentUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   provider?: Prisma.StringFieldUpdateOperationsInput | string
   providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
@@ -429,6 +444,7 @@ export type PaymentUncheckedUpdateInput = {
   bookingId?: Prisma.StringFieldUpdateOperationsInput | string
   provider?: Prisma.StringFieldUpdateOperationsInput | string
   providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
@@ -446,6 +462,7 @@ export type PaymentCreateManyInput = {
   bookingId: string
   provider: string
   providerReference?: string | null
+  checkoutUrl?: string | null
   paymentMethod?: string | null
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.PaymentStatus
@@ -462,6 +479,7 @@ export type PaymentUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   provider?: Prisma.StringFieldUpdateOperationsInput | string
   providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
@@ -479,6 +497,7 @@ export type PaymentUncheckedUpdateManyInput = {
   bookingId?: Prisma.StringFieldUpdateOperationsInput | string
   provider?: Prisma.StringFieldUpdateOperationsInput | string
   providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
@@ -511,6 +530,7 @@ export type PaymentCountOrderByAggregateInput = {
   bookingId?: Prisma.SortOrder
   provider?: Prisma.SortOrder
   providerReference?: Prisma.SortOrder
+  checkoutUrl?: Prisma.SortOrder
   paymentMethod?: Prisma.SortOrder
   amount?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -532,6 +552,7 @@ export type PaymentMaxOrderByAggregateInput = {
   bookingId?: Prisma.SortOrder
   provider?: Prisma.SortOrder
   providerReference?: Prisma.SortOrder
+  checkoutUrl?: Prisma.SortOrder
   paymentMethod?: Prisma.SortOrder
   amount?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -549,6 +570,7 @@ export type PaymentMinOrderByAggregateInput = {
   bookingId?: Prisma.SortOrder
   provider?: Prisma.SortOrder
   providerReference?: Prisma.SortOrder
+  checkoutUrl?: Prisma.SortOrder
   paymentMethod?: Prisma.SortOrder
   amount?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -615,6 +637,7 @@ export type PaymentCreateWithoutBookingInput = {
   id?: string
   provider: string
   providerReference?: string | null
+  checkoutUrl?: string | null
   paymentMethod?: string | null
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.PaymentStatus
@@ -631,6 +654,7 @@ export type PaymentUncheckedCreateWithoutBookingInput = {
   id?: string
   provider: string
   providerReference?: string | null
+  checkoutUrl?: string | null
   paymentMethod?: string | null
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.PaymentStatus
@@ -677,6 +701,7 @@ export type PaymentScalarWhereInput = {
   bookingId?: Prisma.UuidFilter<"Payment"> | string
   provider?: Prisma.StringFilter<"Payment"> | string
   providerReference?: Prisma.StringNullableFilter<"Payment"> | string | null
+  checkoutUrl?: Prisma.StringNullableFilter<"Payment"> | string | null
   paymentMethod?: Prisma.StringNullableFilter<"Payment"> | string | null
   amount?: Prisma.DecimalFilter<"Payment"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumPaymentStatusFilter<"Payment"> | $Enums.PaymentStatus
@@ -693,6 +718,7 @@ export type PaymentCreateManyBookingInput = {
   id?: string
   provider: string
   providerReference?: string | null
+  checkoutUrl?: string | null
   paymentMethod?: string | null
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.PaymentStatus
@@ -709,6 +735,7 @@ export type PaymentUpdateWithoutBookingInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   provider?: Prisma.StringFieldUpdateOperationsInput | string
   providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
@@ -725,6 +752,7 @@ export type PaymentUncheckedUpdateWithoutBookingInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   provider?: Prisma.StringFieldUpdateOperationsInput | string
   providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
@@ -741,6 +769,7 @@ export type PaymentUncheckedUpdateManyWithoutBookingInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   provider?: Prisma.StringFieldUpdateOperationsInput | string
   providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
@@ -760,6 +789,7 @@ export type PaymentSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   bookingId?: boolean
   provider?: boolean
   providerReference?: boolean
+  checkoutUrl?: boolean
   paymentMethod?: boolean
   amount?: boolean
   status?: boolean
@@ -778,6 +808,7 @@ export type PaymentSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   bookingId?: boolean
   provider?: boolean
   providerReference?: boolean
+  checkoutUrl?: boolean
   paymentMethod?: boolean
   amount?: boolean
   status?: boolean
@@ -796,6 +827,7 @@ export type PaymentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   bookingId?: boolean
   provider?: boolean
   providerReference?: boolean
+  checkoutUrl?: boolean
   paymentMethod?: boolean
   amount?: boolean
   status?: boolean
@@ -814,6 +846,7 @@ export type PaymentSelectScalar = {
   bookingId?: boolean
   provider?: boolean
   providerReference?: boolean
+  checkoutUrl?: boolean
   paymentMethod?: boolean
   amount?: boolean
   status?: boolean
@@ -826,7 +859,7 @@ export type PaymentSelectScalar = {
   updatedAt?: boolean
 }
 
-export type PaymentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookingId" | "provider" | "providerReference" | "paymentMethod" | "amount" | "status" | "paidAt" | "refundedAt" | "refundStatus" | "refundProviderReference" | "refundError" | "createdAt" | "updatedAt", ExtArgs["result"]["payment"]>
+export type PaymentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookingId" | "provider" | "providerReference" | "checkoutUrl" | "paymentMethod" | "amount" | "status" | "paidAt" | "refundedAt" | "refundStatus" | "refundProviderReference" | "refundError" | "createdAt" | "updatedAt", ExtArgs["result"]["payment"]>
 export type PaymentInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   booking?: boolean | Prisma.BookingDefaultArgs<ExtArgs>
 }
@@ -847,6 +880,7 @@ export type $PaymentPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     bookingId: string
     provider: string
     providerReference: string | null
+    checkoutUrl: string | null
     paymentMethod: string | null
     amount: runtime.Decimal
     status: $Enums.PaymentStatus
@@ -1285,6 +1319,7 @@ export interface PaymentFieldRefs {
   readonly bookingId: Prisma.FieldRef<"Payment", 'String'>
   readonly provider: Prisma.FieldRef<"Payment", 'String'>
   readonly providerReference: Prisma.FieldRef<"Payment", 'String'>
+  readonly checkoutUrl: Prisma.FieldRef<"Payment", 'String'>
   readonly paymentMethod: Prisma.FieldRef<"Payment", 'String'>
   readonly amount: Prisma.FieldRef<"Payment", 'Decimal'>
   readonly status: Prisma.FieldRef<"Payment", 'PaymentStatus'>

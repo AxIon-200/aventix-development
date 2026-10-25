@@ -3,8 +3,7 @@ import { BadgeTone, StatusBadge } from "@/app/admin/components/ui/StatusBadge";
 
 export const USER_STATUS: Record<UserStatus, { label: string; tone: BadgeTone }> = {
   active: { label: "Active", tone: "success" },
-  inactive: { label: "Inactive", tone: "danger" },
-  pending: { label: "Pending", tone: "warning" },
+  disabled: { label: "Disabled", tone: "danger" },
 };
 
 export const USER_STATUS_OPTIONS = (Object.keys(USER_STATUS) as UserStatus[]).map((value) => ({

@@ -1,4 +1,4 @@
-export type TransactionStatus = "paid" | "pending" | "refunded";
+export type TransactionStatus = "paid" | "pending" | "failed" | "refunded";
 export type TransactionStatusFilter = TransactionStatus | "all";
 
 export type PaymentFilters = { status: TransactionStatusFilter };

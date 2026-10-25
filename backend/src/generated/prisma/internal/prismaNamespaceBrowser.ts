@@ -52,6 +52,7 @@ export const AnyNull = runtime.AnyNull
 
 export const ModelName = {
   User: 'User',
+  AdminPreferences: 'AdminPreferences',
   AuthLink: 'AuthLink',
   EmailCooldown: 'EmailCooldown',
   AuthRateLimit: 'AuthRateLimit',
@@ -112,6 +113,15 @@ export const UserScalarFieldEnum = {
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const AdminPreferencesScalarFieldEnum = {
+  userId: 'userId',
+  settings: 'settings',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AdminPreferencesScalarFieldEnum = (typeof AdminPreferencesScalarFieldEnum)[keyof typeof AdminPreferencesScalarFieldEnum]
 
 
 export const AuthLinkScalarFieldEnum = {
@@ -196,6 +206,10 @@ export const OrganizerProfileScalarFieldEnum = {
   userId: 'userId',
   organizationName: 'organizationName',
   description: 'description',
+  contactEmail: 'contactEmail',
+  payoutBankName: 'payoutBankName',
+  payoutAccountEncrypted: 'payoutAccountEncrypted',
+  payoutAccountLast4: 'payoutAccountLast4',
   approvalStatus: 'approvalStatus',
   decisionVersion: 'decisionVersion',
   approvedAt: 'approvedAt',
@@ -339,6 +353,8 @@ export type EventSeatScalarFieldEnum = (typeof EventSeatScalarFieldEnum)[keyof t
 export const BookingScalarFieldEnum = {
   id: 'id',
   bookingReference: 'bookingReference',
+  checkoutKey: 'checkoutKey',
+  checkoutHash: 'checkoutHash',
   userId: 'userId',
   eventId: 'eventId',
   status: 'status',
@@ -385,6 +401,7 @@ export const PaymentScalarFieldEnum = {
   bookingId: 'bookingId',
   provider: 'provider',
   providerReference: 'providerReference',
+  checkoutUrl: 'checkoutUrl',
   paymentMethod: 'paymentMethod',
   amount: 'amount',
   status: 'status',
@@ -460,6 +477,13 @@ export const SortOrder = {
 } as const
 
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
+
+
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const NullableJsonNullValueInput = {

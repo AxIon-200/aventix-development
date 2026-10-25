@@ -1,70 +1,33 @@
-import {
-  AdminSettings,
-  ChangePasswordInput,
-  SettingsResponse,
-} from "@/app/admin/types/settings";
-import { DEMO, readMockSettings, writeMockSettings } from "@/app/admin/lib/mock/mockSettings";
-import { API_BASE, delay } from "@/app/admin/services/api";
+import type { AdminSettings, ChangePasswordInput, SettingsResponse } from "@/app/admin/types/settings";
+import { authErrorMessage, publicAuthClient } from "@/lib/auth/client";
 
-// Flip to false once the backend endpoints exist. Nothing in the hooks,
-// components, or page needs to change.
-const USE_MOCK = true;
+export const SETTINGS_SAVED_EVENT = "aventix-admin-settings-saved";
 
-// GET /admin/settings  ->  { settings, updatedAt }
-export async function getSettings(): Promise<SettingsResponse> {
-  if (USE_MOCK) {
-    await delay(450);
-    failIfDemo("Failed to load settings");
-    return readMockSettings();
+async function requestSettings(init?: RequestInit): Promise<SettingsResponse> {
+  const response = await fetch("/api/v1/admin/settings", { ...init, credentials: "include", cache: "no-store" });
+  const body = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(body?.error?.message ?? "Settings are unavailable. Please try again.");
+  if (!body?.settings?.general || !body?.settings?.appearance ||
+      (body.updatedAt !== null && !Number.isFinite(Date.parse(body.updatedAt)))) {
+    throw new Error("Invalid settings response.");
   }
-
-  const res = await fetch(`${API_BASE}/admin/settings`);
-  if (!res.ok) throw new Error("Failed to load settings");
-  return res.json();
+  return body;
 }
 
-// PUT /admin/settings  (body: the full AdminSettings object)  ->  { settings, updatedAt }
+export function getSettings(): Promise<SettingsResponse> {
+  return requestSettings();
+}
+
 export async function updateSettings(settings: AdminSettings): Promise<SettingsResponse> {
-  if (USE_MOCK) {
-    await delay(600);
-    failIfDemo("Failed to save settings");
-    return writeMockSettings(settings);
-  }
-
-  const res = await fetch(`${API_BASE}/admin/settings`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(settings),
-  });
-  if (!res.ok) throw new Error("Failed to save settings");
-  return res.json();
+  const saved = await requestSettings({ method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(settings) });
+  window.dispatchEvent(new CustomEvent(SETTINGS_SAVED_EVENT, { detail: saved.settings }));
+  return saved;
 }
 
-// POST /admin/settings/password  (body: { currentPassword, newPassword })  ->  204
-// The backend should reply 400/401 with { message } when the current password is wrong.
 export async function changePassword(input: ChangePasswordInput): Promise<void> {
-  if (USE_MOCK) {
-    await delay(700);
-    failIfDemo("Failed to change password");
-    if (input.currentPassword !== DEMO.currentPassword) {
-      throw new Error("Your current password is incorrect.");
-    }
-    DEMO.currentPassword = input.newPassword; // so the demo keeps working afterwards
-    return;
+  try {
+    await publicAuthClient.changePassword!(input);
+  } catch (error) {
+    throw new Error(authErrorMessage(error));
   }
-
-  const res = await fetch(`${API_BASE}/admin/settings/password`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => null);
-    throw new Error(body?.message ?? "Failed to change password");
-  }
-}
-
-// ───────────── mock-only helpers ─────────────
-function failIfDemo(message: string) {
-  if (DEMO.failRequests) throw new Error(message);
 }

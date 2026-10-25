@@ -8,14 +8,14 @@ import { useToast } from "@/app/admin/components/ui/ToastProvider";
 
 type Props = { onClose: () => void };
 
-const MIN_LENGTH = 8;
+const MIN_LENGTH = 15;
 
 type Errors = { current?: string; next?: string; confirm?: string };
 
 function validate(current: string, next: string, confirm: string): Errors {
   const errors: Errors = {};
   if (!current) errors.current = "Enter your current password.";
-  if (next.length < MIN_LENGTH) errors.next = `Use at least ${MIN_LENGTH} characters.`;
+  if ([...next].length < MIN_LENGTH || [...next].length > 128) errors.next = "Use 15 to 128 characters.";
   else if (next === current) errors.next = "Choose a password different from your current one.";
   if (confirm !== next) errors.confirm = "Passwords don't match.";
   return errors;
@@ -155,7 +155,7 @@ export function ChangePasswordModal({ onClose }: Props) {
           onChange={setNext}
           error={errors.next}
           autoComplete="new-password"
-          hint={`At least ${MIN_LENGTH} characters.`}
+          hint="Use 15 to 128 characters. Spaces and Unicode are allowed."
         />
         <PasswordField
           label="Confirm new password"

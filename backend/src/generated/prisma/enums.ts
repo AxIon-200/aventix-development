@@ -51,7 +51,10 @@ export type OrganizerEmailStatus = (typeof OrganizerEmailStatus)[keyof typeof Or
 export const EventType = {
   CONCERT: 'CONCERT',
   GIG: 'GIG',
-  MUSIC_FESTIVAL: 'MUSIC_FESTIVAL'
+  MUSIC_FESTIVAL: 'MUSIC_FESTIVAL',
+  CONFERENCE: 'CONFERENCE',
+  SPORTS: 'SPORTS',
+  THEATER: 'THEATER'
 } as const
 
 export type EventType = (typeof EventType)[keyof typeof EventType]

@@ -54,7 +54,7 @@ export default function EventsPage() {
   const [isExporting, setIsExporting] = useState(false);
 
   function openAvailability(e: EventRef) {
-    setTarget({ event: { id: e.id, title: e.title, status: e.status, attendees: e.attendees } });
+    setTarget({ event: { id: e.id, title: e.title, status: e.status, attendees: e.attendees, updatedAt: e.updatedAt } });
   }
 
   const columns = useMemo(
@@ -62,7 +62,7 @@ export default function EventsPage() {
       getEventColumns({
         onView: (e) => setViewId(e.id),
         onManageAvailability: (e) =>
-          setTarget({ event: { id: e.id, title: e.title, status: e.status, attendees: e.attendees } }),
+          setTarget({ event: { id: e.id, title: e.title, status: e.status, attendees: e.attendees, updatedAt: e.updatedAt } }),
       }),
     []
   );
@@ -77,13 +77,16 @@ export default function EventsPage() {
     if (!target) return;
     setIsUpdating(true);
     try {
-      await updateEventStatus(target.event.id, status, reason);
+      await updateEventStatus(target.event.id, status, target.event.updatedAt, reason);
       toast.success(`${target.event.title} is now ${EVENT_STATUS[status].label.toLowerCase()}.`);
       setTarget(null);
       list.refetch();
       stats.refetch();
     } catch (err) {
-      // Keep the dialog open so the admin can retry.
+      // Re-read server state after an uncertain or stale update.
+      setTarget(null);
+      list.refetch();
+      stats.refetch();
       toast.error(err instanceof Error ? err.message : "Failed to update event availability.");
     } finally {
       setIsUpdating(false);
@@ -135,12 +138,14 @@ export default function EventsPage() {
       />
 
       <EventDetailsModal
+        key={`event-details:${viewId ?? "closed"}`}
         eventId={viewId}
         onClose={() => setViewId(null)}
         onManageAvailability={requestAvailability}
       />
 
       <EventAvailabilityDialog
+        key={target ? `event-availability:${target.event.id}:${target.event.updatedAt}` : "event-availability:closed"}
         target={target}
         isLoading={isUpdating}
         onConfirm={confirmAvailability}

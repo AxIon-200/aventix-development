@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   AdminSettings,
   SetField,
@@ -26,6 +26,7 @@ export function useSettingsForm(initial: SettingsResponse) {
   const [updatedAt, setUpdatedAt] = useState(initial.updatedAt);
   const [draft, setDraft] = useState(initial.settings);
   const [isSaving, setIsSaving] = useState(false);
+  const saving = useRef(false);
 
   const setField: SetField = useCallback((section, key, value) => {
     setDraft((d) => ({ ...d, [section]: { ...d[section], [key]: value } }));
@@ -46,6 +47,8 @@ export function useSettingsForm(initial: SettingsResponse) {
   const discard = useCallback(() => setDraft(saved), [saved]);
 
   const save = useCallback(async (): Promise<SaveResult> => {
+    if (saving.current) return { ok: false, message: "Settings are already being saved." };
+    saving.current = true;
     setIsSaving(true);
     try {
       const res = await updateSettings(draft);
@@ -56,6 +59,7 @@ export function useSettingsForm(initial: SettingsResponse) {
     } catch (err) {
       return { ok: false, message: err instanceof Error ? err.message : "Failed to save settings" };
     } finally {
+      saving.current = false;
       setIsSaving(false);
     }
   }, [draft]);

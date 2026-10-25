@@ -1,123 +1,92 @@
-
 "use client";
 
-import {
-  changePassword,
-  getProfile,
-  updateProfile,
-} from "@/app/admin/services/profileService";
-
-import type {
-  ChangePasswordPayload,
-  UpdateProfilePayload,
-} from "@/app/admin/types/profile";
-
+import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import Link from "next/link";
+import { useAccountSession } from "@/components/auth/useAccountSession";
+import AccountGate from "@/components/auth/AccountGate";
+import AttendeeProfile, { hasUnsavedProfileChanges, type ProfileDraftState } from "@/components/auth/AttendeeProfile";
+import ChangePasswordForm from "@/components/auth/ChangePasswordForm";
+import type { AccountSession } from "@/lib/auth/client";
+import { getProfile } from "@/app/admin/services/profileService";
 import { useFetch } from "@/app/admin/hooks/useFetch";
-import { useToast } from "@/app/admin/components/ui/ToastProvider";
 import { ErrorState } from "@/app/admin/components/ui/ErrorState";
 import { PageHeader } from "@/app/admin/components/layout/PageHeader";
 import { ProfileSummaryCard } from "@/app/admin/components/profile/ProfileSummaryCard";
-import { PersonalInfoForm } from "@/app/admin/components/profile/PersonalInfoForm";
-import { SecurityForm } from "@/app/admin/components/profile/SecurityForm";
 import { AccountActivityCard } from "@/app/admin/components/profile/AccountActivityCard";
-import { ProfileSkeleton } from "@/app/admin/components/profile/ProfileSkeleton";
 
-export default function ProfilePage() {
-  const toast = useToast();
+function ProfileContent({ session, onAccessRejected, draft, setDraft }: {
+  session: AccountSession;
+  onAccessRejected: Parameters<typeof AttendeeProfile>[0]["onAccessRejected"];
+  draft: ProfileDraftState | null;
+  setDraft: Dispatch<SetStateAction<ProfileDraftState | null>>;
+}) {
   const profile = useFetch(getProfile, []);
+  const dirty = draft?.userId === session.userId && hasUnsavedProfileChanges(draft);
+  const saved = draft?.userId === session.userId ? draft.saved : null;
 
-  // Save changes to personal information.
-  async function handleSave(values: UpdateProfilePayload) {
-  try {
-    // Save the updated information.
-    const updatedProfile = await updateProfile(values);
+  useEffect(() => {
+    if (!saved) return;
+    window.dispatchEvent(new CustomEvent("admin-profile-updated", {
+      detail: { fullName: saved.name, roleLabel: "Administrator" },
+    }));
+  }, [saved]);
 
-    // Notify the topbar immediately after a successful save.
-    window.dispatchEvent(
-      new CustomEvent("admin-profile-updated", {
-        detail: {
-          fullName: updatedProfile.fullName,
-          roleLabel: updatedProfile.roleLabel,
-        },
-      })
-    );
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    const leave = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>("a[href]") : null;
+      if (!link || link.hasAttribute("download") || (link.target && link.target !== "_self")) return;
+      const destination = new URL(link.href);
+      if (destination.pathname === window.location.pathname && destination.origin === window.location.origin) return;
+      if (!window.confirm("You have unsaved personal account changes. Discard them and leave this page?")) {
+        event.preventDefault(); event.stopPropagation();
+      }
+    };
+    const traverse = (event: Event) => {
+      const navigation = event as Event & { navigationType?: string };
+      if (navigation.navigationType === "traverse" && event.cancelable
+        && !window.confirm("Discard your unsaved personal account changes?")) event.preventDefault();
+    };
+    const navigation = (window as Window & { navigation?: EventTarget }).navigation;
+    window.addEventListener("beforeunload", warn);
+    document.addEventListener("click", leave, true);
+    navigation?.addEventListener("navigate", traverse);
+    return () => {
+      window.removeEventListener("beforeunload", warn);
+      document.removeEventListener("click", leave, true);
+      navigation?.removeEventListener("navigate", traverse);
+    };
+  }, [dirty]);
 
-    toast.success("Profile updated.");
+  const summary = profile.data?.id === session.userId ? {
+    ...profile.data,
+    ...(saved ? { fullName: saved.name, email: saved.email, phone: saved.phoneNumber } : {}),
+  } : null;
 
-    // Refresh the profile page data.
-    void profile.refetch();
-  } catch (error) {
-    // Allow the existing form to handle and display the error.
-    throw error;
-  }
+  return <div className="space-y-6">
+    <div className="grid items-start gap-6 lg:grid-cols-3">
+      {summary ? <ProfileSummaryCard profile={summary} /> : profile.isLoading ? <p role="status">Loading account summary…</p> : <ErrorState title="Account summary unavailable" message={profile.error ?? "Could not confirm your account summary."} onRetry={profile.refetch} />}
+      <div className="lg:col-span-2">
+        <AttendeeProfile session={session} returnTo="/admin/profile" onAccessRejected={onAccessRejected} retainedProfile={draft} onProfileChange={setDraft} />
+      </div>
+    </div>
+    <ChangePasswordForm session={session} returnTo="/admin/profile" onAccessRejected={onAccessRejected} onChanged={() => { profile.refetch(); }} />
+    {summary && <AccountActivityCard profile={summary} />}
+  </div>;
 }
 
-  // Change the administrator's password.
-  async function handleChangePassword(
-    values: ChangePasswordPayload
-  ) {
-    await changePassword(values);
-
-    toast.success("Password changed.");
-    profile.refetch();
-  }
-
-  // Called after a profile photo uploads successfully.
-  function handlePhotoUploaded(avatarUrl: string) {
-    // Tell the topbar to update its avatar immediately.
-    window.dispatchEvent(
-      new CustomEvent("admin-profile-photo-updated", {
-        detail: { avatarUrl },
-      })
-    );
-
-    toast.success("Profile photo updated.");
-
-    // Reload profile data so the profile summary stays synchronized.
-    void profile.refetch();
-  }
-
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        eyebrow="Settings / User Profile"
-        title="User Profile"
-        description="Manage your account information and administrator preferences."
-      />
-
-      {profile.error && !profile.data ? (
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03]">
-          <ErrorState
-            title="Couldn't load your profile"
-            message={profile.error}
-            onRetry={profile.refetch}
-          />
-        </div>
-      ) : !profile.data ? (
-        <ProfileSkeleton />
-      ) : (
-        <>
-          <div className="grid gap-6 lg:grid-cols-3">
-            <ProfileSummaryCard
-              profile={profile.data}
-              onPhotoUploaded={handlePhotoUploaded}
-            />
-
-            <PersonalInfoForm
-              profile={profile.data}
-              onSave={handleSave}
-            />
-          </div>
-
-          <SecurityForm
-            onChangePassword={handleChangePassword}
-          />
-
-          <AccountActivityCard
-            profile={profile.data}
-          />
-        </>
-      )}
-    </div>
-  );
+export default function ProfilePage() {
+  const account = useAccountSession();
+  // Preserve an unsaved draft while focus/navigation temporarily rechecks access.
+  const [draft, setDraft] = useState<ProfileDraftState | null>(null);
+  return <div className="space-y-6">
+    <PageHeader eyebrow="Settings / User Profile" title="User Profile" description="Manage your personal account information and password." />
+    {account.loading ? <p role="status">Checking your account…</p>
+      : account.unavailable ? <div><AccountGate code={account.error ?? "UNAVAILABLE"} returnTo="/admin/profile" /><button onClick={account.retry}>Retry account check</button></div>
+      : !account.session ? <Link href="/login?returnTo=%2Fadmin%2Fprofile">Log in to manage your profile</Link>
+      : account.session.role !== "ADMINISTRATOR" ? <p role="alert">This page requires an administrator account.</p>
+      : <ProfileContent key={account.session.userId} session={account.session} onAccessRejected={account.rejectAccess} draft={draft} setDraft={setDraft} />}
+  </div>;
 }

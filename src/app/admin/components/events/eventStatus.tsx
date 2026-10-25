@@ -15,6 +15,8 @@ export const EVENT_STATUS: Record<
     tone: "warning",
     description: "Hidden from attendees. Existing tickets stay valid.",
   },
+  sold_out: { label: "Sold out", tone: "warning", description: "No tickets available." },
+  completed: { label: "Completed", tone: "neutral", description: "This event has ended." },
   cancelled: {
     label: "Cancelled",
     tone: "danger",
@@ -27,6 +29,8 @@ export const EVENT_STATUS: Record<
 export const ALLOWED_TRANSITIONS: Record<EventStatus, EventStatus[]> = {
   published: ["draft", "cancelled"],
   draft: ["published", "cancelled"],
+  sold_out: ["draft", "cancelled"],
+  completed: [],
   cancelled: ["draft"], // restore as a draft first, then review and publish
 };
 
@@ -39,6 +43,9 @@ export const EVENT_CATEGORY_LABEL: Record<EventCategory, string> = {
   concert: "Concert",
   gig: "Gig",
   festival: "Festival",
+  conference: "Conference",
+  sports: "Sports",
+  theater: "Theater",
 };
 
 export const EVENT_CATEGORY_OPTIONS = (Object.keys(EVENT_CATEGORY_LABEL) as EventCategory[]).map(

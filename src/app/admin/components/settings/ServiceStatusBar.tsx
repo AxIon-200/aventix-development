@@ -13,7 +13,7 @@ function timeAgo(iso: string, now: number): string {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-export function ServiceStatusBar({ message, updatedAt }: { message: string; updatedAt: string }) {
+export function ServiceStatusBar({ message, updatedAt }: { message: string; updatedAt: string | null }) {
   // Re-render every 30s so "just now" doesn't go stale while the page stays open.
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -30,7 +30,7 @@ export function ServiceStatusBar({ message, updatedAt }: { message: string; upda
         <span className="h-2 w-2 shrink-0 rounded-full bg-teal-400" aria-hidden="true" />
         <p className="text-xs text-slate-300">{message}</p>
       </div>
-      <p className="shrink-0 text-[11px] text-slate-500">Updated {timeAgo(updatedAt, now)}</p>
+      <p className="shrink-0 text-[11px] text-slate-500">{updatedAt ? `Saved ${timeAgo(updatedAt, now)}` : "Using defaults"}</p>
     </div>
   );
 }
