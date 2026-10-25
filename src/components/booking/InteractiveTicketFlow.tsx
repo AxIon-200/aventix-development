@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { publicBookingClient, bookingErrorMessage } from "@/lib/booking/client";
 import Link from "next/link";
@@ -18,6 +18,7 @@ import InteractiveSeatMap from "./InteractiveSeatMap";
 
 import { isCategoryBookable, categoryStateLabel } from "@/lib/event-booking";
 import type { EventDetails, EventSeat } from "@/types/event";
+import type { TicketOptions } from "@/lib/booking/types";
 
 const STEPS = [
   { id: 1, title: "Performance Details", subtitle: "Event info & lineup" },
@@ -75,7 +76,24 @@ export default function InteractiveTicketFlow({
     tier.id === selectedTierId && selectedEvent && isCategoryBookable(selectedEvent, tier)
   ) ?? ticketTiers.find((tier) => selectedEvent && isCategoryBookable(selectedEvent, tier));
   const [requestedQuantity, setTicketQuantity] = useState(1);
-  const maxQuantity = activeTier ? Math.min(6, activeTier.remaining ?? 6) : 0;
+  const [allowance, setAllowance] = useState<TicketOptions | null>(null);
+  const [allowanceError, setAllowanceError] = useState("");
+  const [allowanceRefresh, setAllowanceRefresh] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    if (!selectedEventId || !attendee?.userId) return;
+    publicBookingClient.getTicketOptions!(selectedEventId).then(options => {
+      if (!cancelled) { setAllowance(options); setAllowanceError(""); }
+    }).catch(error => {
+      if (!cancelled) { setAllowance(null); setAllowanceError(bookingErrorMessage(error)); }
+    });
+    return () => { cancelled = true; };
+  }, [selectedEventId, attendee?.userId, allowanceRefresh]);
+  const currentAllowance = allowance?.event.id === selectedEventId && attendee?.userId ? allowance : null;
+  const remainingAllowance = currentAllowance
+    ? Math.max(0, currentAllowance.purchaseLimit - currentAllowance.confirmedQuantity - currentAllowance.heldQuantity)
+    : 0;
+  const maxQuantity = activeTier ? Math.min(6, activeTier.remaining ?? 6, remainingAllowance) : 0;
   const ticketQuantity = Math.min(requestedQuantity, maxQuantity);
   const [seatSelection, setSelectedSeats] = useState<EventSeat[]>([]);
   const availableSeats = activeTier?.seats ?? [];
@@ -128,6 +146,7 @@ export default function InteractiveTicketFlow({
       router.push('/bookings/' + booking.id + '/payment?method=' + (paymentMethod === "Maya" ? "paymaya" : paymentMethod === "Card" ? "card" : "gcash"));
     } catch (error) {
       setPaymentMessage(bookingErrorMessage(error));
+      setAllowanceRefresh(value => value + 1);
       checkoutBusy.current = false;
       setProcessingPayment(false);
     }
@@ -539,7 +558,7 @@ export default function InteractiveTicketFlow({
                   <div>
                     <p className="text-xs font-semibold text-slate-300">Quantity</p>
                     <p className="text-[11px] text-slate-500">
-                      {activeTier ? `Max ${maxQuantity} per booking` : "Tickets unavailable"}
+                      {currentAllowance ? `Max ${maxQuantity} per booking` : "Checking purchase allowance…"}
                     </p>
                     {activeTier?.remaining !== undefined && (
                       <p role="status" className="mt-1 text-[11px] text-slate-400">
@@ -570,6 +589,16 @@ export default function InteractiveTicketFlow({
                       +
                     </button>
                   </div>
+                </div>
+                <div role="status" className="mt-3 text-xs text-slate-400">
+                  {!attendee?.userId ? "Sign in as an attendee to check your purchase allowance." : allowanceError ? (
+                    <>{allowanceError} <button type="button" className="text-teal-300 underline" onClick={() => setAllowanceRefresh(value => value + 1)}>Retry</button></>
+                  ) : currentAllowance ? (
+                    <>
+                      <p>Event limit: {currentAllowance.purchaseLimit} per attendee. Confirmed: {currentAllowance.confirmedQuantity}. Active holds: {currentAllowance.heldQuantity}. You can select {remainingAllowance} more.</p>
+                      {currentAllowance.heldQuantity > 0 && <Link className="text-teal-300 underline" href="/dashboard/booking-history">Review your existing bookings to resume payment or cancel an unpaid reservation.</Link>}
+                    </>
+                  ) : "Loading your current purchase allowance…"}
                 </div>
 
                 {/* Subtotal Calculation */}

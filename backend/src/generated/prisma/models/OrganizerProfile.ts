@@ -39,6 +39,10 @@ export type OrganizerProfileMinAggregateOutputType = {
   userId: string | null
   organizationName: string | null
   description: string | null
+  contactEmail: string | null
+  payoutBankName: string | null
+  payoutAccountEncrypted: string | null
+  payoutAccountLast4: string | null
   approvalStatus: $Enums.OrganizerStatus | null
   decisionVersion: number | null
   approvedAt: Date | null
@@ -52,6 +56,10 @@ export type OrganizerProfileMaxAggregateOutputType = {
   userId: string | null
   organizationName: string | null
   description: string | null
+  contactEmail: string | null
+  payoutBankName: string | null
+  payoutAccountEncrypted: string | null
+  payoutAccountLast4: string | null
   approvalStatus: $Enums.OrganizerStatus | null
   decisionVersion: number | null
   approvedAt: Date | null
@@ -65,6 +73,10 @@ export type OrganizerProfileCountAggregateOutputType = {
   userId: number
   organizationName: number
   description: number
+  contactEmail: number
+  payoutBankName: number
+  payoutAccountEncrypted: number
+  payoutAccountLast4: number
   approvalStatus: number
   decisionVersion: number
   approvedAt: number
@@ -88,6 +100,10 @@ export type OrganizerProfileMinAggregateInputType = {
   userId?: true
   organizationName?: true
   description?: true
+  contactEmail?: true
+  payoutBankName?: true
+  payoutAccountEncrypted?: true
+  payoutAccountLast4?: true
   approvalStatus?: true
   decisionVersion?: true
   approvedAt?: true
@@ -101,6 +117,10 @@ export type OrganizerProfileMaxAggregateInputType = {
   userId?: true
   organizationName?: true
   description?: true
+  contactEmail?: true
+  payoutBankName?: true
+  payoutAccountEncrypted?: true
+  payoutAccountLast4?: true
   approvalStatus?: true
   decisionVersion?: true
   approvedAt?: true
@@ -114,6 +134,10 @@ export type OrganizerProfileCountAggregateInputType = {
   userId?: true
   organizationName?: true
   description?: true
+  contactEmail?: true
+  payoutBankName?: true
+  payoutAccountEncrypted?: true
+  payoutAccountLast4?: true
   approvalStatus?: true
   decisionVersion?: true
   approvedAt?: true
@@ -214,6 +238,10 @@ export type OrganizerProfileGroupByOutputType = {
   userId: string
   organizationName: string
   description: string | null
+  contactEmail: string | null
+  payoutBankName: string | null
+  payoutAccountEncrypted: string | null
+  payoutAccountLast4: string | null
   approvalStatus: $Enums.OrganizerStatus
   decisionVersion: number
   approvedAt: Date | null
@@ -250,6 +278,10 @@ export type OrganizerProfileWhereInput = {
   userId?: Prisma.UuidFilter<"OrganizerProfile"> | string
   organizationName?: Prisma.StringFilter<"OrganizerProfile"> | string
   description?: Prisma.StringNullableFilter<"OrganizerProfile"> | string | null
+  contactEmail?: Prisma.StringNullableFilter<"OrganizerProfile"> | string | null
+  payoutBankName?: Prisma.StringNullableFilter<"OrganizerProfile"> | string | null
+  payoutAccountEncrypted?: Prisma.StringNullableFilter<"OrganizerProfile"> | string | null
+  payoutAccountLast4?: Prisma.StringNullableFilter<"OrganizerProfile"> | string | null
   approvalStatus?: Prisma.EnumOrganizerStatusFilter<"OrganizerProfile"> | $Enums.OrganizerStatus
   decisionVersion?: Prisma.IntFilter<"OrganizerProfile"> | number
   approvedAt?: Prisma.DateTimeNullableFilter<"OrganizerProfile"> | Date | string | null
@@ -268,6 +300,10 @@ export type OrganizerProfileOrderByWithRelationInput = {
   userId?: Prisma.SortOrder
   organizationName?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
+  contactEmail?: Prisma.SortOrderInput | Prisma.SortOrder
+  payoutBankName?: Prisma.SortOrderInput | Prisma.SortOrder
+  payoutAccountEncrypted?: Prisma.SortOrderInput | Prisma.SortOrder
+  payoutAccountLast4?: Prisma.SortOrderInput | Prisma.SortOrder
   approvalStatus?: Prisma.SortOrder
   decisionVersion?: Prisma.SortOrder
   approvedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -289,6 +325,10 @@ export type OrganizerProfileWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.OrganizerProfileWhereInput | Prisma.OrganizerProfileWhereInput[]
   organizationName?: Prisma.StringFilter<"OrganizerProfile"> | string
   description?: Prisma.StringNullableFilter<"OrganizerProfile"> | string | null
+  contactEmail?: Prisma.StringNullableFilter<"OrganizerProfile"> | string | null
+  payoutBankName?: Prisma.StringNullableFilter<"OrganizerProfile"> | string | null
+  payoutAccountEncrypted?: Prisma.StringNullableFilter<"OrganizerProfile"> | string | null
+  payoutAccountLast4?: Prisma.StringNullableFilter<"OrganizerProfile"> | string | null
   approvalStatus?: Prisma.EnumOrganizerStatusFilter<"OrganizerProfile"> | $Enums.OrganizerStatus
   decisionVersion?: Prisma.IntFilter<"OrganizerProfile"> | number
   approvedAt?: Prisma.DateTimeNullableFilter<"OrganizerProfile"> | Date | string | null
@@ -307,6 +347,10 @@ export type OrganizerProfileOrderByWithAggregationInput = {
   userId?: Prisma.SortOrder
   organizationName?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
+  contactEmail?: Prisma.SortOrderInput | Prisma.SortOrder
+  payoutBankName?: Prisma.SortOrderInput | Prisma.SortOrder
+  payoutAccountEncrypted?: Prisma.SortOrderInput | Prisma.SortOrder
+  payoutAccountLast4?: Prisma.SortOrderInput | Prisma.SortOrder
   approvalStatus?: Prisma.SortOrder
   decisionVersion?: Prisma.SortOrder
   approvedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -328,6 +372,10 @@ export type OrganizerProfileScalarWhereWithAggregatesInput = {
   userId?: Prisma.UuidWithAggregatesFilter<"OrganizerProfile"> | string
   organizationName?: Prisma.StringWithAggregatesFilter<"OrganizerProfile"> | string
   description?: Prisma.StringNullableWithAggregatesFilter<"OrganizerProfile"> | string | null
+  contactEmail?: Prisma.StringNullableWithAggregatesFilter<"OrganizerProfile"> | string | null
+  payoutBankName?: Prisma.StringNullableWithAggregatesFilter<"OrganizerProfile"> | string | null
+  payoutAccountEncrypted?: Prisma.StringNullableWithAggregatesFilter<"OrganizerProfile"> | string | null
+  payoutAccountLast4?: Prisma.StringNullableWithAggregatesFilter<"OrganizerProfile"> | string | null
   approvalStatus?: Prisma.EnumOrganizerStatusWithAggregatesFilter<"OrganizerProfile"> | $Enums.OrganizerStatus
   decisionVersion?: Prisma.IntWithAggregatesFilter<"OrganizerProfile"> | number
   approvedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"OrganizerProfile"> | Date | string | null
@@ -340,6 +388,10 @@ export type OrganizerProfileCreateInput = {
   id?: string
   organizationName: string
   description?: string | null
+  contactEmail?: string | null
+  payoutBankName?: string | null
+  payoutAccountEncrypted?: string | null
+  payoutAccountLast4?: string | null
   approvalStatus?: $Enums.OrganizerStatus
   decisionVersion?: number
   approvedAt?: Date | string | null
@@ -357,6 +409,10 @@ export type OrganizerProfileUncheckedCreateInput = {
   userId: string
   organizationName: string
   description?: string | null
+  contactEmail?: string | null
+  payoutBankName?: string | null
+  payoutAccountEncrypted?: string | null
+  payoutAccountLast4?: string | null
   approvalStatus?: $Enums.OrganizerStatus
   decisionVersion?: number
   approvedAt?: Date | string | null
@@ -372,6 +428,10 @@ export type OrganizerProfileUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   organizationName?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountLast4?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvalStatus?: Prisma.EnumOrganizerStatusFieldUpdateOperationsInput | $Enums.OrganizerStatus
   decisionVersion?: Prisma.IntFieldUpdateOperationsInput | number
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -389,6 +449,10 @@ export type OrganizerProfileUncheckedUpdateInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   organizationName?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountLast4?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvalStatus?: Prisma.EnumOrganizerStatusFieldUpdateOperationsInput | $Enums.OrganizerStatus
   decisionVersion?: Prisma.IntFieldUpdateOperationsInput | number
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -405,6 +469,10 @@ export type OrganizerProfileCreateManyInput = {
   userId: string
   organizationName: string
   description?: string | null
+  contactEmail?: string | null
+  payoutBankName?: string | null
+  payoutAccountEncrypted?: string | null
+  payoutAccountLast4?: string | null
   approvalStatus?: $Enums.OrganizerStatus
   decisionVersion?: number
   approvedAt?: Date | string | null
@@ -417,6 +485,10 @@ export type OrganizerProfileUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   organizationName?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountLast4?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvalStatus?: Prisma.EnumOrganizerStatusFieldUpdateOperationsInput | $Enums.OrganizerStatus
   decisionVersion?: Prisma.IntFieldUpdateOperationsInput | number
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -429,6 +501,10 @@ export type OrganizerProfileUncheckedUpdateManyInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   organizationName?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountLast4?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvalStatus?: Prisma.EnumOrganizerStatusFieldUpdateOperationsInput | $Enums.OrganizerStatus
   decisionVersion?: Prisma.IntFieldUpdateOperationsInput | number
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -457,6 +533,10 @@ export type OrganizerProfileCountOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   organizationName?: Prisma.SortOrder
   description?: Prisma.SortOrder
+  contactEmail?: Prisma.SortOrder
+  payoutBankName?: Prisma.SortOrder
+  payoutAccountEncrypted?: Prisma.SortOrder
+  payoutAccountLast4?: Prisma.SortOrder
   approvalStatus?: Prisma.SortOrder
   decisionVersion?: Prisma.SortOrder
   approvedAt?: Prisma.SortOrder
@@ -474,6 +554,10 @@ export type OrganizerProfileMaxOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   organizationName?: Prisma.SortOrder
   description?: Prisma.SortOrder
+  contactEmail?: Prisma.SortOrder
+  payoutBankName?: Prisma.SortOrder
+  payoutAccountEncrypted?: Prisma.SortOrder
+  payoutAccountLast4?: Prisma.SortOrder
   approvalStatus?: Prisma.SortOrder
   decisionVersion?: Prisma.SortOrder
   approvedAt?: Prisma.SortOrder
@@ -487,6 +571,10 @@ export type OrganizerProfileMinOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   organizationName?: Prisma.SortOrder
   description?: Prisma.SortOrder
+  contactEmail?: Prisma.SortOrder
+  payoutBankName?: Prisma.SortOrder
+  payoutAccountEncrypted?: Prisma.SortOrder
+  payoutAccountLast4?: Prisma.SortOrder
   approvalStatus?: Prisma.SortOrder
   decisionVersion?: Prisma.SortOrder
   approvedAt?: Prisma.SortOrder
@@ -628,6 +716,10 @@ export type OrganizerProfileCreateWithoutUserInput = {
   id?: string
   organizationName: string
   description?: string | null
+  contactEmail?: string | null
+  payoutBankName?: string | null
+  payoutAccountEncrypted?: string | null
+  payoutAccountLast4?: string | null
   approvalStatus?: $Enums.OrganizerStatus
   decisionVersion?: number
   approvedAt?: Date | string | null
@@ -643,6 +735,10 @@ export type OrganizerProfileUncheckedCreateWithoutUserInput = {
   id?: string
   organizationName: string
   description?: string | null
+  contactEmail?: string | null
+  payoutBankName?: string | null
+  payoutAccountEncrypted?: string | null
+  payoutAccountLast4?: string | null
   approvalStatus?: $Enums.OrganizerStatus
   decisionVersion?: number
   approvedAt?: Date | string | null
@@ -663,6 +759,10 @@ export type OrganizerProfileCreateWithoutApprovedByInput = {
   id?: string
   organizationName: string
   description?: string | null
+  contactEmail?: string | null
+  payoutBankName?: string | null
+  payoutAccountEncrypted?: string | null
+  payoutAccountLast4?: string | null
   approvalStatus?: $Enums.OrganizerStatus
   decisionVersion?: number
   approvedAt?: Date | string | null
@@ -679,6 +779,10 @@ export type OrganizerProfileUncheckedCreateWithoutApprovedByInput = {
   userId: string
   organizationName: string
   description?: string | null
+  contactEmail?: string | null
+  payoutBankName?: string | null
+  payoutAccountEncrypted?: string | null
+  payoutAccountLast4?: string | null
   approvalStatus?: $Enums.OrganizerStatus
   decisionVersion?: number
   approvedAt?: Date | string | null
@@ -714,6 +818,10 @@ export type OrganizerProfileUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   organizationName?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountLast4?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvalStatus?: Prisma.EnumOrganizerStatusFieldUpdateOperationsInput | $Enums.OrganizerStatus
   decisionVersion?: Prisma.IntFieldUpdateOperationsInput | number
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -729,6 +837,10 @@ export type OrganizerProfileUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   organizationName?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountLast4?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvalStatus?: Prisma.EnumOrganizerStatusFieldUpdateOperationsInput | $Enums.OrganizerStatus
   decisionVersion?: Prisma.IntFieldUpdateOperationsInput | number
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -764,6 +876,10 @@ export type OrganizerProfileScalarWhereInput = {
   userId?: Prisma.UuidFilter<"OrganizerProfile"> | string
   organizationName?: Prisma.StringFilter<"OrganizerProfile"> | string
   description?: Prisma.StringNullableFilter<"OrganizerProfile"> | string | null
+  contactEmail?: Prisma.StringNullableFilter<"OrganizerProfile"> | string | null
+  payoutBankName?: Prisma.StringNullableFilter<"OrganizerProfile"> | string | null
+  payoutAccountEncrypted?: Prisma.StringNullableFilter<"OrganizerProfile"> | string | null
+  payoutAccountLast4?: Prisma.StringNullableFilter<"OrganizerProfile"> | string | null
   approvalStatus?: Prisma.EnumOrganizerStatusFilter<"OrganizerProfile"> | $Enums.OrganizerStatus
   decisionVersion?: Prisma.IntFilter<"OrganizerProfile"> | number
   approvedAt?: Prisma.DateTimeNullableFilter<"OrganizerProfile"> | Date | string | null
@@ -776,6 +892,10 @@ export type OrganizerProfileCreateWithoutApplicationInput = {
   id?: string
   organizationName: string
   description?: string | null
+  contactEmail?: string | null
+  payoutBankName?: string | null
+  payoutAccountEncrypted?: string | null
+  payoutAccountLast4?: string | null
   approvalStatus?: $Enums.OrganizerStatus
   decisionVersion?: number
   approvedAt?: Date | string | null
@@ -792,6 +912,10 @@ export type OrganizerProfileUncheckedCreateWithoutApplicationInput = {
   userId: string
   organizationName: string
   description?: string | null
+  contactEmail?: string | null
+  payoutBankName?: string | null
+  payoutAccountEncrypted?: string | null
+  payoutAccountLast4?: string | null
   approvalStatus?: $Enums.OrganizerStatus
   decisionVersion?: number
   approvedAt?: Date | string | null
@@ -822,6 +946,10 @@ export type OrganizerProfileUpdateWithoutApplicationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   organizationName?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountLast4?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvalStatus?: Prisma.EnumOrganizerStatusFieldUpdateOperationsInput | $Enums.OrganizerStatus
   decisionVersion?: Prisma.IntFieldUpdateOperationsInput | number
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -838,6 +966,10 @@ export type OrganizerProfileUncheckedUpdateWithoutApplicationInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   organizationName?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountLast4?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvalStatus?: Prisma.EnumOrganizerStatusFieldUpdateOperationsInput | $Enums.OrganizerStatus
   decisionVersion?: Prisma.IntFieldUpdateOperationsInput | number
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -852,6 +984,10 @@ export type OrganizerProfileCreateWithoutDecisionsInput = {
   id?: string
   organizationName: string
   description?: string | null
+  contactEmail?: string | null
+  payoutBankName?: string | null
+  payoutAccountEncrypted?: string | null
+  payoutAccountLast4?: string | null
   approvalStatus?: $Enums.OrganizerStatus
   decisionVersion?: number
   approvedAt?: Date | string | null
@@ -868,6 +1004,10 @@ export type OrganizerProfileUncheckedCreateWithoutDecisionsInput = {
   userId: string
   organizationName: string
   description?: string | null
+  contactEmail?: string | null
+  payoutBankName?: string | null
+  payoutAccountEncrypted?: string | null
+  payoutAccountLast4?: string | null
   approvalStatus?: $Enums.OrganizerStatus
   decisionVersion?: number
   approvedAt?: Date | string | null
@@ -898,6 +1038,10 @@ export type OrganizerProfileUpdateWithoutDecisionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   organizationName?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountLast4?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvalStatus?: Prisma.EnumOrganizerStatusFieldUpdateOperationsInput | $Enums.OrganizerStatus
   decisionVersion?: Prisma.IntFieldUpdateOperationsInput | number
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -914,6 +1058,10 @@ export type OrganizerProfileUncheckedUpdateWithoutDecisionsInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   organizationName?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountLast4?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvalStatus?: Prisma.EnumOrganizerStatusFieldUpdateOperationsInput | $Enums.OrganizerStatus
   decisionVersion?: Prisma.IntFieldUpdateOperationsInput | number
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -928,6 +1076,10 @@ export type OrganizerProfileCreateWithoutEventsInput = {
   id?: string
   organizationName: string
   description?: string | null
+  contactEmail?: string | null
+  payoutBankName?: string | null
+  payoutAccountEncrypted?: string | null
+  payoutAccountLast4?: string | null
   approvalStatus?: $Enums.OrganizerStatus
   decisionVersion?: number
   approvedAt?: Date | string | null
@@ -944,6 +1096,10 @@ export type OrganizerProfileUncheckedCreateWithoutEventsInput = {
   userId: string
   organizationName: string
   description?: string | null
+  contactEmail?: string | null
+  payoutBankName?: string | null
+  payoutAccountEncrypted?: string | null
+  payoutAccountLast4?: string | null
   approvalStatus?: $Enums.OrganizerStatus
   decisionVersion?: number
   approvedAt?: Date | string | null
@@ -974,6 +1130,10 @@ export type OrganizerProfileUpdateWithoutEventsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   organizationName?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountLast4?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvalStatus?: Prisma.EnumOrganizerStatusFieldUpdateOperationsInput | $Enums.OrganizerStatus
   decisionVersion?: Prisma.IntFieldUpdateOperationsInput | number
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -990,6 +1150,10 @@ export type OrganizerProfileUncheckedUpdateWithoutEventsInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   organizationName?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountLast4?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvalStatus?: Prisma.EnumOrganizerStatusFieldUpdateOperationsInput | $Enums.OrganizerStatus
   decisionVersion?: Prisma.IntFieldUpdateOperationsInput | number
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1005,6 +1169,10 @@ export type OrganizerProfileCreateManyApprovedByInput = {
   userId: string
   organizationName: string
   description?: string | null
+  contactEmail?: string | null
+  payoutBankName?: string | null
+  payoutAccountEncrypted?: string | null
+  payoutAccountLast4?: string | null
   approvalStatus?: $Enums.OrganizerStatus
   decisionVersion?: number
   approvedAt?: Date | string | null
@@ -1016,6 +1184,10 @@ export type OrganizerProfileUpdateWithoutApprovedByInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   organizationName?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountLast4?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvalStatus?: Prisma.EnumOrganizerStatusFieldUpdateOperationsInput | $Enums.OrganizerStatus
   decisionVersion?: Prisma.IntFieldUpdateOperationsInput | number
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1032,6 +1204,10 @@ export type OrganizerProfileUncheckedUpdateWithoutApprovedByInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   organizationName?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountLast4?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvalStatus?: Prisma.EnumOrganizerStatusFieldUpdateOperationsInput | $Enums.OrganizerStatus
   decisionVersion?: Prisma.IntFieldUpdateOperationsInput | number
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1047,6 +1223,10 @@ export type OrganizerProfileUncheckedUpdateManyWithoutApprovedByInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   organizationName?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payoutAccountLast4?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvalStatus?: Prisma.EnumOrganizerStatusFieldUpdateOperationsInput | $Enums.OrganizerStatus
   decisionVersion?: Prisma.IntFieldUpdateOperationsInput | number
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1099,6 +1279,10 @@ export type OrganizerProfileSelect<ExtArgs extends runtime.Types.Extensions.Inte
   userId?: boolean
   organizationName?: boolean
   description?: boolean
+  contactEmail?: boolean
+  payoutBankName?: boolean
+  payoutAccountEncrypted?: boolean
+  payoutAccountLast4?: boolean
   approvalStatus?: boolean
   decisionVersion?: boolean
   approvedAt?: boolean
@@ -1118,6 +1302,10 @@ export type OrganizerProfileSelectCreateManyAndReturn<ExtArgs extends runtime.Ty
   userId?: boolean
   organizationName?: boolean
   description?: boolean
+  contactEmail?: boolean
+  payoutBankName?: boolean
+  payoutAccountEncrypted?: boolean
+  payoutAccountLast4?: boolean
   approvalStatus?: boolean
   decisionVersion?: boolean
   approvedAt?: boolean
@@ -1133,6 +1321,10 @@ export type OrganizerProfileSelectUpdateManyAndReturn<ExtArgs extends runtime.Ty
   userId?: boolean
   organizationName?: boolean
   description?: boolean
+  contactEmail?: boolean
+  payoutBankName?: boolean
+  payoutAccountEncrypted?: boolean
+  payoutAccountLast4?: boolean
   approvalStatus?: boolean
   decisionVersion?: boolean
   approvedAt?: boolean
@@ -1148,6 +1340,10 @@ export type OrganizerProfileSelectScalar = {
   userId?: boolean
   organizationName?: boolean
   description?: boolean
+  contactEmail?: boolean
+  payoutBankName?: boolean
+  payoutAccountEncrypted?: boolean
+  payoutAccountLast4?: boolean
   approvalStatus?: boolean
   decisionVersion?: boolean
   approvedAt?: boolean
@@ -1156,7 +1352,7 @@ export type OrganizerProfileSelectScalar = {
   updatedAt?: boolean
 }
 
-export type OrganizerProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "organizationName" | "description" | "approvalStatus" | "decisionVersion" | "approvedAt" | "approvedById" | "createdAt" | "updatedAt", ExtArgs["result"]["organizerProfile"]>
+export type OrganizerProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "organizationName" | "description" | "contactEmail" | "payoutBankName" | "payoutAccountEncrypted" | "payoutAccountLast4" | "approvalStatus" | "decisionVersion" | "approvedAt" | "approvedById" | "createdAt" | "updatedAt", ExtArgs["result"]["organizerProfile"]>
 export type OrganizerProfileInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   approvedBy?: boolean | Prisma.OrganizerProfile$approvedByArgs<ExtArgs>
@@ -1188,6 +1384,10 @@ export type $OrganizerProfilePayload<ExtArgs extends runtime.Types.Extensions.In
     userId: string
     organizationName: string
     description: string | null
+    contactEmail: string | null
+    payoutBankName: string | null
+    payoutAccountEncrypted: string | null
+    payoutAccountLast4: string | null
     approvalStatus: $Enums.OrganizerStatus
     decisionVersion: number
     approvedAt: Date | null
@@ -1626,6 +1826,10 @@ export interface OrganizerProfileFieldRefs {
   readonly userId: Prisma.FieldRef<"OrganizerProfile", 'String'>
   readonly organizationName: Prisma.FieldRef<"OrganizerProfile", 'String'>
   readonly description: Prisma.FieldRef<"OrganizerProfile", 'String'>
+  readonly contactEmail: Prisma.FieldRef<"OrganizerProfile", 'String'>
+  readonly payoutBankName: Prisma.FieldRef<"OrganizerProfile", 'String'>
+  readonly payoutAccountEncrypted: Prisma.FieldRef<"OrganizerProfile", 'String'>
+  readonly payoutAccountLast4: Prisma.FieldRef<"OrganizerProfile", 'String'>
   readonly approvalStatus: Prisma.FieldRef<"OrganizerProfile", 'OrganizerStatus'>
   readonly decisionVersion: Prisma.FieldRef<"OrganizerProfile", 'Int'>
   readonly approvedAt: Prisma.FieldRef<"OrganizerProfile", 'DateTime'>

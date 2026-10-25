@@ -1,7 +1,7 @@
 export type EventStatus = "published" | "draft" | "cancelled" | "sold_out" | "completed";
 export type EventStatusFilter = EventStatus | "all";
 
-export type EventCategory = "concert" | "gig" | "festival";
+export type EventCategory = "concert" | "gig" | "festival" | "conference" | "sports" | "theater";
 export type EventCategoryFilter = EventCategory | "all";
 
 export type EventFilters = {

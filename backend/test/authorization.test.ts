@@ -52,6 +52,7 @@ async function login(app: ReturnType<typeof createApp>, email: string) {
 
 afterEach(() => vi.useRealTimers());
 afterAll(async () => {
+  await prisma.ticketVerification.deleteMany({ where: { verifiedBy: { email: { in: emails } } } });
   await prisma.organizerProfile.deleteMany({ where: { user: { email: { in: emails } } } });
   await prisma.user.deleteMany({ where: { email: { in: emails } } });
   await prisma.authRateLimit.deleteMany({ where: { expiresAt: { gte: new Date("2098-01-01"), lt: new Date("2098-02-01") } } });
@@ -102,6 +103,9 @@ it("checks current server-side access gates before authorizing a matching role",
     expect(result.status).toBe(403);
     expect(result.body.error.code).toBe(code);
     expect(Object.keys(result.body)).toEqual(["error"]);
+    const workspace = await request(app).get("/api/v1/organizer/dashboard").set("Cookie", cookie);
+    expect(workspace.status).toBe(403);
+    expect(workspace.body.error.code).toBe(code);
   }
 });
 
@@ -131,12 +135,14 @@ it("keeps unfinished operations unavailable and enforces roles on implemented bu
       ["get", "/admin/dashboard/overview"],
     ] as const) {
       const pending = request(app)[method](`/api/v1${path}`);
+      if (method === "post") pending.set("Origin", env.FRONTEND_URL).send({ ticketCode: "AVX-unknown" });
       const response = await (cookie ? pending.set("Cookie", cookie) : pending);
       const attendeeRequest = path.startsWith("/attendee/");
       const dashboardRequest = path.startsWith("/admin/dashboard/");
       const expected = attendeeRequest
         ? index === 0 ? 401 : index !== roles.indexOf("ATTENDEE") + 1 ? 403 : path === "/attendee/dashboard" ? 200 : 404
-        : dashboardRequest ? index === 0 ? 401 : index === roles.indexOf("ADMINISTRATOR") + 1 ? 404 : 403 : 404;
+        : dashboardRequest ? index === 0 ? 401 : index === roles.indexOf("ADMINISTRATOR") + 1 ? 404 : 403
+        : index === 0 ? 401 : index === roles.indexOf("ORGANIZER") + 1 ? 200 : 403;
       expect(response.status, `${method} ${path}`).toBe(expected);
     }
   }

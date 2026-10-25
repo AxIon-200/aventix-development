@@ -140,10 +140,18 @@ function NavSection({
   );
 }
 
-export default function OrganizerSidebar() {
+export default function OrganizerSidebar({ onSignOutStart, onSignOutFailure }: {
+  onSignOutStart?: () => void;
+  onSignOutFailure?: () => void;
+}) {
   const pathname = usePathname() || "";
   const activeHref = getActiveNavHref(pathname, allNavLinks);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [drawerPath, setDrawerPath] = useState(pathname);
+  if (drawerPath !== pathname) {
+    setDrawerPath(pathname);
+    setMobileOpen(false);
+  }
 
   // Sync mobile drawer state across custom events & route changes
   useEffect(() => {
@@ -158,10 +166,6 @@ export default function OrganizerSidebar() {
       window.removeEventListener("aventix-close-sidebar", handleClose);
     };
   }, []);
-
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
 
   const collapsed = useSyncExternalStore(
     subscribeToSidebar,
@@ -292,6 +296,8 @@ export default function OrganizerSidebar() {
         </div>
 
         <SignOutButton
+          onStart={onSignOutStart}
+          onFailure={onSignOutFailure}
           title={collapsed ? "Sign Out" : undefined}
           className={`flex items-center rounded-lg py-2.5 lg:py-2 text-sm text-slate-400 hover:bg-white/5 hover:text-slate-200 ${
             collapsed ? "lg:justify-center lg:px-0 gap-3 px-3" : "gap-3 px-3"

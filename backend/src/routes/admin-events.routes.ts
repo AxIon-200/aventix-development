@@ -8,12 +8,12 @@ import { env } from "../config/env.js";
 
 const statuses = ["draft", "published", "sold_out", "completed", "cancelled"] as const;
 const filters = z.object({ search: z.string().trim().max(100).optional(),
-  status: z.enum(statuses).optional(), category: z.enum(["concert", "gig", "festival"]).optional() }).strict();
+  status: z.enum(statuses).optional(), category: z.enum(["concert", "gig", "festival", "conference", "sports", "theater"]).optional() }).strict();
 const listInput = filters.extend({ page: z.coerce.number().int().min(1).max(1_000_000).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(10) });
 const changeInput = z.object({ status: z.enum(["draft", "published", "cancelled"]),
   expectedUpdatedAt: z.iso.datetime(), reason: z.string().trim().max(500).optional() }).strict();
-const categoryMap = { concert: "CONCERT", gig: "GIG", festival: "MUSIC_FESTIVAL" } as const;
+const categoryMap = { concert: "CONCERT", gig: "GIG", festival: "MUSIC_FESTIVAL", conference: "CONFERENCE", sports: "SPORTS", theater: "THEATER" } as const;
 const transitions: Record<EventStatus, readonly string[]> = {
   DRAFT: ["published", "cancelled"], PUBLISHED: ["draft", "cancelled"],
   SOLD_OUT: ["draft", "cancelled"], COMPLETED: [], CANCELLED: ["draft"],

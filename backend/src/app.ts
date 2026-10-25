@@ -12,6 +12,7 @@ import { contactRouter } from "./routes/contact.routes.js";
 import type { SaveContactMessage } from "./lib/contact-message.js";
 import { organizerReviewRouter } from "./lib/organizer-review.js";
 import apiRouter from "./routes/index.js";
+import { organizerRouter } from "./routes/organizer.routes.js";
 import { attendeeRouter } from "./routes/attendee.routes.js";
 import { checkoutRouter } from "./routes/checkout.routes.js";
 import { adminUsersRouter } from "./routes/admin-users.routes.js";
@@ -226,6 +227,7 @@ export function createApp(options: AppOptions = {}) {
     } });
   }) satisfies ErrorRequestHandler);
 
+  app.use("/api/v1/organizer", (_req, res, next) => { res.set("Cache-Control", "no-store"); next(); });
   app.use(express.json());
 
   app.use("/api/v1/contact", contactRouter(auth, options.saveContactMessage));
@@ -237,6 +239,7 @@ export function createApp(options: AppOptions = {}) {
   }));
 
   app.use("/api/v1/admin/users", adminUsersRouter(auth, now));
+  app.use("/api/v1/organizer", organizerRouter(auth));
   app.use("/api/v1/admin/dashboard", adminDashboardRouter(auth, now));
   app.use("/api/v1/admin/profile", adminProfileRouter(auth));
   app.use("/api/v1/admin/settings", adminSettingsRouter(auth));
@@ -244,7 +247,7 @@ export function createApp(options: AppOptions = {}) {
   app.use("/api/v1/admin/bookings", adminBookingsRouter(auth));
   app.use("/api/v1/admin/payments", adminPaymentsRouter(auth));
   app.use("/api/v1/admin/activity-logs", adminActivityLogsRouter(auth, now));
-  app.use(["/api/v1/admin/users", "/api/v1/admin/events", "/api/v1/admin/bookings", "/api/v1/admin/settings", "/api/v1/checkout"], ((error, _req, res, _next) => {
+  app.use(["/api/v1/organizer", "/api/v1/admin/users", "/api/v1/admin/events", "/api/v1/admin/bookings", "/api/v1/admin/settings", "/api/v1/checkout"], ((error, _req, res, _next) => {
     const tooLarge = error?.type === "entity.too.large";
     res.status(tooLarge ? 413 : 400).json({ error: {
       code: tooLarge ? "PAYLOAD_TOO_LARGE" : "VALIDATION_ERROR",

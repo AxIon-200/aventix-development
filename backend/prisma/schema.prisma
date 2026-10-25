@@ -162,6 +162,10 @@ model OrganizerProfile {
   userId           String          @unique @db.Uuid
   organizationName String
   description      String?
+  contactEmail     String?
+  payoutBankName   String?
+  payoutAccountEncrypted String?
+  payoutAccountLast4 String?
   approvalStatus   OrganizerStatus @default(PENDING)
   decisionVersion  Int             @default(0)
   approvedAt       DateTime?
@@ -254,6 +258,9 @@ enum EventType {
   CONCERT
   GIG
   MUSIC_FESTIVAL
+  CONFERENCE
+  SPORTS
+  THEATER
 }
 
 enum EventStatus {
@@ -299,6 +306,7 @@ model Event {
   bookings         Booking[]
 
   @@index([organizerId])
+  @@index([organizerId, status])
   @@index([venueId])
   @@index([status])
   @@index([eventDate])
@@ -568,6 +576,7 @@ model TicketVerification {
 
   @@index([ticketId])
   @@index([verifiedById])
+  @@index([verifiedById, verifiedAt])
   @@index([result])
   @@index([verifiedAt])
 }

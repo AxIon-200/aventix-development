@@ -43,6 +43,9 @@ export const EVENT_CATEGORY_LABEL: Record<EventCategory, string> = {
   concert: "Concert",
   gig: "Gig",
   festival: "Festival",
+  conference: "Conference",
+  sports: "Sports",
+  theater: "Theater",
 };
 
 export const EVENT_CATEGORY_OPTIONS = (Object.keys(EVENT_CATEGORY_LABEL) as EventCategory[]).map(

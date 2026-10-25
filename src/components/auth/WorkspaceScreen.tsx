@@ -13,6 +13,8 @@ import AttendeeProfile, { hasUnsavedProfileChanges, type ProfileDraftState } fro
 import ChangePasswordForm from "./ChangePasswordForm";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
+import OrganizerSidebar from "@/components/organizer/OrganizerSidebar";
+import OrganizerTopbar from "@/components/organizer/OrganizerTopbar";
 
 /** No protected children or sample records are serialized behind this guard. */
 export default function WorkspaceScreen({ role, title, returnTo, initial, accountScreen, children }: {
@@ -76,8 +78,10 @@ export default function WorkspaceScreen({ role, title, returnTo, initial, accoun
 
   const session = account.session;
   const attendeeWorkspace = role === "ATTENDEE" && session?.role === "ATTENDEE" && !account.loading && !account.unavailable;
-  const content = <main id="main-content" onClickCapture={attendeeWorkspace ? undefined : confirmNavigation} className={attendeeWorkspace && children ? "space-y-6 p-4 sm:p-6 lg:p-8" : "mx-auto min-h-screen max-w-4xl space-y-6 px-6 py-16"}>
-    {!attendeeWorkspace && <Link href="/events" className="inline-block text-[#66fcf1] underline">Browse public events</Link>}
+  const organizerWorkspace = role === "ORGANIZER" && session?.role === "ORGANIZER" && !account.loading && !account.unavailable;
+  const styledWorkspace = attendeeWorkspace || organizerWorkspace;
+  const content = <main id="main-content" onClickCapture={styledWorkspace ? undefined : confirmNavigation} className={styledWorkspace && children ? "space-y-6 p-4 sm:p-6 lg:p-8" : "mx-auto min-h-screen max-w-4xl space-y-6 px-6 py-16"}>
+    {!styledWorkspace && <Link href="/events" className="inline-block text-[#66fcf1] underline">Browse public events</Link>}
     {account.loading ? <p role="status">Checking your current account…</p>
       : account.unavailable ? <section className="space-y-4">
         <h1 className="text-3xl font-semibold">Workspace unavailable</h1>
@@ -96,11 +100,11 @@ export default function WorkspaceScreen({ role, title, returnTo, initial, accoun
         <Link href={workspaceNavigation[session.role][0].href} className="text-[#66fcf1] underline">Go to your permitted workspace</Link>
       </section>
       : <>
-        {(!attendeeWorkspace || !children) && <header className="space-y-2">
+        {(!styledWorkspace || !children) && <header className="space-y-2">
           <h1 className="text-3xl font-semibold">{title}</h1>
           {accountScreen !== "profile" && <p>Signed in as {session.displayName} · {session.email}</p>}
         </header>}
-        {role !== "ATTENDEE" && <nav aria-label="Workspace" className="flex flex-wrap gap-4 border-y border-slate-700 py-4">
+        {!styledWorkspace && <nav aria-label="Workspace" className="flex flex-wrap gap-4 border-y border-slate-700 py-4">
           {workspaceNavigation[role].map(item => <Link key={item.href} href={item.href} prefetch={false} className="text-[#66fcf1] underline">{item.label}</Link>)}
         </nav>}
         {accountScreen === "profile" ? <div className="space-y-6">
@@ -117,14 +121,14 @@ export default function WorkspaceScreen({ role, title, returnTo, initial, accoun
           <p className="mt-3 text-slate-300">This workspace is still being built. Account information comes from your current account; tickets, bookings, payments, and workspace tools are not available yet.</p>
         </section>}
       </>}
-    {!account.loading && session && !attendeeWorkspace && <SignOutButton {...signOutCallbacks} onBeforeSignOut={confirmLeave} className="inline-block text-[#66fcf1] underline">Sign Out</SignOutButton>}
+    {!account.loading && session && !styledWorkspace && <SignOutButton {...signOutCallbacks} onBeforeSignOut={confirmLeave} className="inline-block text-[#66fcf1] underline">Sign Out</SignOutButton>}
   </main>;
-  if (!attendeeWorkspace) return content;
+  if (!styledWorkspace) return content;
 
   return <div className="flex min-h-screen bg-[#0B0F19]" onClickCapture={confirmNavigation}>
-    <DashboardSidebar onBeforeSignOut={confirmLeave} onSignOutStart={signOutCallbacks.onStart} onSignOutFailure={signOutCallbacks.onFailure} />
+    {organizerWorkspace ? <OrganizerSidebar onSignOutStart={signOutCallbacks.onStart} onSignOutFailure={signOutCallbacks.onFailure} /> : <DashboardSidebar onBeforeSignOut={confirmLeave} onSignOutStart={signOutCallbacks.onStart} onSignOutFailure={signOutCallbacks.onFailure} />}
     <div className="min-w-0 flex-1">
-      <DashboardTopbar attendeeName={session.displayName} />
+      {organizerWorkspace ? <OrganizerTopbar organizerName={session.displayName} /> : <DashboardTopbar attendeeName={session.displayName} />}
       {content}
     </div>
   </div>;
