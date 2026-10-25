@@ -3,6 +3,7 @@ export function formatDate(iso?: string | null): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
   return d.toLocaleDateString("en-US", {
+    timeZone: typeof document === "undefined" ? "Asia/Manila" : document.documentElement.dataset.adminTimezone ?? "Asia/Manila",
     month: "short",
     day: "numeric",
     year: "numeric",

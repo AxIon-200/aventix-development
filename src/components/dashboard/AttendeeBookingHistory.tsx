@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useAttendeeRecords } from "./useAttendeeRecords";
 import { money } from "@/lib/attendee-records";
 import { DateRangePicker } from "@/components/shared/date-picker";
@@ -11,7 +12,7 @@ export default function AttendeeBookingHistoryPage() {
   const bookings = [...records.bookings, ...records.demos]
     .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
     .map(booking => ({
-      ref: booking.reference, event: booking.eventTitle,
+      id: booking.id, simulation: booking.simulation, ref: booking.reference, event: booking.eventTitle,
       date: new Intl.DateTimeFormat("en-PH", { timeZone: "Asia/Manila", dateStyle: "medium" }).format(new Date(booking.createdAt)),
       isoDate: new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(booking.createdAt)),
       tickets: booking.quantity, total: money(booking.status === "REFUNDED" ? 0 : booking.paidCentavos),
@@ -69,7 +70,7 @@ export default function AttendeeBookingHistoryPage() {
               ) : (
                 filteredBookings.map((b) => (
                   <tr key={b.ref} className="hover:bg-white/5">
-                    <td className="px-4 py-3 font-mono text-teal-400">{b.ref}</td>
+                    <td className="px-4 py-3 font-mono text-teal-400">{b.simulation ? b.ref : <Link href={`/bookings/${b.id}/summary`} className="underline">{b.ref}</Link>}</td>
                     <td className="px-4 py-3 font-medium text-white">{b.event}</td>
                     <td className="px-4 py-3 text-slate-400">{b.date}</td>
                     <td className="px-4 py-3">{b.tickets}</td>

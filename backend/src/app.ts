@@ -13,6 +13,15 @@ import type { SaveContactMessage } from "./lib/contact-message.js";
 import { organizerReviewRouter } from "./lib/organizer-review.js";
 import apiRouter from "./routes/index.js";
 import { attendeeRouter } from "./routes/attendee.routes.js";
+import { checkoutRouter } from "./routes/checkout.routes.js";
+import { adminUsersRouter } from "./routes/admin-users.routes.js";
+import { adminProfileRouter } from "./routes/admin-profile.routes.js";
+import { adminSettingsRouter } from "./routes/admin-settings.routes.js";
+import { adminEventsRouter } from "./routes/admin-events.routes.js";
+import { adminPaymentsRouter } from "./routes/admin-payments.routes.js";
+import { adminActivityLogsRouter } from "./routes/admin-activity-logs.routes.js";
+import { adminBookingsRouter } from "./routes/admin-bookings.routes.js";
+import { adminDashboardRouter } from "./routes/admin-dashboard.routes.js";
 import { env } from "./config/env.js";
 import { loadCurrentTerms } from "./config/terms.js";
 import type { CurrentTerms } from "./config/terms.js";
@@ -227,8 +236,24 @@ export function createApp(options: AppOptions = {}) {
     ...(options.sendOrganizerDecisionEmail ? { sendOrganizerDecisionEmail: options.sendOrganizerDecisionEmail } : {}),
   }));
 
+  app.use("/api/v1/admin/users", adminUsersRouter(auth, now));
+  app.use("/api/v1/admin/dashboard", adminDashboardRouter(auth, now));
+  app.use("/api/v1/admin/profile", adminProfileRouter(auth));
+  app.use("/api/v1/admin/settings", adminSettingsRouter(auth));
+  app.use("/api/v1/admin/events", adminEventsRouter(auth));
+  app.use("/api/v1/admin/bookings", adminBookingsRouter(auth));
+  app.use("/api/v1/admin/payments", adminPaymentsRouter(auth));
+  app.use("/api/v1/admin/activity-logs", adminActivityLogsRouter(auth, now));
+  app.use(["/api/v1/admin/users", "/api/v1/admin/events", "/api/v1/admin/bookings", "/api/v1/admin/settings", "/api/v1/checkout"], ((error, _req, res, _next) => {
+    const tooLarge = error?.type === "entity.too.large";
+    res.status(tooLarge ? 413 : 400).json({ error: {
+      code: tooLarge ? "PAYLOAD_TOO_LARGE" : "VALIDATION_ERROR",
+      message: tooLarge ? "Request body is too large" : "Invalid JSON body",
+    } });
+  }) satisfies ErrorRequestHandler);
   app.use("/api/v1", apiRouter);
   app.use("/api/v1/attendee", attendeeRouter(auth));
+  app.use("/api/v1/checkout", checkoutRouter(auth));
 
   return app;
 }

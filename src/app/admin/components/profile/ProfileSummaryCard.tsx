@@ -5,16 +5,13 @@ import type { AdminProfile } from "@/app/admin/types/profile";
 import { getInitials, formatDate } from "@/app/admin/lib/format";
 import { formatLastActive } from "@/app/admin/lib/relativeTime";
 import { StatusBadge } from "@/app/admin/components/ui/StatusBadge";
-import { ProfilePhotoUpload } from "@/app/admin/components/profile/ProfilePhotoUpload";
 
 type ProfileSummaryCardProps = {
   profile: AdminProfile;
-  onPhotoUploaded: (avatarUrl: string) => void;
 };
 
 export function ProfileSummaryCard({
   profile,
-  onPhotoUploaded,
 }: ProfileSummaryCardProps) {
   const active = profile.status === "active";
 
@@ -36,10 +33,6 @@ export function ProfileSummaryCard({
             )}
           </div>
 
-          {/* Camera button sits on the avatar itself */}
-          <ProfilePhotoUpload
-            onUploaded={onPhotoUploaded}
-          />
         </div>
 
         <div className="min-w-0">
@@ -74,7 +67,7 @@ export function ProfileSummaryCard({
         <div className="flex items-center justify-between gap-3">
           <dt className="text-slate-500">Last login</dt>
           <dd className="text-right text-slate-200">
-            {formatLastActive(profile.lastLoginAt)}
+            {profile.lastLoginAt ? formatLastActive(profile.lastLoginAt) : "Not available"}
           </dd>
         </div>
 

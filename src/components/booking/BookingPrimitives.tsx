@@ -123,7 +123,7 @@ export function ItemList({ booking }: { booking: BookingRecord }) {
             </span>
           </div>
           <p className="mt-3 text-sm text-[#66fcf1]">
-            Seats: {item.seats.map((s) => s.displayLabel).join(", ")}
+            {item.admissionMode === "GENERAL_ADMISSION" ? "General admission" : `Seats: ${item.seats.map((s) => s.displayLabel).join(", ")}`}
           </p>
         </li>
       ))}

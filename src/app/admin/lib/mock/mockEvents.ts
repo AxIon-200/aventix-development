@@ -28,6 +28,7 @@ function buildDemoEvents(count: number): AdminEvent[] {
     return {
       id: `evt-${401 + i}`,
       eventCode: `EVT-${401 + i}`,
+      updatedAt: new Date().toISOString(),
       title: `${TITLES[i % TITLES.length]}${i >= TITLES.length ? ` Vol. ${Math.floor(i / TITLES.length) + 1}` : ""}`,
       organizerName: ORGANIZERS[i % ORGANIZERS.length],
       startsAt: new Date(Date.now() + (i * 3 - 4) * DAY).toISOString(),

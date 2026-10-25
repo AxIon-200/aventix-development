@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import PageShell from "@/components/layout/PageShell";
+
 import Dialog from "@/components/auth/Dialog";
 import { useAccountSession } from "@/components/auth/useAccountSession";
 import { publicAuthClient, type PublicAuthClient } from "@/lib/auth/client";
@@ -65,11 +65,13 @@ export default function BookingRecordView({
   mode,
   client = publicBookingClient,
   auth = publicAuthClient,
+  initialMethod = "",
 }: {
   bookingId: string;
   mode: Mode;
   client?: PublicBookingClient;
   auth?: PublicAuthClient;
+  initialMethod?: string;
 }) {
   const access = useAccountSession(auth);
   const router = useRouter();
@@ -83,7 +85,7 @@ export default function BookingRecordView({
   const loadLock = useRef(false);
   const mounted = useRef(true);
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
-  const [methodId, setMethodId] = useState("");
+  const [methodId, setMethodId] = useState(initialMethod);
   const [attemptStarted, setAttemptStarted] = useState(false);
   const [methodsLoading, setMethodsLoading] = useState(true);
   const [instructions, setInstructions] = useState<PaymentInstructions>();
@@ -139,7 +141,7 @@ export default function BookingRecordView({
   }, [access.session, refresh]);
   useEffect(() => {
     if (
-      mode !== "payment" ||
+      (mode !== "payment" && mode !== "confirmation") ||
       !access.session ||
       !booking ||
       booking.status !== "PENDING_PAYMENT"
@@ -289,15 +291,15 @@ export default function BookingRecordView({
         : "Booking status";
   if (access.loading)
     return (
-      <PageShell>
+      <div className="text-white">
         <p role="status" className="p-10">
           Checking your account…
         </p>
-      </PageShell>
+      </div>
     );
   if (!access.session)
     return (
-      <PageShell>
+      <div className="text-white">
         <section className="mx-auto max-w-2xl px-6 py-20">
           <h1 className="font-display text-3xl font-bold">
             Log in to view your booking
@@ -314,11 +316,11 @@ export default function BookingRecordView({
             Log in
           </Link>
         </section>
-      </PageShell>
+      </div>
     );
   if (!booking)
     return (
-      <PageShell>
+      <div className="text-white">
         <section className="mx-auto max-w-2xl px-6 py-20">
           <h1 className="font-display text-3xl font-bold">{title}</h1>
           {loading ? (
@@ -341,7 +343,7 @@ export default function BookingRecordView({
             Back to Events
           </Link>
         </section>
-      </PageShell>
+      </div>
     );
 
   const confirmed = isConfirmed(booking);
@@ -367,7 +369,7 @@ export default function BookingRecordView({
     : undefined;
 
   return (
-    <PageShell>
+    <div className="text-white">
       <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-16">
         <BookingHeading
           name={
@@ -772,7 +774,7 @@ export default function BookingRecordView({
           </button>
         </Dialog>
       </div>
-    </PageShell>
+    </div>
   );
 }
 

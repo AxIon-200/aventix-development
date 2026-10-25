@@ -82,6 +82,7 @@ export default function AttendeeTicketsPage() {
                 <QrCodeIcon className="h-4 w-4" />
                 <span>Show demo pass</span>
               </button>}
+              {!ticket.simulation && <Link href={`/tickets/${encodeURIComponent(ticket.id)}`} className="text-xs font-semibold text-teal-300 underline">View ticket</Link>}
             </div>
           </div>
         ))}

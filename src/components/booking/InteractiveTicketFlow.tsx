@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import PayMongoSimulation from "./PayMongoSimulation";
-import { demoStorageKey, demoRecordsChanged, parseDemoBookings } from "@/lib/attendee-records";
-import { createSimulationSession, completeSimulation, type SimulationSession, type SimulationOutcome } from "@/lib/paymongo-simulation";
+import { useRouter } from "next/navigation";
+import { publicBookingClient, bookingErrorMessage } from "@/lib/booking/client";
 import Link from "next/link";
 import {
   Calendar,
@@ -16,7 +15,6 @@ import {
   Sparkles,
 } from "lucide-react";
 import InteractiveSeatMap from "./InteractiveSeatMap";
-import ConfirmedETicket, { type ETicketData, DEFAULT_ETICKET_DATA } from "./ConfirmedETicket";
 
 import { isCategoryBookable, categoryStateLabel } from "@/lib/event-booking";
 import type { EventDetails, EventSeat } from "@/types/event";
@@ -84,11 +82,6 @@ export default function InteractiveTicketFlow({
   const requiresSeats = activeTier?.admissionMode === "ASSIGNED_SEATING";
   const selectedSeats = seatSelection.filter((seat) => availableSeats.some((available) => available.id === seat.id)).slice(0, ticketQuantity);
   const seatsComplete = !requiresSeats || (ticketQuantity > 0 && selectedSeats.length === ticketQuantity);
-  const selectedSeat = {
-    label: requiresSeats ? selectedSeats.map((seat) => seat.label).join("; ") || "No seats selected" : "General admission",
-    gate: "See venue entry instructions",
-    tier: activeTier?.name ?? "",
-  };
   const handleSeatToggle = (seat: EventSeat) => {
     if (!availableSeats.some((available) => available.id === seat.id)) return;
     setSelectedSeats((current) => {
@@ -109,103 +102,34 @@ export default function InteractiveTicketFlow({
   const attendeeEmail = attendee?.email ?? "";
   const attendeePhone = attendee?.phoneNumber ?? "";
   const [paymentMethod, setPaymentMethod] = useState<"GCash" | "Maya" | "Card">("GCash");
-  const [simulation, setSimulation] = useState<SimulationSession | null>(null);
-  const activeSimulation = useRef<SimulationSession | null>(null);
+  const router = useRouter();
+  const [isProcessingPayment, setProcessingPayment] = useState(false);
+  const checkoutBusy = useRef(false);
+  const checkoutOperation = useRef<{ fingerprint: string; key: string; bookingId?: string } | null>(null);
   const [paymentMessage, setPaymentMessage] = useState("");
-  const isProcessingPayment = simulation !== null;
 
-  // Confirmed E-Ticket state
-  const [eTicketData, setETicketData] = useState<ETicketData>(DEFAULT_ETICKET_DATA);
-
-  // Process checkout & transition to confirmation pass
-  const handleConfirmBooking = () => {
-    if (!selectedEvent || !activeTier || ticketQuantity < 1 || !seatsComplete) return;
-    if (!attendee?.userId) {
-      setPaymentMessage("Sign in as an attendee before starting a demo checkout.");
-      return;
-    }
-    if (activeSimulation.current || currentStep === 5) return;
-    const session = createSimulationSession(paymentMethod, totalAmount);
-    activeSimulation.current = session;
-    setSimulation(session);
+  const handleConfirmBooking = async () => {
+    if (!selectedEvent || !activeTier || ticketQuantity < 1 || !seatsComplete || checkoutBusy.current) return;
+    if (!attendee?.userId) { setPaymentMessage("Sign in as an attendee before starting checkout."); return; }
+    checkoutBusy.current = true;
+    setProcessingPayment(true);
     setPaymentMessage("");
-  };
-
-  const handleSimulationComplete = (outcome: SimulationOutcome) => {
-    const session = activeSimulation.current;
-    if (!session || session.status !== "pending") return;
-    const result = completeSimulation(session, outcome);
-    activeSimulation.current = null;
-    setSimulation(null);
-    if (result.status !== "paid") {
-      setPaymentMessage(result.status === "failed"
-        ? "Simulated payment failed. No charge was made. Try again or choose another method."
-        : "Checkout cancelled. No charge was made. You can try again.");
+    const draft = { version: 1 as const, eventId: selectedEvent.id, items: [{ ticketCategoryId: activeTier.id,
+      quantity: ticketQuantity, seatIds: selectedSeats.map(seat => seat.id) }] };
+    const fingerprint = JSON.stringify(draft);
+    if (checkoutOperation.current?.bookingId) {
+      router.push('/bookings/' + checkoutOperation.current.bookingId + '/payment');
       return;
     }
-    if (!selectedEvent || !activeTier) return;
-    {
-      const formattedDate = new Intl.DateTimeFormat("en-PH", {
-        timeZone: "Asia/Manila", dateStyle: "medium", timeStyle: "short",
-      }).format(new Date());
-      const randomRef = result.paymentReference!;
-
-      const confirmedData: ETicketData = {
-        eventTitle: concertTitle,
-        category: genre,
-        organizer: selectedEvent.organizer.name,
-        date: eventDate,
-        time: eventTime,
-        doorsOpenTime: "",
-        venueName: selectedEvent.venue.name,
-        venueAddress: selectedEvent.venue.address,
-        ticketHolder: ticketHolderName || "Attendee",
-        ticketType: activeTier.name,
-        seatInfo: selectedSeat.label,
-        gateInfo: selectedSeat.gate,
-        bookingRef: result.id,
-        admitsText: `Admits ${ticketQuantity} ${ticketQuantity === 1 ? "attendee" : "attendees"}`,
-        ticketId: `TKT-DEMO-${crypto.randomUUID()}`,
-        simulation: true,
-        priceFormatted: `PHP ${totalAmount.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-        paymentMethod: `PayMongo demo - ${result.method}`,
-        paymentDate: formattedDate,
-        paymentRef: randomRef,
-        supportEmail: "help@soundwave.ph",
-        supportPhone: "+63 917 555 0123",
-      };
-
-      setETicketData(confirmedData);
-
-      // Save to localStorage so My Tickets immediately displays it
-      try {
-        if (!attendee?.userId) throw new Error("Attendee account required");
-        const key = demoStorageKey(attendee.userId);
-        const list = parseDemoBookings(localStorage.getItem(key));
-        list.unshift({
-          id: result.id,
-          reference: result.id,
-          eventId: selectedEvent.id,
-          eventTitle: confirmedData.eventTitle,
-          startsAt: selectedEvent.startsAt,
-          eventStatus: selectedEvent.status,
-          createdAt: new Date().toISOString(),
-          venue: confirmedData.venueName,
-          status: "DEMO",
-          quantity: ticketQuantity,
-          totalCentavos: result.amountCentavos,
-          paidCentavos: 0,
-          tickets: [],
-          simulation: true,
-          pass: confirmedData,
-        });
-        localStorage.setItem(key, JSON.stringify(list));
-        window.dispatchEvent(new Event(demoRecordsChanged));
-      } catch {
-        setPaymentMessage("Your demo pass could not be saved in this browser. You can still view it below.");
-      }
-
-      setCurrentStep(5);
+    if (checkoutOperation.current?.fingerprint !== fingerprint) checkoutOperation.current = { fingerprint, key: crypto.randomUUID() };
+    try {
+      const booking = await publicBookingClient.createBooking!(draft, checkoutOperation.current!.key);
+      checkoutOperation.current!.bookingId = booking.id;
+      router.push('/bookings/' + booking.id + '/payment?method=' + (paymentMethod === "Maya" ? "paymaya" : paymentMethod === "Card" ? "card" : "gcash"));
+    } catch (error) {
+      setPaymentMessage(bookingErrorMessage(error));
+      checkoutBusy.current = false;
+      setProcessingPayment(false);
     }
   };
 
@@ -218,7 +142,6 @@ export default function InteractiveTicketFlow({
 
   return (
     <div className="space-y-8">
-      {simulation && <PayMongoSimulation session={simulation} onComplete={handleSimulationComplete} />}
       {/* Top Banner and Navigation */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
@@ -798,7 +721,7 @@ export default function InteractiveTicketFlow({
               <div className="rounded-2xl border border-white/10 bg-[#111622] p-6 shadow-md">
                 <h2 className="text-base font-bold text-white">Select Payment Method</h2>
                 <p className="text-xs text-slate-400">
-                  Simulation only. No payment will be charged.
+                  PayMongo test checkout. No real money will be charged.
                 </p>
 
                 <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -925,7 +848,7 @@ export default function InteractiveTicketFlow({
                   ) : (
                     <>
                       <ShieldCheck className="h-4 w-4" />
-                      <span>Open PayMongo demo · PHP {totalAmount.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span>Continue to PayMongo test checkout · PHP {totalAmount.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </>
                   )}
                 </button>
@@ -946,17 +869,7 @@ export default function InteractiveTicketFlow({
         </div>
       )}
 
-      {/* ================= STEP 5: CONFIRMED BOOKING PASS (EXACTLY MATCHING IMAGE 2) ================= */}
-      {currentStep === 5 && (
-        <div className="space-y-6">
-          {paymentMessage && <p role="status" className="text-sm text-amber-200">{paymentMessage}</p>}
-          <ConfirmedETicket
-            data={eTicketData}
-            showActions={true}
-            onBookAnother={() => { setPaymentMessage(""); setCurrentStep(1); }}
-          />
-        </div>
-      )}
+
     </div>
   );
 }

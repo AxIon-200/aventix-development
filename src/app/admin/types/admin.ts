@@ -30,21 +30,25 @@ export type DashboardStats = {
 export type SalesDataPoint = {
   label: string; // e.g. "Aug 17"
   ticketsSold: number;
-  revenueIndex: number;
+  revenue: number;
+  date: string;
 };
 
 export type BookingStatusBreakdown = {
-  confirmed: number; // percentage, 0-100
+  confirmed: number; // booking counts
   completed: number;
   pending: number;
   cancelled: number;
+  expired: number;
+  refunded: number;
+  total: number;
 };
 
 export type RecentEventRow = {
   id: string;
   title: string;
-  date: string;
-  status: "upcoming" | "ongoing" | "completed";
+  date: string | null;
+  status: "draft" | "published" | "sold_out" | "completed" | "cancelled";
 };
 
 export type RecentUserRow = {
@@ -58,6 +62,6 @@ export type RecentBookingRow = {
   id: string;
   eventTitle: string;
   userName: string;
-  status: "confirmed" | "pending" | "cancelled";
+  status: "confirmed" | "completed" | "pending" | "cancelled" | "expired" | "refunded";
   createdAt: string;
 };

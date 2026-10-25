@@ -15,7 +15,7 @@ export const DEMO = {
 
 const FIRST = ["Noah", "Alyssa", "Ethan", "Sofia", "Daniel", "Nina", "Mia", "Lucas", "Isabel", "Gabriel", "Chloe", "Miguel"];
 const LAST = ["Garcia", "Cruz", "Lim", "Reyes", "Tan", "Ramos", "Santos", "Bautista", "Mendoza", "Aquino", "Villanueva", "Castro"];
-const STATUS_CYCLE: UserStatus[] = ["active", "active", "inactive", "active", "pending", "active", "active", "inactive"];
+const STATUS_CYCLE: UserStatus[] = ["active", "active", "disabled", "active"];
 
 function buildDemoUsers(count: number): ManagedUser[] {
   const DAY = 24 * 60 * 60 * 1000;
@@ -27,6 +27,7 @@ function buildDemoUsers(count: number): ManagedUser[] {
       userCode: `USR-${1000 + i}`,
       name: `${first} ${last}`,
       email: `${first}.${last}${i}@email.com`.toLowerCase(),
+      emailVerified: true,
       status: STATUS_CYCLE[i % STATUS_CYCLE.length],
       joinedAt: new Date(Date.now() - i * 2.5 * DAY).toISOString(),
       avatarUrl: null,

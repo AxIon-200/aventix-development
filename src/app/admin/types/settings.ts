@@ -45,7 +45,7 @@ export type SettingsSection = keyof AdminSettings;
 // GET /admin/settings and PUT /admin/settings both return this.
 export type SettingsResponse = {
   settings: AdminSettings;
-  updatedAt: string; // ISO
+  updatedAt: string | null; // null until the first save
 };
 
 export type ChangePasswordInput = {

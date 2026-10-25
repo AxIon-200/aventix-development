@@ -19,7 +19,7 @@ function compile(file, resolve) {
   return loadedModule.exports;
 }
 
-test('public event stock subtracts confirmed bookings and unexpired payment holds', async () => {
+test('public event stock retains pending holds until provider expiry is confirmed', async () => {
   const past = new Date(Date.now() - 60000), future = new Date(Date.now() + 60000);
   const item = (quantity, status, expiresAt) => ({ quantity, booking: { status, expiresAt } });
   const category = {
@@ -45,9 +45,9 @@ test('public event stock subtracts confirmed bookings and unexpired payment hold
     prisma: { event: { findUnique: read, findMany: async query => [await read(query)] } },
   }));
   let result = await PublicEventsService.get(event.id);
-  assert.equal(result.categories[0].remaining, 1);
-  assert.equal(result.categories[0].availability, 'AVAILABLE');
-  assert.equal((await PublicEventsService.list())[0].categories[0].remaining, 1);
+  assert.equal(result.categories[0].remaining, 0);
+  assert.equal(result.categories[0].availability, 'SOLD_OUT');
+  assert.equal((await PublicEventsService.list())[0].categories[0].remaining, 0);
   category.maxCapacity = 4;
   result = await PublicEventsService.get(event.id);
   assert.equal(result.categories[0].remaining, 0);
@@ -60,7 +60,7 @@ test('public event stock subtracts confirmed bookings and unexpired payment hold
   assert.equal((await PublicEventsService.get(event.id)).categories[0].remaining, 0);
 });
 
-test('assigned seating exposes only seats without confirmed bookings or unexpired holds', async () => {
+test('assigned seating retains pending allocations until the booking is explicitly expired', async () => {
   const past = new Date(Date.now() - 60000), future = new Date(Date.now() + 60000);
   const seat = (id, allocationStatus, status, expiresAt) => ({
     id, section: 'Floor', row: '01', seatNumber: id, displayLabel: `Seat ${id}`,
@@ -84,15 +84,17 @@ test('assigned seating exposes only seats without confirmed bookings or unexpire
     } } },
   }));
   const result = await PublicEventsService.get(event.id);
-  assert.deepEqual(result.categories[0].seats.map(seat => seat.id), ['free', 'expired', 'released', 'cancelled']);
-  assert.equal(result.categories[0].remaining, 4);
+  assert.deepEqual(result.categories[0].seats.map(seat => seat.id), ['free', 'released', 'cancelled']);
+  assert.equal(result.categories[0].remaining, 3);
+  event.ticketCategories[0].seats[3].bookingSeats[0].bookingItem.booking.status = 'EXPIRED';
+  assert.equal((await PublicEventsService.get(event.id)).categories[0].seats.some(s => s.id === 'expired'), true);
   assert.equal(result.categories[0].seats[0].bookingSeats, undefined);
 });
 
 test('quantity cannot exceed remaining stock, including repeated increment calls', () => {
   const React = require('react');
   let state = [], index = 0;
-  const react = { ...React, useState(initial) {
+  const react = { ...React, useRef: initial => ({ current: initial }), useState(initial) {
     const position = index++;
     if (!(position in state)) state[position] = initial;
     return [state[position], value => {
@@ -100,7 +102,7 @@ test('quantity cannot exceed remaining stock, including repeated increment calls
     }];
   } };
   const { default: Flow } = compile('src/components/booking/InteractiveTicketFlow.tsx', id =>
-    id === 'react' ? react : id === '@/lib/event-booking' ? load('src/lib/event-booking.ts')
+    id === 'react' ? react : id === 'next/navigation' ? { useRouter: () => ({ push() {} }) } : id === '@/lib/booking/client' ? load('src/lib/booking/client.ts') : id === '@/lib/event-booking' ? load('src/lib/event-booking.ts')
       : id.startsWith('./') ? { __esModule: true, default: () => null, DEFAULT_ETICKET_DATA: {} } : require(id));
   const flatten = node => Array.isArray(node) ? node.flatMap(flatten)
     : node && typeof node === 'object' ? [node, ...flatten(node.props?.children)] : [];
@@ -138,7 +140,7 @@ test('quantity cannot exceed remaining stock, including repeated increment calls
 test('multiple seats must match ticket quantity before checkout and reset when quantity changes', () => {
   const React = require('react');
   let state = [], index = 0;
-  const react = { ...React, useState(initial) {
+  const react = { ...React, useRef: initial => ({ current: initial }), useState(initial) {
     const position = index++;
     if (!(position in state)) state[position] = initial;
     return [state[position], value => {
@@ -146,7 +148,7 @@ test('multiple seats must match ticket quantity before checkout and reset when q
     }];
   } };
   const { default: Flow } = compile('src/components/booking/InteractiveTicketFlow.tsx', id =>
-    id === 'react' ? react : id === '@/lib/event-booking' ? load('src/lib/event-booking.ts')
+    id === 'react' ? react : id === 'next/navigation' ? { useRouter: () => ({ push() {} }) } : id === '@/lib/booking/client' ? load('src/lib/booking/client.ts') : id === '@/lib/event-booking' ? load('src/lib/event-booking.ts')
       : id.startsWith('./') ? { __esModule: true, default: () => null, DEFAULT_ETICKET_DATA: {} } : require(id));
   const { default: SeatMap } = compile('src/components/booking/InteractiveSeatMap.tsx', require);
   const flatten = node => Array.isArray(node) ? node.flatMap(flatten)
@@ -207,7 +209,7 @@ test('multiple seats must match ticket quantity before checkout and reset when q
   assert.ok(text(tree[0]).includes('Jan 1, 2027'));
   assert.ok(text(tree[0]).includes('08:00 PM'));
   for (const [label, method] of [['Maya', 'Maya'], ['Credit / Debit', 'Card'], ['GCash', 'GCash']]) {
-    tree.find(node => node.type === 'label' && text(node).includes(label)).props.onClick();
+    tree.find(node => node.type === 'button' && text(node).includes(label)).props.onClick();
     render();
     assert.ok(text(tree[0]).includes(`Payment method: ${method}`));
   }

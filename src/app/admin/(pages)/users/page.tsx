@@ -66,7 +66,7 @@ export default function UsersPage() {
     try {
       await updateUserStatus(statusTarget.user.id, statusTarget.next);
       toast.success(
-        `${statusTarget.user.name} was ${statusTarget.next === "active" ? "activated" : "deactivated"}.`
+        `${statusTarget.user.name}'s account was ${statusTarget.next === "active" ? "enabled" : "disabled"}.`
       );
       setStatusTarget(null);
       list.refetch();
@@ -103,7 +103,7 @@ export default function UsersPage() {
       <PageHeader
         eyebrow="Account Administration"
         title="User Management"
-        description="Manage attendee accounts, activation status, profile access, and account activity."
+        description="Manage attendee accounts, account access, email verification, and booking participation."
         action={<ExportButton onClick={handleExport} isLoading={isExporting} />}
       />
 
@@ -118,10 +118,10 @@ export default function UsersPage() {
         list={list}
         columns={columns}
         getRowId={(u) => u.id}
-        noun="users"
+        noun="attendees"
         searchPlaceholder="Search name, email, or user ID…"
         filters={FILTERS}
-        emptyTitle="No users yet"
+        emptyTitle="No attendees yet"
         emptyDescription="Attendee accounts will appear here as soon as people sign up."
       />
 
@@ -134,13 +134,13 @@ export default function UsersPage() {
       <ConfirmDialog
         isOpen={statusTarget !== null}
         variant={activating ? "primary" : "danger"}
-        title={activating ? "Activate this user?" : "Deactivate this user?"}
+        title={activating ? "Enable this attendee account?" : "Disable this attendee account?"}
         description={
           activating
-            ? `${statusTarget?.user.name} will regain access to their account and be able to book tickets.`
-            : `${statusTarget?.user.name} will lose access to their account and won't be able to book tickets until reactivated.`
+            ? `${statusTarget?.user.name} must sign in again. Email verification and other sign-in requirements still apply.`
+            : `${statusTarget?.user.name} will be signed out on all devices and cannot sign in or book tickets until their account is enabled again.`
         }
-        confirmLabel={activating ? "Activate" : "Deactivate"}
+        confirmLabel={activating ? "Enable account" : "Disable account"}
         isLoading={isUpdating}
         onConfirm={confirmStatusChange}
         onCancel={() => !isUpdating && setStatusTarget(null)}

@@ -3,6 +3,7 @@ import { BadgeTone, StatusBadge } from "@/app/admin/components/ui/StatusBadge";
 
 export const TRANSACTION_STATUS: Record<TransactionStatus, { label: string; tone: BadgeTone }> = {
   paid: { label: "Paid", tone: "success" },
+  failed: { label: "Failed", tone: "danger" },
   pending: { label: "Pending", tone: "warning" },
   refunded: { label: "Refunded", tone: "danger" },
 };

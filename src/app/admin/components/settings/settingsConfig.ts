@@ -20,7 +20,7 @@ export const TABS: TabConfig[] = [
     description: "Workspace and account defaults",
     title: "General settings",
     subtitle: "Workspace defaults used across the Aventix admin portal.",
-    status: "All system services are operational",
+    status: "Preferences are stored for your administrator account",
     note: ACCOUNT_NOTE,
   },
   {
@@ -28,8 +28,8 @@ export const TABS: TabConfig[] = [
     label: "Notifications",
     description: "Alerts and email preferences",
     title: "Notification settings",
-    subtitle: "Control alerts and email preferences.",
-    status: "All notification services are operational",
+    subtitle: "Save your notification preferences. Automated delivery is not available yet.",
+    status: "Preferences are saved; automated notification delivery is not available",
     note: ACCOUNT_NOTE,
   },
   {
@@ -38,7 +38,7 @@ export const TABS: TabConfig[] = [
     description: "Authentication and sessions",
     title: "Security settings",
     subtitle: "Manage authentication and session controls.",
-    status: "Authentication and session services are operational",
+    status: "Password changes use your account authentication service",
     note: ACCOUNT_NOTE,
   },
   {
@@ -47,7 +47,7 @@ export const TABS: TabConfig[] = [
     description: "Theme and density",
     title: "Appearance settings",
     subtitle: "Customize the admin workspace appearance.",
-    status: "All appearance preferences are available",
+    status: "Saved appearance preferences apply across your admin workspace",
     note: ACCOUNT_NOTE,
   },
   {
@@ -56,8 +56,8 @@ export const TABS: TabConfig[] = [
     description: "Application behavior",
     title: "System settings",
     subtitle: "Control application behavior and maintenance preferences.",
-    status: "All system services are operational",
-    note: "Maintenance mode affects all users. Other changes apply to this account only.",
+    status: "Data refresh applies while your admin workspace is open",
+    note: "Changes apply to this administrator account only. Maintenance mode is unavailable.",
   },
 ];
 
@@ -118,7 +118,7 @@ export const TIMEZONE_OPTIONS: SelectOptionItem[] = [
 
 export const LANGUAGE_OPTIONS: SelectOptionItem[] = [
   { value: "en", label: "English" },
-  { value: "fil", label: "Filipino" },
+  { value: "fil", label: "Filipino (coming soon)", disabled: true },
 ];
 
 export const SESSION_TIMEOUT_OPTIONS: SelectOptionItem[] = [

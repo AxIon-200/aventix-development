@@ -1,4 +1,4 @@
-export type EventStatus = "published" | "draft" | "cancelled";
+export type EventStatus = "published" | "draft" | "cancelled" | "sold_out" | "completed";
 export type EventStatusFilter = EventStatus | "all";
 
 export type EventCategory = "concert" | "gig" | "festival";
@@ -15,10 +15,11 @@ export type AdminEvent = {
   eventCode: string; // display id, e.g. "EVT-401"
   title: string;
   organizerName: string;
-  startsAt: string; // ISO
+  startsAt: string | null; // ISO
   venue: string;
   status: EventStatus;
-  category: EventCategory;
+  category: EventCategory | null;
+  updatedAt: string;
   attendees: number; // tickets sold / people attending
 };
 
@@ -27,13 +28,13 @@ export type TicketTierSummary = {
   name: string;
   price: number;
   sold: number;
-  capacity: number;
+  capacity: number | null;
 };
 
 // GET /admin/events/:id (details modal)
 export type AdminEventDetails = AdminEvent & {
   description?: string | null;
-  capacity: number;
+  capacity: number | null;
   revenue: number;
   tiers: TicketTierSummary[];
   cancellationReason?: string | null;
@@ -45,4 +46,6 @@ export type EventStats = {
   published: number;
   draft: number;
   cancelled: number;
+  soldOut: number;
+  completed: number;
 };

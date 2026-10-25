@@ -385,3 +385,16 @@ span[class*="rounded-full"][class*="bg-"] {
   dialog, [role="dialog"], #admin-notifications-panel, [role="menu"] { animation: none !important; }
   .aventix-click-ripple { display: none !important; }
 }
+
+.admin-workspace[data-density="compact"] #main-content { padding-top: 1rem; padding-bottom: 1rem; }
+.admin-workspace[data-density="compact"] #main-content > .space-y-6 > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem; }
+.admin-workspace[data-compact-tables] table td,
+.admin-workspace[data-compact-tables] table th { padding-top: .5rem; padding-bottom: .5rem; }
+.admin-workspace[data-reduce-motion] *,
+.admin-workspace[data-reduce-motion] *::before,
+.admin-workspace[data-reduce-motion] *::after {
+  animation-duration: .01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: .01ms !important;
+  scroll-behavior: auto !important;
+}

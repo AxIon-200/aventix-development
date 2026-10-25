@@ -13,19 +13,20 @@ type Handlers = {
 export function getUserColumns({ onView, onChangeStatus }: Handlers): Column<ManagedUser>[] {
   return [
     {
-      header: "User",
+      header: "Attendee",
       render: (u) => (
         <div className="flex items-center gap-3">
           <Avatar name={u.name} src={u.avatarUrl} />
           <div className="min-w-0">
             <p className="truncate font-medium text-white">{u.name}</p>
-            <p className="text-[11px] text-slate-500">{u.userCode}</p>
+            <p className="max-w-[180px] truncate text-[11px] text-slate-500" title={u.userCode}>{u.userCode}</p>
           </div>
         </div>
       ),
     },
     { header: "Email", className: "max-w-[240px] truncate", render: (u) => u.email },
-    { header: "Status", render: (u) => <UserStatusBadge status={u.status} /> },
+    { header: "Account Status", render: (u) => <UserStatusBadge status={u.status} /> },
+    { header: "Email Verification", className: "text-slate-400", render: (u) => u.emailVerified ? "Verified" : "Unverified" },
     { header: "Date Joined", className: "text-slate-400", render: (u) => formatDate(u.joinedAt) },
     {
       header: "Actions",
@@ -37,15 +38,15 @@ export function getUserColumns({ onView, onChangeStatus }: Handlers): Column<Man
               onClick={() => onChangeStatus(u, "active")}
               className="rounded-md bg-teal-500/10 px-2.5 py-1 text-xs font-medium text-teal-300 hover:bg-teal-500/20"
             >
-              Activate
+              Enable
             </button>
           )}
-          {u.status !== "inactive" && (
+          {u.status !== "disabled" && (
             <button
-              onClick={() => onChangeStatus(u, "inactive")}
+              onClick={() => onChangeStatus(u, "disabled")}
               className="rounded-md bg-rose-500/10 px-2.5 py-1 text-xs font-medium text-rose-300 hover:bg-rose-500/20"
             >
-              Deactivate
+              Disable
             </button>
           )}
           <button

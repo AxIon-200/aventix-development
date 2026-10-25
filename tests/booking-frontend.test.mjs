@@ -314,3 +314,15 @@ test("booking amounts preserve centavos and show configured fees precisely", () 
   assert.ok(formatBookingAmount(100.25).includes("100.25"));
   assert.ok(formatBookingAmount(2200).includes("2,200.00"));
 });
+
+test("general admission requires no numbered seats while assigned seating still requires one per ticket", () => {
+  const general = structuredClone(booking);
+  general.items[0].admissionMode = "GENERAL_ADMISSION";
+  general.items[0].seats = [];
+  assert.equal(requireBooking(general).items[0].admissionMode, "GENERAL_ADMISSION");
+  general.items[0].admissionMode = "ASSIGNED_SEATING";
+  assert.throws(() => requireBooking(general));
+  general.items[0].admissionMode = "GENERAL_ADMISSION";
+  general.items[0].seats = [{ id: "seat-in-general-admission", displayLabel: "A1" }];
+  assert.throws(() => requireBooking(general));
+});

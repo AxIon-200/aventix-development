@@ -6,7 +6,7 @@ import { AdminBooking, PaymentDecision } from "@/app/admin/types/bookings";
 export function getPaymentTransitions(
   booking: Pick<AdminBooking, "status" | "paymentStatus">
 ): PaymentDecision[] {
-  if (booking.paymentStatus === "pending" && booking.status !== "cancelled") return ["paid"];
+  if (["pending", "failed"].includes(booking.paymentStatus) && booking.status === "pending") return ["paid"];
   if (booking.paymentStatus === "paid" && booking.status !== "completed") return ["refunded"];
   return []; // already refunded, or the event is over, or nothing to collect
 }

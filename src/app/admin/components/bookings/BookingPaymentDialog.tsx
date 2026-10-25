@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { AdminBooking, PaymentDecision } from "@/app/admin/types/bookings";
 import { Modal } from "@/app/admin/components/ui/Modal";
@@ -38,27 +38,26 @@ const ACTIONS: Record<
       `Record ${formatPeso(amount)} as received. A pending booking becomes confirmed.`,
   },
   refunded: {
-    label: "Refund payment",
-    confirm: "Refund",
+    label: "Record refund",
+    confirm: "Record refund",
     danger: true,
     describe: (amount) =>
-      `Record a ${formatPeso(amount)} refund. The booking will be cancelled and its tickets released.`,
+      `Record a ${formatPeso(amount)} refund. The booking will be marked as refunded and its tickets released. Record this after returning the funds.`,
   },
 };
 
-export function BookingPaymentDialog({ target, isLoading, onConfirm, onCancel }: Props) {
-  const [selected, setSelected] = useState<PaymentDecision | null>(null);
-  const [note, setNote] = useState("");
+export function BookingPaymentDialog(props: Props) {
+  if (!props.target) return null;
+  return <BookingPaymentForm key={props.target.booking.id + props.target.booking.paymentStatus} {...props} />;
+}
+
+function BookingPaymentForm({ target, isLoading, onConfirm, onCancel }: Props) {
 
   const booking = target?.booking;
   const options = booking ? getPaymentTransitions(booking) : [];
 
-  // When there is only one possible action, preselect it (no extra click).
-  useEffect(() => {
-    setSelected(options.length === 1 ? options[0] : null);
-    setNote("");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [target]);
+  const [selected, setSelected] = useState<PaymentDecision | null>(() => options.length === 1 ? options[0] : null);
+  const [note, setNote] = useState("");
 
   const action = selected ? ACTIONS[selected] : null;
 

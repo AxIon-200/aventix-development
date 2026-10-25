@@ -1,7 +1,7 @@
 import { CalendarDays, Eye } from "lucide-react";
 import { AdminEvent } from "@/app/admin/types/events";
 import { Column } from "@/app/admin/components/data-table/types";
-import { EventStatusBadge } from "@/app/admin/components/events/eventStatus";
+import { ALLOWED_TRANSITIONS, EventStatusBadge } from "@/app/admin/components/events/eventStatus";
 import { formatDate } from "@/app/admin/lib/format";
 
 type Handlers = {
@@ -53,6 +53,7 @@ export function getEventColumns({ onView, onManageAvailability }: Handlers): Col
             <Eye className="h-4 w-4" />
           </button>
           <button
+            disabled={ALLOWED_TRANSITIONS[e.status].length === 0}
             onClick={() => onManageAvailability(e)}
             aria-label={`Manage availability for ${e.title}`}
             title="Manage availability"

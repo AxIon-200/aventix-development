@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { EventStatus } from "@/app/admin/types/events";
 import { Modal } from "@/app/admin/components/ui/Modal";
@@ -11,7 +11,7 @@ import {
 } from "@/app/admin/components/events/eventStatus";
 
 export type AvailabilityTarget = {
-  event: { id: string; title: string; status: EventStatus; attendees: number };
+  event: { id: string; title: string; status: EventStatus; attendees: number; updatedAt: string };
 };
 
 type Props = {
@@ -33,10 +33,6 @@ export function EventAvailabilityDialog({ target, isLoading, onConfirm, onCancel
   const [selected, setSelected] = useState<EventStatus | null>(null);
   const [reason, setReason] = useState("");
 
-  useEffect(() => {
-    setSelected(null);
-    setReason("");
-  }, [target]);
 
   const event = target?.event;
   const options = event ? ALLOWED_TRANSITIONS[event.status] : [];
@@ -137,7 +133,7 @@ export function EventAvailabilityDialog({ target, isLoading, onConfirm, onCancel
                 onChange={(e) => setReason(e.target.value.slice(0, MAX_REASON))}
                 disabled={isLoading}
                 rows={3}
-                placeholder="Shared with the organizer and attendees"
+                placeholder="Record a cancellation reason"
                 className="mt-1.5 w-full resize-none rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-slate-200 placeholder-slate-600 outline-none focus:border-teal-400/60 disabled:opacity-60"
               />
               <p className="mt-1 text-right text-[11px] text-slate-600">

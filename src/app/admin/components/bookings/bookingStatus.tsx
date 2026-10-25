@@ -6,12 +6,15 @@ export const BOOKING_STATUS: Record<BookingStatus, { label: string; tone: BadgeT
   pending: { label: "Pending", tone: "warning" },
   completed: { label: "Completed", tone: "info" },
   cancelled: { label: "Cancelled", tone: "danger" },
+  expired: { label: "Expired", tone: "warning" },
+  refunded: { label: "Refunded", tone: "danger" },
 };
 
 export const PAYMENT_STATUS: Record<PaymentStatus, { label: string; tone: BadgeTone }> = {
   paid: { label: "Paid", tone: "success" },
   pending: { label: "Pending", tone: "warning" },
   refunded: { label: "Refunded", tone: "danger" },
+  failed: { label: "Failed", tone: "danger" },
 };
 
 export const BOOKING_STATUS_OPTIONS = (Object.keys(BOOKING_STATUS) as BookingStatus[]).map((value) => ({

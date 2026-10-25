@@ -1,6 +1,6 @@
 "use client";
 
-import { UserCheck, UserPlus, UserX, Users } from "lucide-react";
+import { UserCheck, UserPlus, Ticket, Users } from "lucide-react";
 import { UserStats } from "@/app/admin/types/users";
 import { StatCard } from "@/app/admin/components/dashboard/StatCard";
 import { ErrorState } from "@/app/admin/components/ui/ErrorState";
@@ -37,32 +37,32 @@ export function UserStatsCards({ stats, isLoading, error, onRetry }: Props) {
   return (
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
       <StatCard
-        label="Total Users"
+        label="Total Attendees"
         value={stats.total.toLocaleString()}
         icon={Users}
         change={{
-          value: `+${stats.newThisMonth.toLocaleString()}`,
-          direction: stats.newThisMonth > 0 ? "up" : "neutral",
-          label: "joined in last 30 days",
+          value: "",
+          direction: "neutral",
+          label: "All attendee accounts",
         }}
       />
       <StatCard
-        label="Active Users"
+        label="Active Accounts"
         value={stats.active.toLocaleString()}
         icon={UserCheck}
-        change={{ value: pct(stats.active, stats.total), direction: "neutral", label: "of all users" }}
+        change={{ value: pct(stats.active, stats.total), direction: "neutral", label: "of accounts enabled" }}
       />
       <StatCard
-        label="Pending Activation"
-        value={stats.pending.toLocaleString()}
+        label="New Attendees"
+        value={stats.newLast30Days.toLocaleString()}
         icon={UserPlus}
-        change={{ value: pct(stats.pending, stats.total), direction: "neutral", label: "awaiting review" }}
+        change={{ value: "", direction: "neutral", label: "Joined in the last 30 days" }}
       />
       <StatCard
-        label="Inactive Users"
-        value={stats.inactive.toLocaleString()}
-        icon={UserX}
-        change={{ value: pct(stats.inactive, stats.total), direction: "neutral", label: "of all users" }}
+        label="Attendees with Bookings"
+        value={stats.withBookings.toLocaleString()}
+        icon={Ticket}
+        change={{ value: "", direction: "neutral", label: "With at least one confirmed booking" }}
       />
     </div>
   );

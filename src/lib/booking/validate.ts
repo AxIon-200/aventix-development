@@ -129,7 +129,8 @@ export function requireBooking(
       item.quantity < 1 ||
       !money(item.unitPrice) ||
       !Array.isArray(item.seats) ||
-      item.seats.length !== item.quantity ||
+      (item.admissionMode !== undefined && !["ASSIGNED_SEATING", "GENERAL_ADMISSION"].includes(String(item.admissionMode))) ||
+      item.seats.length !== (item.admissionMode === "GENERAL_ADMISSION" ? 0 : item.quantity) ||
       categories.has(item.ticketCategoryId)
     )
       return fail();

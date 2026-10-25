@@ -13,7 +13,7 @@ export type AdminProfile = {
   lastLoginAt: string | null; // ISO
   createdAt: string; // ISO
   passwordChangedAt: string | null; // ISO
-  twoFactorEnabled: boolean;
+  twoFactorEnabled: boolean | null;
 };
 
 // PATCH /admin/profile

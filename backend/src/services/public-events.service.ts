@@ -82,13 +82,13 @@ function toPublicEvent(event: PublicEventRow) {
       const seats = category.seats.filter((seat) => !seat.bookingSeats.some((allocation) => {
         const booking = allocation.bookingItem.booking;
         return allocation.allocationStatus !== "RELEASED" &&
-          (booking.status === "CONFIRMED" || (booking.status === "PENDING_PAYMENT" && booking.expiresAt > now));
+          (booking.status === "CONFIRMED" || booking.status === "PENDING_PAYMENT");
       })).map((seat) => ({
         id: seat.id, section: seat.section ?? "", row: seat.row ?? "",
         seatNumber: seat.seatNumber, label: seat.displayLabel,
       }));
       const reserved = category.bookingItems.reduce((total, item) =>
-        total + (item.booking.status === "CONFIRMED" || item.booking.expiresAt > now ? item.quantity : 0), 0);
+        total + item.quantity, 0);
       const remaining = event.status === "SOLD_OUT" ? 0
         : category.admissionMode === "ASSIGNED_SEATING"
           ? Math.min(seats.length, category.maxCapacity === null ? seats.length : Math.max(0, category.maxCapacity - reserved))

@@ -53,8 +53,23 @@ export function SettingsWorkspace({ initial }: { initial: SettingsResponse }) {
       e.preventDefault();
       e.returnValue = "";
     };
+    const onNavigate = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>("a[href]") : null;
+      if (!link || link.hasAttribute("download") || (link.target && link.target !== "_self")) return;
+      const destination = new URL(link.href);
+      if (destination.origin === window.location.origin && destination.pathname === window.location.pathname) return;
+      if (!window.confirm("Discard your unsaved settings and leave this page?")) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
     window.addEventListener("beforeunload", onBeforeUnload);
-    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+    document.addEventListener("click", onNavigate, true);
+    return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      document.removeEventListener("click", onNavigate, true);
+    };
   }, [isDirty]);
 
   function toggleMaintenance(next: boolean) {

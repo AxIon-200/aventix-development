@@ -13,14 +13,14 @@ export function AccountActivityCard({ profile }: { profile: AdminProfile }) {
           <div>
             <p className="text-xs text-slate-500">Last password change</p>
             <p className="mt-1 text-sm font-medium text-slate-200">
-              {formatTimeAgo(profile.passwordChangedAt)}
+              {profile.passwordChangedAt ? formatTimeAgo(profile.passwordChangedAt) : "No recorded change"}
             </p>
           </div>
           <div>
             <p className="text-xs text-slate-500">Two-factor authentication</p>
             <div className="mt-1">
               <StatusBadge
-                label={profile.twoFactorEnabled ? "Enabled" : "Not enabled"}
+                label={profile.twoFactorEnabled === null ? "Not available" : profile.twoFactorEnabled ? "Enabled" : "Not enabled"}
                 tone={profile.twoFactorEnabled ? "success" : "warning"}
               />
             </div>

@@ -28,6 +28,8 @@ const PAYMENT_FOR: Record<BookingStatus, PaymentStatus> = {
   pending: "pending",
   completed: "paid",
   cancelled: "refunded",
+  expired: "pending",
+  refunded: "refunded",
 };
 
 export const MOCK_EVENT_VENUES: Record<string, string> = Object.fromEntries(

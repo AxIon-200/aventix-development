@@ -1,8 +1,9 @@
 import WorkspacePage from "@/components/auth/WorkspacePage";
+import BookingRecordView from "@/components/booking/BookingRecordView";
 
 export const metadata = { title: "Booking confirmation | Aventix", robots: { index: false, follow: false } };
 
 export default async function Page({ params }: { params: Promise<{ bookingId: string }> }) {
   const { bookingId } = await params;
-  return <WorkspacePage role="ATTENDEE" title="Booking confirmation" returnTo={`/bookings/${encodeURIComponent(bookingId)}/confirmation`} />;
+  return <WorkspacePage role="ATTENDEE" title="Booking confirmation" returnTo={`/bookings/${encodeURIComponent(bookingId)}/confirmation`}><BookingRecordView bookingId={bookingId} mode="confirmation" /></WorkspacePage>;
 }

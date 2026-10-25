@@ -104,7 +104,7 @@ export default function BookingsPage() {
       toast.success(
         paymentStatus === "paid"
           ? `${target.booking.bookingCode} was marked as paid.`
-          : `${target.booking.bookingCode} was refunded and cancelled.`
+          : `${target.booking.bookingCode} was marked as refunded.`
       );
       setTarget(null);
       list.refetch();

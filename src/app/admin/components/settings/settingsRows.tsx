@@ -37,7 +37,7 @@ export function LanguageRow({ values, onChange }: RowProps) {
     <SettingRow
       id="language"
       label="Language"
-      description="Interface language for this administrator account."
+      description="English is available. Filipino translations are not available yet."
       control={(a) => (
         <SelectField
           {...a}
@@ -55,11 +55,12 @@ export function AutoLogoutRow({ values, onChange }: RowProps) {
     <SettingRow
       id="auto-logout"
       label="Automatic logout"
-      description="Sign out after a period of inactivity for better account security."
+      description="Not available yet. Sessions expire seven days after sign-in."
       control={(a) => (
         <Toggle
           {...a}
           checked={values.security.autoLogout}
+          disabled
           onChange={(v) => onChange("security", "autoLogout", v)}
         />
       )}
@@ -73,11 +74,7 @@ export function SessionTimeoutRow({ values, onChange }: RowProps) {
     <SettingRow
       id="session-timeout"
       label="Session timeout"
-      description={
-        enabled
-          ? "How long an inactive session remains active."
-          : "Turn on automatic logout to choose a timeout."
-      }
+      description="Inactivity timeouts are not available. The fixed session lifetime is seven days."
       control={(a) => (
         <SelectField
           {...a}
