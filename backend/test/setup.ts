@@ -41,4 +41,20 @@ if (!connectionIdentity.includes(testProjectRef)) {
 }
 
 // 5. All configuration checks passed
-console.log("Test database environment verified");
+// A project reference alone does not prevent tests from writing to a project
+// that has since been repurposed for a public demonstration.
+const { PrismaPg } = await import("@prisma/adapter-pg");
+const { PrismaClient } = await import("../src/generated/prisma/client.js");
+const markerClient = new PrismaClient({ adapter: new PrismaPg({ connectionString: databaseUrl }) });
+try {
+  const marker = await markerClient.$queryRaw<Array<{ environment: string }>>`
+    SELECT environment FROM public.test_environment_marker WHERE id = 1`;
+  if (marker[0]?.environment !== "aventix-test") {
+    throw new Error("Database is no longer marked for tests");
+  }
+} catch {
+  throw new Error("Dedicated test database marker could not be verified");
+} finally {
+  await markerClient.$disconnect();
+}
+console.log("Test database environment and marker verified");
