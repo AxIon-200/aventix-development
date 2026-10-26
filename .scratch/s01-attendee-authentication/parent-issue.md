@@ -30,3 +30,5 @@ Work the frontier: #107 can start first; other tickets become available as their
 ## Scope boundaries
 
 Reuse the existing Better Auth/Prisma identity, sessions, and Aventix lifecycle; no new authentication system or planned schema change. Profile editing and authenticated password change belong to S02. Event, booking, payment, ticket, organizer-onboarding, and administrative business integrations remain later slices. Publication of this tracking parent does not start application implementation, send real email, change live accounts, deploy, or lift activation gates. Historical issues remain unchanged.
+
+connected to .env
