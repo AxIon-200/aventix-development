@@ -36,7 +36,5 @@ services:
         sync: false
       - key: PAYMONGO_SECRET_KEY
         sync: false
-      - key: PAYMONGO_WEBHOOK_SECRET
-        sync: false
       - key: ORGANIZER_PAYOUT_KEY
         sync: false

@@ -26,6 +26,8 @@ import { adminDashboardRouter } from "./routes/admin-dashboard.routes.js";
 import { env } from "./config/env.js";
 import { loadCurrentTerms } from "./config/terms.js";
 import type { CurrentTerms } from "./config/terms.js";
+import { createPayMongoWebhookRouter } from "./lib/paymongo-webhook.js";
+import type { PayMongoWebhookOptions } from "./lib/paymongo-webhook.js";
 import { claimAuthIp, positiveLimit } from "./lib/auth-rate-limit.js";
 import { verificationLanding, passwordResetLanding } from "./lib/verification-landing.js";
 
@@ -35,6 +37,7 @@ export interface AppOptions {
   sendPasswordResetEmail?: SendAuthEmail;
   sendOrganizerDecisionEmail?: SendOrganizerDecisionEmail;
   saveContactMessage?: SaveContactMessage;
+  payMongoWebhook?: PayMongoWebhookOptions;
   now?: () => Date;
   registrationLimit?: number;
   verificationLimit?: number;
@@ -79,6 +82,9 @@ export function createApp(options: AppOptions = {}) {
       credentials: true,
     })
   );
+
+  // PayMongo signs the raw request body; mount this before any JSON parser.
+  app.use(createPayMongoWebhookRouter(options.payMongoWebhook));
 
   app.use("/api/auth", async (req, res, next) => {
     res.set("Cache-Control", "no-store");

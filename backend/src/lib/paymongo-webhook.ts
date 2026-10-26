@@ -57,17 +57,17 @@ export const savePayMongoReceipt: SavePayMongoReceipt = async receipt => prisma.
   return true;
 }, { timeout: 15000 });
 
-export function createPayMongoWebhookApp(options: {
+export interface PayMongoWebhookOptions {
   secret?: () => string | undefined;
   now?: () => Date;
   save?: SavePayMongoReceipt;
-} = {}) {
-  const app = express();
-  app.disable("x-powered-by");
+}
+
+export function createPayMongoWebhookRouter(options: PayMongoWebhookOptions = {}) {
+  const router = express.Router();
   const secret = options.secret ?? (() => process.env.PAYMONGO_WEBHOOK_SECRET);
-  app.use((_req, res, next) => { res.set("Cache-Control", "no-store"); next(); });
-  app.get("/health", (_req, res) => res.status(secret() ? 200 : 503).json({ ready: Boolean(secret()), mode: "test", service: "paymongo-webhook" }));
-  app.post(PAYMONGO_WEBHOOK_PATH, express.raw({ type: "application/json", limit: "256kb" }), async (req, res) => {
+  router.post(PAYMONGO_WEBHOOK_PATH, express.raw({ type: "application/json", limit: "256kb" }), async (req, res) => {
+    res.set("Cache-Control", "no-store");
     const signingSecret = secret();
     if (!signingSecret) { res.status(503).json({ error: "Webhook is not configured" }); return; }
     if (!Buffer.isBuffer(req.body)) { res.status(415).json({ error: "JSON content type is required" }); return; }
@@ -94,9 +94,19 @@ export function createPayMongoWebhookApp(options: {
       res.status(200).json({ received: true, duplicate: !created });
     } catch { res.status(503).json({ error: "Webhook could not be saved; retry delivery" }); }
   });
-  app.use((_req, res) => { res.status(404).json({ error: "Not found" }); });
-  app.use(((error, _req, res, _next) => {
+  router.use(((error, _req, res, _next) => {
     res.status(error?.type === "entity.too.large" ? 413 : 400).json({ error: "Invalid webhook request" });
   }) satisfies ErrorRequestHandler);
+  return router;
+}
+
+export function createPayMongoWebhookApp(options: PayMongoWebhookOptions = {}) {
+  const app = express();
+  app.disable("x-powered-by");
+  const secret = options.secret ?? (() => process.env.PAYMONGO_WEBHOOK_SECRET);
+  app.use((_req, res, next) => { res.set("Cache-Control", "no-store"); next(); });
+  app.get("/health", (_req, res) => res.status(secret() ? 200 : 503).json({ ready: Boolean(secret()), mode: "test", service: "paymongo-webhook" }));
+  app.use(createPayMongoWebhookRouter(options));
+  app.use((_req, res) => { res.status(404).json({ error: "Not found" }); });
   return app;
 }

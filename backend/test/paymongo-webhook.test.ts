@@ -2,6 +2,7 @@ import { createHmac, randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, expect, it, vi } from "vitest";
 import { createPayMongoWebhookApp, PAYMONGO_WEBHOOK_PATH, savePayMongoReceipt } from "../src/lib/paymongo-webhook.js";
+import { createApp } from "../src/app.js";
 import { prisma } from "../src/lib/prisma.js";
 
 const secret = "isolated-paymongo-test-signing-secret";
@@ -30,6 +31,15 @@ it("accepts valid signed test payments and stores only the fields needed for lat
   expect(save).toHaveBeenCalledWith({ eventId, checkoutSessionId: "cs_test_fixture", referenceNumber: "fixture-reference",
     paymentId: "pay_test_fixture", amountCentavos: 150050, currency: "PHP", livemode: false, payloadHash: expect.any(String) });
   expect(JSON.stringify(save.mock.calls)).not.toContain("must-not-be-stored");
+});
+it("receives signed test webhooks on the deployed API port before JSON parsing", async () => {
+  const save = vi.fn(async () => true);
+  const app = createApp({ payMongoWebhook: { secret: () => secret, now: () => now, save } });
+  expect((await deliver(app)).status).toBe(200);
+  expect(save).toHaveBeenCalledTimes(1);
+  expect((await deliver(app, JSON.stringify(payload()), "invalid")).status).toBe(401);
+  expect(save).toHaveBeenCalledTimes(1);
+  expect((await request(app).get("/api/v1/health")).status).toBe(200);
 });
 it("rejects tampered, unsigned, old, future, malformed and live events before any storage", async () => {
   const { app, save } = fixture();
