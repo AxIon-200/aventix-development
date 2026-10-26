@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "./prisma.js";
 import { CheckoutProviderError, paymongoCheckout, safeCheckoutUrl, type CheckoutGateway } from "./paymongo-checkout.js";
+import { settleCheckout } from "./settle-checkout.js";
 
 export class BookingError extends Error {
   constructor(public code: string, public status = 409) { super(code); }
@@ -37,9 +38,11 @@ export function presentBooking(b: BookingRow, now = new Date()) {
   const active = b.status === "PENDING_PAYMENT" && b.expiresAt > now && b.event.status === "PUBLISHED";
   return { id: b.id, reference: b.bookingReference,
     event: { id: b.eventId, name: b.event.name, startsAt: (b.event.startTime ?? b.event.eventDate)?.toISOString(),
-      status: b.event.status === "SOLD_OUT" ? "PUBLISHED" : b.event.status, venue: b.event.venue ?? { name: "Venue to be announced", address: "To be announced" } },
+      status: b.event.status === "SOLD_OUT" ? "PUBLISHED" : b.event.status,
+      venue: { name: b.event.venue?.name?.trim() || "Venue to be announced",
+        address: b.event.venue?.address?.trim() || "To be announced" } },
     attendee: { name: b.user.name, email: b.user.email, ...(b.user.phoneNumber ? { phoneNumber: b.user.phoneNumber } : {}) },
-    status: b.status, paymentStatus: payment?.status ?? "PENDING", paymentMethod: payment?.paymentMethod ?? undefined,
+    status: b.status, paymentStatus: payment?.status ?? (["CANCELLED", "EXPIRED"].includes(b.status) ? "FAILED" : "PENDING"), paymentMethod: payment?.paymentMethod ?? undefined,
     items: b.items.map(i => ({ ticketCategoryId: i.ticketCategoryId, name: i.ticketCategory.name, quantity: i.quantity,
       admissionMode: i.ticketCategory.admissionMode,
       unitPrice: Number(i.unitPrice), seats: i.seats.map(s => ({ id: s.eventSeatId, displayLabel: s.eventSeat.displayLabel,
@@ -51,9 +54,17 @@ export function presentBooking(b: BookingRow, now = new Date()) {
       href: `/tickets/${t.id}` }))),
   };
 }
-export async function getOwnBooking(id: string, userId: string) {
-  const b = await prisma.booking.findFirst({ where: { id, userId }, include });
+export async function getOwnBooking(id: string, userId: string, gateway: CheckoutGateway = paymongoCheckout) {
+  let b = await prisma.booking.findFirst({ where: { id, userId }, include });
   if (!b) throw new BookingError("NOT_FOUND", 404);
+  if (b.status === "PENDING_PAYMENT" && b.expiresAt <= new Date()) {
+    try {
+      await reconcileOverdueBooking(id, userId, gateway);
+    } catch {
+      // Keep the hold pending when the payment provider cannot verify expiry.
+    }
+    b = await prisma.booking.findFirstOrThrow({ where: { id, userId }, include });
+  }
   return presentBooking(b);
 }
 export async function createBooking(userId: string, input: z.infer<typeof bookingInput>, now = new Date()) {
@@ -68,10 +79,10 @@ export async function createBooking(userId: string, input: z.infer<typeof bookin
     const event = await tx.event.findUnique({ where: { id: input.eventId }, include: { ticketCategories: true } });
     if (!event || event.status !== "PUBLISHED" || !(event.startTime ?? event.eventDate) || (event.startTime ?? event.eventDate)! <= now)
       throw new BookingError("INVENTORY_CHANGED");
-    // No provider session exists for these holds, so they can safely expire under the event lock.
+    // No provider session exists for these overdue holds, so they can be cancelled under the event lock.
     const expired = await tx.booking.findMany({ where: { eventId: event.id, status: "PENDING_PAYMENT", expiresAt: { lte: now },
       payments: { none: { status: "PENDING" } } }, select: { id: true } });
-    for (const b of expired) { await lockBooking(tx, b.id); await release(tx, b.id, "EXPIRED", now); }
+    for (const b of expired) { await lockBooking(tx, b.id); await release(tx, b.id, "CANCELLED", now); }
     const existing = await tx.bookingItem.aggregate({ where: { booking: { userId, eventId: event.id,
       status: { in: ["PENDING_PAYMENT", "CONFIRMED"] } } }, _sum: { quantity: true } });
     const quantity = input.items.reduce((n, i) => n + i.quantity, 0);
@@ -161,9 +172,45 @@ export async function closeBooking(id: string, userId: string | undefined, statu
     await release(tx, id, status, new Date());
   });
 }
+export async function reconcileOverdueBooking(id: string, userId: string | undefined, gateway: CheckoutGateway = paymongoCheckout) {
+  const b = await prisma.booking.findFirst({ where: { id, ...(userId ? { userId } : {}) },
+    include: { payments: true } });
+  if (!b) throw new BookingError("NOT_FOUND", 404);
+  if (b.status !== "PENDING_PAYMENT" || b.expiresAt > new Date()) return;
+  for (const payment of b.payments.filter(p => p.status === "PENDING")) {
+    if (payment.provider !== "paymongo_test" || !payment.providerReference) throw new BookingError("PAYMENT_PROCESSING");
+    const session = await gateway.inspect(payment.providerReference);
+    const paid = session.attributes.payments?.filter(p => p.attributes.status === "paid") ?? [];
+    if (paid.length) {
+      if (paid.length !== 1) throw new BookingError("PAYMENT_PROCESSING");
+      const result = await prisma.$transaction(tx => settleCheckout(tx, {
+        eventId: `provider-lookup:${session.id}`, checkoutSessionId: session.id,
+        referenceNumber: session.attributes.reference_number ?? null, paymentId: paid[0]!.id,
+        amountCentavos: paid[0]!.attributes.amount ?? null,
+        currency: paid[0]!.attributes.currency === "PHP" ? "PHP" : null,
+        livemode: false, payloadHash: "",
+      }, "provider_lookup"), { timeout: 15000 });
+      if (result.processingStatus !== "BOOKING_CONFIRMED" && result.processingStatus !== "ALREADY_CONFIRMED")
+        throw new BookingError("PAYMENT_PROCESSING");
+      return;
+    }
+  }
+  await closeBooking(id, userId, "CANCELLED", gateway);
+}
 export async function expireBookings(gateway: CheckoutGateway = paymongoCheckout) {
-  const rows = await prisma.booking.findMany({ where: { status: "PENDING_PAYMENT", expiresAt: { lte: new Date() } }, select: { id: true }, take: 20, orderBy: { expiresAt: "asc" } });
-  for (const b of rows) { try { await closeBooking(b.id, undefined, "EXPIRED", gateway); } catch { /* Keep inventory when provider expiry is unconfirmed. */ } }
+  const cutoff = new Date();
+  let after: { id: string; expiresAt: Date } | undefined;
+  for (;;) {
+    const rows = await prisma.booking.findMany({ where: { status: "PENDING_PAYMENT", expiresAt: { lte: cutoff },
+      ...(after ? { OR: [{ expiresAt: { gt: after.expiresAt } }, { expiresAt: after.expiresAt, id: { gt: after.id } }] } : {}) },
+      select: { id: true, expiresAt: true }, take: 20, orderBy: [{ expiresAt: "asc" }, { id: "asc" }] });
+    for (const b of rows) {
+      try { await reconcileOverdueBooking(b.id, undefined, gateway); }
+      catch (error) { console.error("Booking reconciliation pending", b.id, error instanceof BookingError ? error.code : "PROVIDER_UNAVAILABLE"); }
+    }
+    if (rows.length < 20) break;
+    after = rows[rows.length - 1]!;
+  }
 }
 export function startBookingExpiryWorker() {
   let running = false;

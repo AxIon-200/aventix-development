@@ -1,4 +1,5 @@
 import { getEvents } from "@/lib/events-api";
+import { isCategoryBookable } from "@/lib/event-booking";
 import type { EventDetails } from "@/types/event";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
@@ -46,12 +47,7 @@ export default async function BuyTicketsPage({
   if (authorized) {
     try {
       events = (await getEvents()).filter((event) =>
-        event.status === "PUBLISHED" && event.categories.some((category) =>
-          category.status === "ACTIVE" &&
-          category.availability !== "SOLD_OUT" &&
-          category.availability !== "SALE_ENDED" &&
-          category.remaining !== 0
-        )
+        event.categories.some((category) => isCategoryBookable(event, category))
       );
     } catch {
       eventsUnavailable = true;

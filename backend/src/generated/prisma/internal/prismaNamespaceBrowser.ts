@@ -66,6 +66,7 @@ export const ModelName = {
   Venue: 'Venue',
   Event: 'Event',
   EventMedia: 'EventMedia',
+  EventImage: 'EventImage',
   TicketCategory: 'TicketCategory',
   EventSeat: 'EventSeat',
   Booking: 'Booking',
@@ -314,6 +315,16 @@ export const EventMediaScalarFieldEnum = {
 } as const
 
 export type EventMediaScalarFieldEnum = (typeof EventMediaScalarFieldEnum)[keyof typeof EventMediaScalarFieldEnum]
+
+
+export const EventImageScalarFieldEnum = {
+  eventId: 'eventId',
+  kind: 'kind',
+  mimeType: 'mimeType',
+  data: 'data'
+} as const
+
+export type EventImageScalarFieldEnum = (typeof EventImageScalarFieldEnum)[keyof typeof EventImageScalarFieldEnum]
 
 
 export const TicketCategoryScalarFieldEnum = {

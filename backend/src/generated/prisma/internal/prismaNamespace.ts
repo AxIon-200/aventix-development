@@ -412,6 +412,7 @@ export const ModelName = {
   Venue: 'Venue',
   Event: 'Event',
   EventMedia: 'EventMedia',
+  EventImage: 'EventImage',
   TicketCategory: 'TicketCategory',
   EventSeat: 'EventSeat',
   Booking: 'Booking',
@@ -437,7 +438,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "adminPreferences" | "authLink" | "emailCooldown" | "authRateLimit" | "session" | "account" | "verification" | "organizerProfile" | "organizerApplication" | "organizerDecision" | "organizerDecisionNotification" | "venue" | "event" | "eventMedia" | "ticketCategory" | "eventSeat" | "booking" | "bookingItem" | "bookingSeat" | "payment" | "ticket" | "ticketVerification" | "activityLog" | "contactMessage"
+    modelProps: "user" | "adminPreferences" | "authLink" | "emailCooldown" | "authRateLimit" | "session" | "account" | "verification" | "organizerProfile" | "organizerApplication" | "organizerDecision" | "organizerDecisionNotification" | "venue" | "event" | "eventMedia" | "eventImage" | "ticketCategory" | "eventSeat" | "booking" | "bookingItem" | "bookingSeat" | "payment" | "ticket" | "ticketVerification" | "activityLog" | "contactMessage"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1551,6 +1552,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    EventImage: {
+      payload: Prisma.$EventImagePayload<ExtArgs>
+      fields: Prisma.EventImageFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.EventImageFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EventImagePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.EventImageFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EventImagePayload>
+        }
+        findFirst: {
+          args: Prisma.EventImageFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EventImagePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.EventImageFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EventImagePayload>
+        }
+        findMany: {
+          args: Prisma.EventImageFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EventImagePayload>[]
+        }
+        create: {
+          args: Prisma.EventImageCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EventImagePayload>
+        }
+        createMany: {
+          args: Prisma.EventImageCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.EventImageCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EventImagePayload>[]
+        }
+        delete: {
+          args: Prisma.EventImageDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EventImagePayload>
+        }
+        update: {
+          args: Prisma.EventImageUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EventImagePayload>
+        }
+        deleteMany: {
+          args: Prisma.EventImageDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.EventImageUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.EventImageUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EventImagePayload>[]
+        }
+        upsert: {
+          args: Prisma.EventImageUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EventImagePayload>
+        }
+        aggregate: {
+          args: Prisma.EventImageAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateEventImage>
+        }
+        groupBy: {
+          args: Prisma.EventImageGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.EventImageGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.EventImageCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.EventImageCountAggregateOutputType> | number
+        }
+      }
+    }
     TicketCategory: {
       payload: Prisma.$TicketCategoryPayload<ExtArgs>
       fields: Prisma.TicketCategoryFieldRefs
@@ -2552,6 +2627,16 @@ export const EventMediaScalarFieldEnum = {
 export type EventMediaScalarFieldEnum = (typeof EventMediaScalarFieldEnum)[keyof typeof EventMediaScalarFieldEnum]
 
 
+export const EventImageScalarFieldEnum = {
+  eventId: 'eventId',
+  kind: 'kind',
+  mimeType: 'mimeType',
+  data: 'data'
+} as const
+
+export type EventImageScalarFieldEnum = (typeof EventImageScalarFieldEnum)[keyof typeof EventImageScalarFieldEnum]
+
+
 export const TicketCategoryScalarFieldEnum = {
   id: 'id',
   eventId: 'eventId',
@@ -2895,6 +2980,20 @@ export type ListEnumEventStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$
 
 
 /**
+ * Reference to a field of type 'Bytes'
+ */
+export type BytesFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Bytes'>
+    
+
+
+/**
+ * Reference to a field of type 'Bytes[]'
+ */
+export type ListBytesFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Bytes[]'>
+    
+
+
+/**
  * Reference to a field of type 'AdmissionMode'
  */
 export type EnumAdmissionModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AdmissionMode'>
@@ -3171,6 +3270,7 @@ export type GlobalOmitConfig = {
   venue?: Prisma.VenueOmit
   event?: Prisma.EventOmit
   eventMedia?: Prisma.EventMediaOmit
+  eventImage?: Prisma.EventImageOmit
   ticketCategory?: Prisma.TicketCategoryOmit
   eventSeat?: Prisma.EventSeatOmit
   booking?: Prisma.BookingOmit

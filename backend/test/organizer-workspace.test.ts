@@ -47,6 +47,7 @@ afterAll(async () => {
   const ownedEvents = await prisma.event.findMany({ where: { organizerId: { in: organizations } }, select: { id: true, venueId: true } });
   const ids = ownedEvents.map(event => event.id);
   venues.push(...ownedEvents.flatMap(event => event.venueId ? [event.venueId] : []));
+  await prisma.activityLog.deleteMany({ where: { entityType: "Event", entityId: { in: ids } } });
   await prisma.ticketVerification.deleteMany({ where: { verifiedById: { in: users } } });
   await prisma.ticket.deleteMany({ where: { bookingItem: { eventId: { in: ids } } } });
   await prisma.payment.deleteMany({ where: { booking: { eventId: { in: ids } } } });
@@ -126,6 +127,32 @@ it("persists drafts, categories, Manila times, safe venue replacements and stale
     await prisma.event.update({ where: { id: events[1]! }, data: { eventType: { Conference: "CONFERENCE", Sports: "SPORTS", Theater: "THEATER" }[category] as "CONFERENCE" | "SPORTS" | "THEATER" } });
     expect((await PublicEventsService.get(events[1]!))?.type).toBe(category);
   }
+});
+it("lets an organizer add general admission tiers and publish only a complete owned draft", async () => {
+  const draft = await write("/events", { title: "Tickets", category: "Concert",
+    startsAt: "2096-11-20T19:00:00+08:00", venueText: "Concert Hall" }, "post");
+  const id = draft.body.data.id;
+  expect((await write(`/events/${id}/publish`, { expectedUpdatedAt: draft.body.data.updatedAt }, "post")).body.error.code).toBe("INCOMPLETE_EVENT");
+  expect((await write(`/events/${events[2]}/tiers`, { name: "GA", description: "", price: 100,
+    maxCapacity: 10, status: "ACTIVE", expectedUpdatedAt: draft.body.data.updatedAt }, "post")).status).toBe(404);
+  const tier = await write(`/events/${id}/tiers`, { name: " GA ", description: "Floor", price: 125.5,
+    maxCapacity: 10, status: "ACTIVE", expectedUpdatedAt: draft.body.data.updatedAt }, "post");
+  expect(tier.status).toBe(201);
+  expect(tier.body.data.tiers[0]).toMatchObject({ name: "GA", price: 125.5, maxCapacity: 10, admissionMode: "GENERAL_ADMISSION" });
+  expect((await write(`/events/${id}/tiers`, { name: "Stale", description: "", price: 100,
+    maxCapacity: 10, status: "ACTIVE", expectedUpdatedAt: draft.body.data.updatedAt }, "post")).status).toBe(409);
+  const changed = await write(`/events/${id}/tiers/${tier.body.data.tiers[0].id}`, { name: "VIP", description: "Front",
+    price: 200, maxCapacity: 5, status: "ACTIVE", expectedUpdatedAt: tier.body.data.updatedAt });
+  expect(changed.body.data.tiers[0]).toMatchObject({ name: "VIP", price: 200 });
+  await prisma.user.update({ where: { id: users[0]! }, data: { emailVerified: true } });
+  const published = await write(`/events/${id}/publish`, { expectedUpdatedAt: changed.body.data.updatedAt }, "post");
+  expect(published.status).toBe(200);
+  expect(published.body.data.status).toBe("PUBLISHED");
+  expect((await PublicEventsService.get(id))?.categories[0]).toMatchObject({ name: "VIP", price: 200 });
+  expect((await write(`/events/${id}/tiers`, { name: "Late", description: "", price: 100,
+    maxCapacity: 10, status: "ACTIVE", expectedUpdatedAt: published.body.data.updatedAt }, "post")).body.error.code).toBe("TIER_EDIT_UNAVAILABLE");
+  expect((await write(`/events/${id}/publish`, { expectedUpdatedAt: published.body.data.updatedAt }, "post")).body.error.code).toBe("INVALID_TRANSITION");
+  expect(await prisma.activityLog.count({ where: { entityType: "Event", entityId: id, action: "EVENT_STATUS_CHANGED" } })).toBe(1);
 });
 it("uses one paid-booking selection for dashboard, analytics and escaped CSV at Manila boundaries", async () => {
   const sale = await booking({ quantity: 2, amount: 200.50, at: "2096-05-31T16:00:00Z" });

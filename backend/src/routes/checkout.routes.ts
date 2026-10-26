@@ -44,10 +44,10 @@ export function checkoutRouter(auth: ReturnType<typeof createAuth>, gateway: Che
     res.status(201).json({ data: await createBooking(res.locals.user.id, input) });
   });
   router.get("/bookings/:id", async (req, res) => {
-    res.json({ data: await getOwnBooking(z.uuid().parse(req.params.id), res.locals.user.id) });
+    res.json({ data: await getOwnBooking(z.uuid().parse(req.params.id), res.locals.user.id, gateway) });
   });
   router.get("/bookings/:id/payment-methods", async (req, res) => {
-    await getOwnBooking(z.uuid().parse(req.params.id), res.locals.user.id);
+    await getOwnBooking(z.uuid().parse(req.params.id), res.locals.user.id, gateway);
     res.json({ data: paymentMethods });
   });
   router.post("/bookings/:id/payment", async (req, res) => {
@@ -58,7 +58,7 @@ export function checkoutRouter(auth: ReturnType<typeof createAuth>, gateway: Che
     z.object({ operationKey: z.uuid() }).strict().parse(req.body);
     const id = z.uuid().parse(req.params.id);
     await closeBooking(id, res.locals.user.id, "CANCELLED", gateway);
-    res.json({ data: await getOwnBooking(id, res.locals.user.id) });
+    res.json({ data: await getOwnBooking(id, res.locals.user.id, gateway) });
   });
   router.get("/tickets/:id", async (req, res) => {
     const ticket = await prisma.ticket.findFirst({ where: { id: z.uuid().parse(req.params.id), bookingItem: { booking: { userId: res.locals.user.id } } },

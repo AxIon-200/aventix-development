@@ -6,7 +6,7 @@ import { prisma } from "../src/lib/prisma.js";
 import type { createAuth } from "../src/lib/auth.js";
 import { checkoutRouter } from "../src/routes/checkout.routes.js";
 import { createPayMongoWebhookApp } from "../src/lib/paymongo-webhook.js";
-import { expireBookings } from "../src/lib/checkout-bookings.js";
+import { reconcileOverdueBooking } from "../src/lib/checkout-bookings.js";
 import { CheckoutProviderError, type CheckoutGateway } from "../src/lib/paymongo-checkout.js";
 import { PublicEventsService } from "../src/services/public-events.service.js";
 
@@ -113,6 +113,21 @@ it("reserves actual prices exactly once and prevents another attendee buying the
   expect((await request(client).get(`/checkout/bookings/${b.id}`)).body.data.issuedTickets).toHaveLength(1);
 }, 30000);
 
+it("provides a usable venue address for bookings created with venue text only", async () => {
+  const event = await prisma.event.findUniqueOrThrow({ where: { id: eventId }, select: { venueId: true } });
+  const venueId = event.venueId!;
+  await prisma.venue.update({ where: { id: venueId }, data: { address: "" } });
+  try {
+    const created = await booking();
+    expect(created.event.venue.address).toBe("To be announced");
+    const read = await request(client).get(`/checkout/bookings/${created.id}`);
+    expect(read.status).toBe(200);
+    expect(read.body.data.event.venue.address).toBe("To be announced");
+  } finally {
+    await prisma.venue.update({ where: { id: venueId }, data: { address: "Test fixture venue" } });
+  }
+}, 30000);
+
 it("never confirms for unknown sessions, mismatched references, incorrect totals or incomplete dashboard fixtures", async () => {
   const b = await booking(); expect((await checkout(b.id)).status).toBe(200);
   for (const change of [{ amount: 1 }, { reference: "wrong-booking" }, { sessionId: "cs_unknown" }, { incomplete: true }]) {
@@ -133,8 +148,22 @@ it("keeps inventory until provider expiry is verified, then releases it for anot
   const next = await booking(seated, [seats[1]!], app(other));
   expect(next.status).toBe("PENDING_PAYMENT");
   await prisma.booking.update({ where: { id: next.id }, data: { expiresAt: new Date(Date.now() - 1000) } });
-  await expireBookings(gateway);
-  expect((await request(app(other)).get(`/checkout/bookings/${next.id}`)).body.data.status).toBe("EXPIRED");
+  await reconcileOverdueBooking(next.id, undefined, gateway);
+  expect((await request(app(other)).get(`/checkout/bookings/${next.id}`)).body.data.status).toBe("CANCELLED");
+}, 30000);
+
+it("cancels an unpaid reservation when its deadline has passed", async () => {
+  const b = await booking(seated, [seats[2]!]);
+  await prisma.booking.update({ where: { id: b.id }, data: { expiresAt: new Date(Date.now() - 1000) } });
+  const read = await request(client).get(`/checkout/bookings/${b.id}`);
+  expect(read.body.data.status).toBe("CANCELLED");
+  expect(read.body.data.paymentStatus).toBe("FAILED");
+  expect(read.body.data.canPay).toBe(false);
+  expect(read.body.data.canCancel).toBe(false);
+  const otherClient = app(other);
+  const replacement = await booking(seated, [seats[2]!], otherClient);
+  expect(replacement.status).toBe("PENDING_PAYMENT");
+  expect((await post(`/bookings/${replacement.id}/cancel`, { operationKey: randomUUID() }, otherClient)).status).toBe(200);
 }, 30000);
 
 it("retains an uncertain session attempt and refuses duplicate checkout creation or premature cancellation", async () => {
@@ -206,4 +235,34 @@ it("enforces ownership, attendee role, origin, JSON, limits and seat/category me
   expect((await post("/bookings", draft(standing, [], 20))).body.error.code).toBe("PURCHASE_LIMIT_EXCEEDED");
   expect((await post("/bookings", draft(standing, [seats[4]!]))).body.error.code).toBe("SEAT_SELECTION_INVALID");
   expect((await post("/bookings", draft(seated, [randomUUID()]))).body.error.code).toBe("SEAT_UNAVAILABLE");
+}, 30000);
+
+it("recovers a paid overdue checkout when its webhook was missed", async () => {
+  const b = await booking(); await checkout(b.id);
+  const row = await prisma.booking.findUniqueOrThrow({ where: { id: b.id }, include: { payments: true } });
+  await prisma.booking.update({ where: { id: b.id }, data: { expiresAt: new Date(Date.now() - 1000) } });
+  const paidGateway = { ...gateway, inspect: vi.fn(async () => ({ id: row.payments[0]!.providerReference!,
+    attributes: { livemode: false as const, status: "active", reference_number: b.reference,
+      payments: [{ id: `pay_${randomUUID()}`, attributes: { status: "paid", amount: 125025, currency: "PHP" } }] } })) };
+  await reconcileOverdueBooking(b.id, undefined, paidGateway);
+  const read = await request(app(owner, "ATTENDEE", paidGateway)).get(`/checkout/bookings/${b.id}`);
+  expect(read.body.data).toMatchObject({ status: "CONFIRMED", paymentStatus: "PAID" });
+  expect(read.body.data.issuedTickets).toHaveLength(1);
+  await reconcileOverdueBooking(b.id, undefined, paidGateway);
+  expect(await prisma.ticket.count({ where: { bookingItem: { bookingId: b.id } } })).toBe(1);
+  expect(gateway.expire).not.toHaveBeenCalledWith(row.payments[0]!.providerReference);
+}, 30000);
+
+it("retains an overdue paid checkout when provider amount does not match", async () => {
+  const b = await booking(); await checkout(b.id);
+  const row = await prisma.booking.findUniqueOrThrow({ where: { id: b.id }, include: { payments: true } });
+  await prisma.booking.update({ where: { id: b.id }, data: { expiresAt: new Date(Date.now() - 1000) } });
+  const suspiciousGateway = { ...gateway, inspect: vi.fn(async () => ({ id: row.payments[0]!.providerReference!,
+    attributes: { livemode: false as const, reference_number: b.reference,
+      payments: [{ id: `pay_${randomUUID()}`, attributes: { status: "paid", amount: 1, currency: "PHP" } }] } })) };
+  await expect(reconcileOverdueBooking(b.id, undefined, suspiciousGateway)).rejects.toMatchObject({ code: "PAYMENT_PROCESSING" });
+  const read = await request(app(owner, "ATTENDEE", suspiciousGateway)).get(`/checkout/bookings/${b.id}`);
+  expect(read.body.data.status).toBe("PENDING_PAYMENT");
+  expect(await prisma.ticket.count({ where: { bookingItem: { bookingId: b.id } } })).toBe(0);
+  expect(gateway.expire).not.toHaveBeenCalledWith(row.payments[0]!.providerReference);
 }, 30000);

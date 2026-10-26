@@ -301,6 +301,7 @@ model Event {
   organizer        OrganizerProfile @relation(fields: [organizerId], references: [id])
   venue            Venue?           @relation(fields: [venueId], references: [id])
   media            EventMedia[]
+  images           EventImage[]
   ticketCategories TicketCategory[]
   seats            EventSeat[]
   bookings         Booking[]
@@ -326,6 +327,17 @@ model EventMedia {
   @@index([eventId])
   @@index([uploadedById])
   @@index([eventId, displayOrder])
+}
+
+model EventImage {
+  eventId String @db.Uuid
+  kind    String
+  mimeType String
+  data    Bytes @db.ByteA
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@id([eventId, kind])
 }
 
 enum AdmissionMode {

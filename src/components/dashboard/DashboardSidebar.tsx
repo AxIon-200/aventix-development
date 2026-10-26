@@ -213,9 +213,9 @@ export default function DashboardSidebar({
             }`}
           >
             <Link
-              href="/dashboard"
+              href="/"
               onClick={() => setMobileOpenPath(null)}
-              aria-label="Aventix attendee dashboard"
+              aria-label="Aventix landing page"
               className="flex items-center"
             >
               {collapsed ? (

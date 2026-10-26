@@ -1,5 +1,7 @@
 # Organizer backend and database implementation plan
 
+Implementation update (2026-10-26): the organizer event form now supports creating and editing general admission ticket tiers for draft events and publishing a complete draft. The original boundaries below describe the planning baseline. Assigned seating configuration remains outside this editor.
+
 Planning baseline: current working-tree frontend in `aventix-development`, reviewed 2026-10-26. This document proposes implementation; it does not change application code or the database.
 
 **Implementation status — 2026-10-26**

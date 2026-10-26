@@ -43,3 +43,15 @@ it("only releases a checkout after retrieval confirms expiry with no paid or ong
     expect(await paymongoCheckout.expire("cs_fixture")).toBe(expected);
   }
 });
+it("reads a test checkout for recovery and rejects a mismatched session", async () => {
+  vi.stubEnv("PAYMONGO_SECRET_KEY", "sk_test_fixture");
+  const fetcher = vi.fn(); vi.stubGlobal("fetch", fetcher);
+  fetcher.mockResolvedValueOnce(Response.json({ data: { id: "cs_fixture", attributes: { livemode: false,
+    status: "active", reference_number: input.reference, payments: [{ id: "pay_fixture", attributes: {
+      status: "paid", amount: 125025, currency: "PHP" } }] } } }));
+  expect((await paymongoCheckout.inspect("cs_fixture")).attributes.payments?.[0]?.attributes).toMatchObject({
+    status: "paid", amount: 125025, currency: "PHP",
+  });
+  fetcher.mockResolvedValueOnce(Response.json({ data: { id: "cs_other", attributes: { livemode: false } } }));
+  await expect(paymongoCheckout.inspect("cs_fixture")).rejects.toBeInstanceOf(CheckoutProviderError);
+});

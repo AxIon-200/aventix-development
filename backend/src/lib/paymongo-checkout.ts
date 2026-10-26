@@ -6,7 +6,8 @@ export const paymentMethods = [
 const sessionSchema = z.object({ data: z.object({ id: z.string().regex(/^cs_[A-Za-z0-9]+$/),
   attributes: z.object({ livemode: z.literal(false), status: z.string().optional(),
     checkout_url: z.url().optional(), reference_number: z.string().nullish(),
-    payments: z.array(z.object({ id: z.string(), attributes: z.object({ status: z.string() }) })).optional(),
+    payments: z.array(z.object({ id: z.string(), attributes: z.object({ status: z.string(),
+      amount: z.number().int().nonnegative().safe().optional(), currency: z.string().optional() }) })).optional(),
   }) }) });
 export type CheckoutSession = z.infer<typeof sessionSchema>["data"];
 export class CheckoutProviderError extends Error {
@@ -16,6 +17,7 @@ export interface CheckoutGateway {
   create(input: { reference: string; bookingId: string; paymentId: string; method: string;
     items: { name: string; amount: number; quantity: number }[] }): Promise<CheckoutSession>;
   expire(sessionId: string): Promise<boolean>;
+  inspect(sessionId: string): Promise<CheckoutSession>;
 }
 function authorization() {
   const key = process.env.PAYMONGO_SECRET_KEY;
@@ -65,5 +67,15 @@ export const paymongoCheckout: CheckoutGateway = {
     const parsed = sessionSchema.safeParse(await current.json());
     return parsed.success && parsed.data.data.id === id && parsed.data.data.attributes.status === "expired"
       && !(parsed.data.data.attributes.payments ?? []).some(p => ["paid", "pending", "processing"].includes(p.attributes.status));
+  },
+  async inspect(id) {
+    if (!/^cs_[A-Za-z0-9]+$/.test(id)) throw new CheckoutProviderError(false);
+    const response = await fetch(`https://api.paymongo.com/v1/checkout_sessions/${id}`, {
+      headers: { Authorization: authorization(), Accept: "application/json" }, signal: AbortSignal.timeout(10000),
+    });
+    if (!response.ok) throw new CheckoutProviderError(false);
+    const parsed = sessionSchema.safeParse(await response.json());
+    if (!parsed.success || parsed.data.data.id !== id) throw new CheckoutProviderError(false);
+    return parsed.data.data;
   },
 };

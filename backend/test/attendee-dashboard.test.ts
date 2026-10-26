@@ -20,7 +20,7 @@ beforeEach(() => { findMany.mockReset(); });
 it("uses the authenticated attendee identity, ignores requested user IDs and returns actual records", async () => {
   findMany.mockResolvedValue([{
     id: "booking-1", bookingReference: "BKG-1", eventId: "event-1", status: "CONFIRMED",
-    createdAt: new Date("2026-10-01"), totalAmount: "200.50",
+    createdAt: new Date("2026-10-01"), expiresAt: new Date("2026-10-01T00:15:00Z"), totalAmount: "200.50",
     event: { name: "Concert", status: "PUBLISHED", startTime: new Date("2026-11-01"), venue: { name: "Venue" } },
     payments: [
       { status: "PAID", amount: "200.50" }, { status: "FAILED", amount: "200.50" },
@@ -33,7 +33,8 @@ it("uses the authenticated attendee identity, ignores requested user IDs and ret
   expect(response.headers["cache-control"]).toBe("no-store");
   expect(findMany.mock.calls[0]![0].where).toEqual({ userId: "current-attendee" });
   expect(response.body.data.userId).toBe("current-attendee");
-  expect(response.body.data.bookings[0]).toMatchObject({ paidCentavos: 20050, totalCentavos: 20050, quantity: 2 });
+  expect(response.body.data.bookings[0]).toMatchObject({ paidCentavos: 20050, totalCentavos: 20050, quantity: 2,
+    overdue: false });
   expect(response.body.data.bookings[0].tickets).toHaveLength(1);
   expect(JSON.stringify(response.body)).not.toContain("verificationToken");
 });

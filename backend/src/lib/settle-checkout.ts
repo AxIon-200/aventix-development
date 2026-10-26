@@ -3,7 +3,7 @@ import type { Prisma } from "../generated/prisma/client.js";
 import type { PayMongoReceipt } from "./paymongo-webhook.js";
 import { centavos, lockBooking } from "./checkout-bookings.js";
 
-export async function settleCheckout(tx: Prisma.TransactionClient, receipt: PayMongoReceipt) {
+export async function settleCheckout(tx: Prisma.TransactionClient, receipt: PayMongoReceipt, source: "webhook" | "provider_lookup" = "webhook") {
   await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('aventix-payment-id'), hashtext(${receipt.paymentId}))::text`;
   const payment = await tx.payment.findUnique({ where: { provider_providerReference: { provider: "paymongo_test", providerReference: receipt.checkoutSessionId } },
     select: { id: true, bookingId: true } });
@@ -45,6 +45,6 @@ export async function settleCheckout(tx: Prisma.TransactionClient, receipt: PayM
   }
   await tx.booking.update({ where: { id: b.id }, data: { status: "CONFIRMED" } });
   await tx.activityLog.create({ data: { action: "PAYMONGO_BOOKING_CONFIRMED", entityType: "Booking", entityId: b.id,
-    metadata: { eventId: receipt.eventId, paymentId: receipt.paymentId, checkoutSessionId: receipt.checkoutSessionId, amountCentavos: receipt.amountCentavos, mode: "test" } } });
+    metadata: { eventId: receipt.eventId, paymentId: receipt.paymentId, checkoutSessionId: receipt.checkoutSessionId, amountCentavos: receipt.amountCentavos, mode: "test", source } } });
   return { processingStatus: "BOOKING_CONFIRMED", bookingId: b.id };
 }

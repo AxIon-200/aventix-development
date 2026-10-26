@@ -117,6 +117,11 @@ export type Event = Prisma.EventModel
  */
 export type EventMedia = Prisma.EventMediaModel
 /**
+ * Model EventImage
+ * 
+ */
+export type EventImage = Prisma.EventImageModel
+/**
  * Model TicketCategory
  * 
  */
