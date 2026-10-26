@@ -16,7 +16,8 @@ export default function AttendeeBookingHistoryPage() {
       date: new Intl.DateTimeFormat("en-PH", { timeZone: "Asia/Manila", dateStyle: "medium" }).format(new Date(booking.createdAt)),
       isoDate: new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(booking.createdAt)),
       tickets: booking.quantity, total: money(booking.status === "REFUNDED" ? 0 : booking.paidCentavos),
-      status: booking.simulation ? "DEMO (no charge)" : booking.status,
+      status: booking.simulation ? "DEMO (no charge)" : booking.status === "PENDING_PAYMENT" && booking.overdue
+          ? "PAYMENT VERIFICATION PENDING" : booking.status,
     }));
 
   const filteredBookings = bookings.filter((b) => {

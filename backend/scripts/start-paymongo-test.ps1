@@ -26,8 +26,11 @@ $publicOrigin = $null
 for ($attempt = 0; $attempt -lt 60; $attempt++) {
   $logFile = Join-Path $runtimeDirectory 'tunnel.stderr.log'
   if (Test-Path -LiteralPath $logFile) {
-    $urlMatch = [regex]::Match((Get-Content -LiteralPath $logFile -Raw), 'https://[a-z0-9-]+\.trycloudflare\.com')
-    if ($urlMatch.Success) { $publicOrigin = $urlMatch.Value; break }
+    $logText = Get-Content -LiteralPath $logFile -Raw
+    if ($logText) {
+      $urlMatch = [regex]::Match($logText, 'https://[a-z0-9-]+\.trycloudflare\.com')
+      if ($urlMatch.Success) { $publicOrigin = $urlMatch.Value; break }
+    }
   }
   Start-Sleep -Milliseconds 500
 }

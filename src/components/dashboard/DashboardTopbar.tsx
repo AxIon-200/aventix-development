@@ -48,7 +48,7 @@ export default function DashboardTopbar({
           <Menu className="h-5 w-5" />
         </button>
 
-        <Link href="/dashboard" className="flex items-center gap-2 lg:hidden">
+        <Link href="/" className="flex items-center gap-2 lg:hidden">
           <Image
             src="/images/aventix-icon.png"
             alt="Aventix"

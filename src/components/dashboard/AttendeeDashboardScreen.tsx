@@ -7,6 +7,7 @@ import AttendeeDashboardOverview from "./AttendeeDashboardOverview";
 import DashboardSidebar from "./DashboardSidebar";
 import DashboardTopbar from "./DashboardTopbar";
 import AccountGate from "@/components/auth/AccountGate";
+import SignOutButton from "@/components/auth/SignOutButton";
 import { useAccountSession, type AccountState } from "@/components/auth/useAccountSession";
 import { publicAuthClient } from "@/lib/auth/client";
 import { accountSession } from "@/lib/auth/account-session";
@@ -29,7 +30,9 @@ export default function AttendeeDashboardScreen({ initial }: { initial: AccountS
   if (account.unavailable) return <main id="main-content" className="mx-auto max-w-3xl space-y-4 p-8">
     <h1 className="text-2xl font-semibold">Dashboard unavailable</h1>
     <AccountGate code={account.error ?? "UNAVAILABLE"} />
-    <button type="button" onClick={() => { account.retry(); router.refresh(); }} className="text-[#66fcf1] underline">Retry account check</button>
+    {account.error === "LOGOUT_UNCERTAIN"
+      ? <SignOutButton className="text-[#66fcf1] underline">Retry sign-out</SignOutButton>
+      : <button type="button" onClick={() => { account.retry(); router.refresh(); }} className="text-[#66fcf1] underline">Retry account check</button>}
   </main>;
 
   const session = account.session;

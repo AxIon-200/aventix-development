@@ -17,6 +17,15 @@ export const eventCreate = z.object({ title: fields.title, category: fields.cate
   startsAt: fields.startsAt.optional(), venueText: fields.venueText.optional(), description: fields.description.optional() }).strict();
 export const eventUpdate = eventCreate.partial().extend({ expectedUpdatedAt: z.iso.datetime() }).strict()
   .refine(value => Object.keys(value).length > 1);
+export const ticketTierInput = z.object({
+  name: z.string().trim().min(1).max(150),
+  description: z.string().trim().max(1000),
+  price: z.number().min(0.01).max(9999999999.99).refine(value => Math.abs(value * 100 - Math.round(value * 100)) < 0.000001),
+  maxCapacity: z.number().int().min(1).max(1_000_000),
+  status: z.enum(["ACTIVE", "DISABLED"]),
+  expectedUpdatedAt: z.iso.datetime(),
+}).strict();
+export const publishEventInput = z.object({ expectedUpdatedAt: z.iso.datetime() }).strict();
 export const eventFilters = z.object({ search: z.string().trim().max(200).optional(),
   status: z.enum(["DRAFT", "PUBLISHED", "SOLD_OUT", "COMPLETED", "CANCELLED"]).optional() }).strict();
 export const profileUpdate = z.object({ organizationName: z.string().trim().min(2).max(150).optional(),

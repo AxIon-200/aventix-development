@@ -6,6 +6,12 @@ export interface OrganizerEventSummary {
 export interface OrganizerEventDraft {
   id: string; title: string; category: string | null; startsAt: string | null; venueText: string; description: string;
   status: EventPublishStatus; updatedAt: string;
+  posterUrl: string | null;
+  tiers: OrganizerTicketTier[];
+}
+export interface OrganizerTicketTier {
+  id: string; name: string; description: string; price: number; maxCapacity: number | null;
+  admissionMode: "GENERAL_ADMISSION" | "ASSIGNED_SEATING"; status: "ACTIVE" | "DISABLED";
 }
 export interface OrganizerDashboard {
   organizationName: string; activeEvents: OrganizerEventSummary[];

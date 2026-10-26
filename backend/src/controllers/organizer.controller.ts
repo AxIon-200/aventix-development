@@ -1,7 +1,8 @@
 import type { RequestHandler } from "express";
 import { z } from "zod";
 import { OrganizerService } from "../services/organizer.service.js";
-import { csvCell, eventCreate, eventFilters, eventUpdate, OrganizerError, profileUpdate, reportInput, scanInput } from "../lib/organizer-input.js";
+import { csvCell, eventCreate, eventFilters, eventUpdate, OrganizerError, profileUpdate, publishEventInput, reportInput, scanInput, ticketTierInput } from "../lib/organizer-input.js";
+import { validateEventImage } from "../lib/event-image.js";
 
 export const getOrganizerDashboard: RequestHandler = async (_req, res) => {
   res.json({ data: await OrganizerService.getDashboard(res.locals.organization.id, res.locals.organization.organizationName) });
@@ -17,6 +18,25 @@ export const saveOrganizerEvent: RequestHandler = async (req, res) => {
   const input = id ? eventUpdate.parse(req.body) : eventCreate.parse(req.body);
   const expected = "expectedUpdatedAt" in input ? input.expectedUpdatedAt as string : undefined;
   res.status(id ? 200 : 201).json({ data: await OrganizerService.saveEvent(res.locals.organization.id, input, id, expected) });
+};
+export const saveOrganizerPoster: RequestHandler = async (req, res) => {
+  const id = z.uuid().parse(req.params.id);
+  const expected = z.iso.datetime().parse(req.get("X-Event-Updated-At"));
+  const data = req.body as Buffer;
+  validateEventImage(data, req.get("Content-Type") ?? "");
+  res.json({ data: await OrganizerService.savePoster(res.locals.organization.id, id,
+    req.get("Content-Type")!, data, expected) });
+};
+export const saveOrganizerTier: RequestHandler = async (req, res) => {
+  const eventId = z.uuid().parse(req.params.id);
+  const tierId = req.params.tierId ? z.uuid().parse(req.params.tierId) : undefined;
+  res.status(tierId ? 200 : 201).json({ data: await OrganizerService.saveTier(res.locals.organization.id, eventId,
+    ticketTierInput.parse(req.body), tierId) });
+};
+export const publishOrganizerEvent: RequestHandler = async (req, res) => {
+  const id = z.uuid().parse(req.params.id);
+  const input = publishEventInput.parse(req.body);
+  res.json({ data: await OrganizerService.publishEvent(res.locals.organization.id, res.locals.user.id, id, input.expectedUpdatedAt) });
 };
 export const getOrganizerProfile: RequestHandler = async (_req, res) => { res.json({ data: await OrganizerService.profile(res.locals.user.id) }); };
 export const saveOrganizerProfile: RequestHandler = async (req, res) => { res.json({ data: await OrganizerService.saveProfile(res.locals.user.id, profileUpdate.parse(req.body)) }); };

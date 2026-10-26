@@ -40,6 +40,12 @@ export function useAttendeeRecords() {
     return () => controller.abort();
   }, [userId, revision]);
 
+  useEffect(() => {
+    if (!userId || result?.userId !== userId || !result.data?.bookings.some(booking => booking.status === "PENDING_PAYMENT")) return;
+    const timer = window.setInterval(() => setRevision(value => value + 1), 15000);
+    return () => window.clearInterval(timer);
+  }, [userId, result]);
+
   const current = result?.userId === userId ? result : null;
   return {
     loading: !userId || !current,

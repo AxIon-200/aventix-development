@@ -25,6 +25,7 @@ export class AttendeeService {
         eventStatus: booking.event.status,
         venue: booking.event.venue?.name ?? "Venue to be announced",
         status: booking.status,
+        overdue: booking.status === "PENDING_PAYMENT" && booking.expiresAt <= new Date(),
         createdAt: booking.createdAt.toISOString(),
         // Failed, pending and refunded attempts never count as spending.
         paidCentavos: booking.payments.filter(payment => payment.status === "PAID")

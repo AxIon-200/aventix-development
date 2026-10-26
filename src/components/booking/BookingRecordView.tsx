@@ -83,6 +83,7 @@ export default function BookingRecordView({
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const loadLock = useRef(false);
+  const deadlineRefresh = useRef("");
   const mounted = useRef(true);
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
   const [methodId, setMethodId] = useState(initialMethod);
@@ -141,7 +142,6 @@ export default function BookingRecordView({
   }, [access.session, refresh]);
   useEffect(() => {
     if (
-      (mode !== "payment" && mode !== "confirmation") ||
       !access.session ||
       !booking ||
       booking.status !== "PENDING_PAYMENT"
@@ -151,7 +151,18 @@ export default function BookingRecordView({
       if (!busyRef.current) void refresh();
     }, 8000);
     return () => window.clearInterval(timer);
-  }, [mode, access.session, booking, refresh]);
+  }, [access.session, booking, refresh]);
+  useEffect(() => {
+    if (
+      !booking ||
+      booking.status !== "PENDING_PAYMENT" ||
+      remaining > 0 ||
+      deadlineRefresh.current === booking.id
+    )
+      return;
+    deadlineRefresh.current = booking.id;
+    void refresh();
+  }, [booking, remaining, refresh]);
   useEffect(() => {
     if (
       mode !== "payment" ||
@@ -383,7 +394,9 @@ export default function BookingRecordView({
           <div>
             <p className="text-sm font-semibold">{booking.reference}</p>
             <p className="mt-1 text-xs text-[#9aa4ae]">
-              Booking: {booking.status} · Payment: {booking.paymentStatus}
+              Booking: {booking.status === "PENDING_PAYMENT" && remaining === 0
+                ? "Payment verification pending"
+                : booking.status} · Payment: {booking.paymentStatus}
               {booking.paymentMethod ? ` · ${booking.paymentMethod}` : ""}
             </p>
           </div>
@@ -395,7 +408,7 @@ export default function BookingRecordView({
             >
               {remaining > 0
                 ? `Reservation: ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}`
-                : "Reservation deadline reached — refresh status"}
+                : "Reservation deadline reached — payment verification pending"}
             </p>
           )}
         </div>

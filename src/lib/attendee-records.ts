@@ -9,6 +9,7 @@ export interface AttendeeBooking {
   eventStatus: string;
   venue: string;
   status: string;
+  overdue?: boolean;
   createdAt: string;
   paidCentavos: number;
   totalCentavos: number;

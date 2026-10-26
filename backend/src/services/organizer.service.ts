@@ -4,7 +4,7 @@ import { prisma } from "../lib/prisma.js";
 import { centavos, lockBooking } from "../lib/checkout-bookings.js";
 import { categoryLabel, categoryMap, encryptAccount, OrganizerError, reportDates } from "../lib/organizer-input.js";
 import type { z } from "zod";
-import type { eventCreate, eventUpdate, eventFilters, profileUpdate } from "../lib/organizer-input.js";
+import type { eventCreate, eventUpdate, eventFilters, profileUpdate, ticketTierInput } from "../lib/organizer-input.js";
 
 const paidBooking = { status: "CONFIRMED", payments: { some: { status: "PAID" } } } satisfies Prisma.BookingWhereInput;
 const eventInclude = { venue: true, ticketCategories: { include: { _count: { select: { seats: { where: { enabled: true } } } },
@@ -72,11 +72,75 @@ export class OrganizerService {
     return (await prisma.event.findMany({ where, include: eventInclude, orderBy: [{ createdAt: "desc" }, { id: "asc" }] })).map(presentEvent);
   }
   static async event(organizerId: string, id: string) {
-    const event = await prisma.event.findFirst({ where: { id, organizerId }, include: { venue: true } });
+    const event = await prisma.event.findFirst({ where: { id, organizerId }, include: { venue: true,
+      ticketCategories: { orderBy: [{ createdAt: "asc" }, { id: "asc" }] } } });
     if (!event) throw new OrganizerError("NOT_FOUND", 404);
     return { id: event.id, title: event.name, category: event.eventType ? categoryLabel(event.eventType) : null,
       startsAt: (event.startTime ?? event.eventDate)?.toISOString() ?? null, venueText: event.venue?.name ?? "",
-      description: event.description ?? "", status: event.status, updatedAt: event.updatedAt.toISOString() };
+      description: event.description ?? "", status: event.status, updatedAt: event.updatedAt.toISOString(),
+      posterUrl: event.posterUrl, bannerUrl: event.bannerUrl,
+      tiers: event.ticketCategories.map(tier => ({ id: tier.id, name: tier.name, description: tier.description ?? "",
+        price: tier.price.toNumber(), maxCapacity: tier.maxCapacity, admissionMode: tier.admissionMode, status: tier.status })) };
+  }
+  static async savePoster(organizerId: string, eventId: string, mimeType: string, data: Buffer, expectedUpdatedAt: string) {
+    await prisma.$transaction(async tx => {
+      await tx.$queryRaw`SELECT id FROM "Event" WHERE id = ${eventId}::uuid AND "organizerId" = ${organizerId}::uuid FOR UPDATE`;
+      const event = await tx.event.findFirst({ where: { id: eventId, organizerId } });
+      if (!event) throw new OrganizerError("NOT_FOUND", 404);
+      if (event.updatedAt.toISOString() !== expectedUpdatedAt) throw new OrganizerError("STALE_EVENT", 409);
+      const bytes = Uint8Array.from(data);
+      await tx.eventImage.upsert({ where: { eventId_kind: { eventId, kind: "poster" } },
+        create: { eventId, kind: "poster", mimeType, data: bytes }, update: { mimeType, data: bytes } });
+      const url = `/api/v1/events/${eventId}/images/poster`;
+      await tx.event.update({ where: { id: eventId }, data: {
+        posterUrl: url,
+        updatedAt: new Date(Math.max(Date.now(), event.updatedAt.getTime() + 1)),
+      } });
+    });
+    return this.event(organizerId, eventId);
+  }
+  static async saveTier(organizerId: string, eventId: string, input: z.infer<typeof ticketTierInput>, tierId?: string) {
+    await prisma.$transaction(async tx => {
+      await tx.$queryRaw`SELECT id FROM "Event" WHERE id = ${eventId}::uuid AND "organizerId" = ${organizerId}::uuid FOR UPDATE`;
+      const event = await tx.event.findFirst({ where: { id: eventId, organizerId } });
+      if (!event) throw new OrganizerError("NOT_FOUND", 404);
+      if (event.updatedAt.toISOString() !== input.expectedUpdatedAt) throw new OrganizerError("STALE_EVENT", 409);
+      if (event.status !== "DRAFT") throw new OrganizerError("TIER_EDIT_UNAVAILABLE", 409);
+      const existing = tierId ? await tx.ticketCategory.findFirst({ where: { id: tierId, eventId } }) : null;
+      if (tierId && !existing) throw new OrganizerError("NOT_FOUND", 404);
+      if (existing?.admissionMode === "ASSIGNED_SEATING") throw new OrganizerError("TIER_EDIT_UNAVAILABLE", 409);
+      if (existing && await tx.bookingItem.count({ where: { ticketCategoryId: existing.id } }) &&
+        (existing.price.toNumber() !== input.price || existing.maxCapacity !== input.maxCapacity || existing.status !== input.status))
+        throw new OrganizerError("TIER_HAS_BOOKINGS", 409);
+      const data = { name: input.name, description: input.description, price: input.price.toFixed(2),
+        maxCapacity: input.maxCapacity, status: input.status };
+      if (existing) await tx.ticketCategory.update({ where: { id: existing.id }, data });
+      else await tx.ticketCategory.create({ data: { ...data, eventId, admissionMode: "GENERAL_ADMISSION" } });
+      await tx.event.update({ where: { id: eventId }, data: { updatedAt: new Date(Math.max(Date.now(), event.updatedAt.getTime() + 1)) } });
+    });
+    return this.event(organizerId, eventId);
+  }
+  static async publishEvent(organizerId: string, userId: string, id: string, expectedUpdatedAt: string) {
+    await prisma.$transaction(async tx => {
+      await tx.$queryRaw`SELECT id FROM "Event" WHERE id = ${id}::uuid AND "organizerId" = ${organizerId}::uuid FOR UPDATE`;
+      const event = await tx.event.findFirst({ where: { id, organizerId }, include: { organizer: { include: { user: true } },
+        ticketCategories: { include: { _count: { select: { seats: { where: { enabled: true } } } } } } } });
+      if (!event) throw new OrganizerError("NOT_FOUND", 404);
+      if (event.updatedAt.toISOString() !== expectedUpdatedAt) throw new OrganizerError("STALE_EVENT", 409);
+      if (event.status !== "DRAFT") throw new OrganizerError("INVALID_TRANSITION", 409);
+      if (!event.venueId || !(event.startTime ?? event.eventDate) || (event.startTime ?? event.eventDate)! <= new Date() || !event.eventType ||
+        event.organizer.approvalStatus !== "APPROVED" || event.organizer.user.status !== "ACTIVE" ||
+        !event.organizer.user.emailVerified ||
+        !event.ticketCategories.some(tier => tier.status === "ACTIVE" && tier.price.toNumber() > 0 &&
+          (tier.admissionMode === "GENERAL_ADMISSION" ? (tier.maxCapacity ?? 0) > 0 :
+            tier._count.seats > 0 && (tier.maxCapacity === null || tier.maxCapacity > 0))))
+        throw new OrganizerError("INCOMPLETE_EVENT", 409);
+      await tx.event.update({ where: { id }, data: { status: "PUBLISHED",
+        updatedAt: new Date(Math.max(Date.now(), event.updatedAt.getTime() + 1)) } });
+      await tx.activityLog.create({ data: { userId, action: "EVENT_STATUS_CHANGED", entityType: "Event", entityId: id,
+        metadata: { previousStatus: "DRAFT", status: "PUBLISHED" } } });
+    });
+    return this.event(organizerId, id);
   }
   static async saveEvent(organizerId: string, input: EventChanges, id?: string, expectedUpdatedAt?: string) {
     const savedId = await prisma.$transaction(async tx => {
