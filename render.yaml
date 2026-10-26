@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: aventix-school-api
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: backend
+    branch: debugging-phase
+    autoDeployTrigger: off
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_VERSION
+        value: 24.18.0
+      - key: NODE_ENV
+        value: production
+      - key: FRONTEND_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: BETTER_AUTH_SECRET
+        generateValue: true
+      - key: BETTER_AUTH_URL
+        fromService:
+          name: aventix-school-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: CURRENT_TERMS_VERSION
+        value: aventix-prototype-2026-10-24-v2
+      - key: CURRENT_TERMS_DOCUMENT_URL
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: AUTH_EMAIL_FROM
+        sync: false
+      - key: PAYMONGO_SECRET_KEY
+        sync: false
+      - key: PAYMONGO_WEBHOOK_SECRET
+        sync: false
+      - key: ORGANIZER_PAYOUT_KEY
+        sync: false
